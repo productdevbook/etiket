@@ -162,10 +162,9 @@ export function encodeDotCode(text: string): boolean[][] {
   if (height % 2 === 0) height++;
 
   // Ensure height + width is odd (DotCode constraint)
-  // Currently both are odd, so sum is even. Adjust width by +2 to keep it odd
-  // while making the sum odd.
+  // Make one dimension even and one odd so their sum is odd
   if ((height + width) % 2 === 0) {
-    width += 2;
+    height++;
   }
 
   // Pad data codewords to fill available data capacity
