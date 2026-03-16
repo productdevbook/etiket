@@ -699,6 +699,7 @@ export { renderQRCodeSVG } from "./renderers/svg/qr";
 export { renderMatrixSVG } from "./renderers/svg/matrix";
 export { renderText } from "./renderers/text";
 export { svgToDataURI, svgToBase64, svgToBase64Raw } from "./renderers/data-uri";
+export { optimizeSVG } from "./renderers/svg/optimize";
 
 // Re-export error classes
 export { EtiketError, InvalidInputError, CapacityError, CheckDigitError } from "./errors";
