@@ -11,8 +11,13 @@ export default defineConfig({
     "src/cli.ts",
   ],
   format: ["esm"],
-  dts: true,
+  dts: {
+    sourcemap: false,
+  },
   clean: true,
-  sourcemap: true,
+  sourcemap: false,
   minify: true,
+  treeshake: true,
+  target: "es2022",
+  publint: true,
 });

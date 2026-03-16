@@ -38,7 +38,7 @@
   "author": "productdevbook",
   "repository": {
     "type": "git",
-    "url": "https://github.com/productdevbook/etiket"
+    "url": "git+https://github.com/productdevbook/etiket.git"
   },
   "bin": {
     "etiket": "./dist/cli.mjs"
@@ -96,6 +96,7 @@
     "consola": "^3.4.2",
     "oxfmt": "^0.40.0",
     "oxlint": "latest",
+    "publint": "^0.3.18",
     "tsdown": "latest",
     "typescript": "latest",
     "vitest": "latest"
