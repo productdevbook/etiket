@@ -275,6 +275,13 @@ const qrSvg = renderQRCodeSVG(matrix, { size: 400, dotType: "dots" });
 - Works in browser, Node.js, Deno, Bun, workers
 - ~24KB gzipped (full bundle)
 
+import { qrcodeData } from "etiket"
+
+const qr = qrcodeData("hello")
+
+console.log(qr.matrix)
+
+
 ## Comparison
 
 | Feature                              |       etiket       | [uqr](https://github.com/unjs/uqr) | [bwip-js](https://github.com/metafloor/bwip-js) | [JsBarcode](https://github.com/lindell/JsBarcode) | [qr-code-styling](https://github.com/kozakdenys/qr-code-styling) |
