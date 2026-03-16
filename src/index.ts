@@ -778,6 +778,8 @@ export { encodeCode128 } from "./encoders/code128";
 export type { Code128Charset, Code128Options } from "./encoders/code128";
 export { encodeEAN13, encodeEAN8 } from "./encoders/ean";
 export { encodeQR } from "./encoders/qr/index";
+export { encodeMicroQR } from "./encoders/qr/micro";
+export type { MicroQROptions } from "./encoders/qr/micro";
 export { encodeCode39, encodeCode39Extended } from "./encoders/code39";
 export { encodeCode93, encodeCode93Extended } from "./encoders/code93";
 export { encodeITF, encodeITF14 } from "./encoders/itf";
