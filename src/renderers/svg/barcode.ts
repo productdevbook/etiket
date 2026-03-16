@@ -12,6 +12,7 @@ export function renderBarcodeSVG(bars: number[], options: BarcodeSVGOptions = {}
   const {
     height = 80,
     barWidth = 2,
+    barGap = 0,
     color = "#000",
     background = "#fff",
     showText = false,
@@ -88,12 +89,16 @@ export function renderBarcodeSVG(bars: number[], options: BarcodeSVGOptions = {}
   // Draw bars
   let x = mLeft;
   let isBar = true;
+  const halfGap = barGap / 2;
   for (const w of bars) {
     const barPixelWidth = w * barWidth;
     if (isBar) {
-      parts.push(
-        `<rect x="${x}" y="${barTop}" width="${barPixelWidth}" height="${barHeight}" fill="${escapeAttr(color)}"/>`,
-      );
+      const gappedWidth = barPixelWidth - barGap;
+      if (gappedWidth > 0) {
+        parts.push(
+          `<rect x="${x + halfGap}" y="${barTop}" width="${gappedWidth}" height="${barHeight}" fill="${escapeAttr(color)}"/>`,
+        );
+      }
     }
     x += barPixelWidth;
     isBar = !isBar;

@@ -51,6 +51,7 @@ export interface QRCodeSVGOptions {
   background?: string | GradientOptions | "transparent";
   dotType?: DotType;
   dotSize?: number; // 0.1 to 1, default 1
+  shape?: "square" | "circle"; // overall QR code shape, default 'square'
   corners?: {
     topLeft?: CornerOptions;
     topRight?: CornerOptions;
@@ -64,6 +65,8 @@ export interface BarcodeSVGOptions {
   width?: number;
   height?: number;
   barWidth?: number;
+  /** Extra spacing between bars. Each bar is narrowed by barGap/2 on each side. Default 0. */
+  barGap?: number;
   color?: string;
   background?: string;
   showText?: boolean;
