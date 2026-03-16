@@ -40,7 +40,9 @@
   "scripts": {
     "build": "tsdown",
     "dev": "tsdown --watch",
-    "lint": "oxlint",
+    "lint": "oxlint . && oxfmt --check .",
+    "lint:fix": "oxlint . --fix && oxfmt .",
+    "fmt": "oxfmt .",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
@@ -90,6 +92,9 @@
   "devDependencies": {
     "bumpp": "latest",
     "changelogen": "latest",
+    "citty": "^0.2.1",
+    "consola": "^3.4.2",
+    "oxfmt": "^0.40.0",
     "oxlint": "latest",
     "tsdown": "latest",
     "typescript": "latest",
