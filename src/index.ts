@@ -24,6 +24,8 @@ import { encodePharmacode } from "./encoders/pharmacode";
 import { encodeCode11 } from "./encoders/code11";
 import { encodeGS1128 } from "./encoders/gs1-128";
 import { encodeIdentcode, encodeLeitcode } from "./encoders/deutsche-post";
+import { encodePOSTNET, encodePLANET } from "./encoders/postnet";
+import { encodePlessey } from "./encoders/plessey";
 import { encodeDataMatrix, encodeGS1DataMatrix } from "./encoders/datamatrix/index";
 import { encodePDF417 } from "./encoders/pdf417/index";
 import { encodeAztec } from "./encoders/aztec/index";
@@ -55,7 +57,10 @@ export type BarcodeType =
   | "code11"
   | "gs1-128"
   | "identcode"
-  | "leitcode";
+  | "leitcode"
+  | "postnet"
+  | "planet"
+  | "plessey";
 
 export interface BarcodeOptions extends BarcodeSVGOptions {
   type?: BarcodeType;
@@ -180,6 +185,30 @@ export function barcode(text: string, options: BarcodeOptions = {}): string {
       break;
     case "leitcode":
       bars = encodeLeitcode(text);
+      break;
+    case "postnet": {
+      // POSTNET returns height array — convert to uniform bar/space widths
+      const heights = encodePOSTNET(text);
+      bars = [];
+      for (const _h of heights) {
+        bars.push(1); // bar
+        bars.push(1); // space
+      }
+      bars.pop(); // remove trailing space
+      break;
+    }
+    case "planet": {
+      const heights = encodePLANET(text);
+      bars = [];
+      for (const _h of heights) {
+        bars.push(1);
+        bars.push(1);
+      }
+      bars.pop();
+      break;
+    }
+    case "plessey":
+      bars = encodePlessey(text);
       break;
     default:
       throw new Error(`Unsupported barcode type: ${type}`);
@@ -731,6 +760,12 @@ export function encode(text: string, options: EncodeOptions = {}): EncodeResult 
     case "leitcode":
       bars = encodeLeitcode(text);
       break;
+    case "postnet":
+      return { type: "1d", bars: encodePOSTNET(text) };
+    case "planet":
+      return { type: "1d", bars: encodePLANET(text) };
+    case "plessey":
+      return { type: "1d", bars: encodePlessey(text) };
     default:
       throw new Error(`Unsupported encode type: ${type}`);
   }
@@ -743,6 +778,8 @@ export { encodeCode128 } from "./encoders/code128";
 export type { Code128Charset, Code128Options } from "./encoders/code128";
 export { encodeEAN13, encodeEAN8 } from "./encoders/ean";
 export { encodeQR } from "./encoders/qr/index";
+export { encodeMicroQR } from "./encoders/qr/micro";
+export type { MicroQROptions } from "./encoders/qr/micro";
 export { encodeCode39, encodeCode39Extended } from "./encoders/code39";
 export { encodeCode93, encodeCode93Extended } from "./encoders/code93";
 export { encodeITF, encodeITF14 } from "./encoders/itf";
@@ -755,6 +792,21 @@ export { encodePharmacode } from "./encoders/pharmacode";
 export { encodeCode11 } from "./encoders/code11";
 export { encodeGS1128 } from "./encoders/gs1-128";
 export { encodeIdentcode, encodeLeitcode } from "./encoders/deutsche-post";
+export { encodePOSTNET, encodePLANET } from "./encoders/postnet";
+export { encodePlessey } from "./encoders/plessey";
+export {
+  encodeRM4SCC,
+  encodeKIX,
+  encodeAustraliaPost,
+  encodeJapanPost,
+} from "./encoders/fourstate";
+export type { FourState } from "./encoders/fourstate";
+export {
+  encodeISBT128DIN,
+  encodeISBT128Component,
+  encodeISBT128Expiry,
+  encodeISBT128BloodGroup,
+} from "./encoders/isbt128";
 export { encodeHIBCPrimary, encodeHIBCSecondary, encodeHIBCConcatenated } from "./encoders/hibc";
 export { encodeDataMatrix, encodeGS1DataMatrix } from "./encoders/datamatrix/index";
 export { encodePDF417 } from "./encoders/pdf417/index";

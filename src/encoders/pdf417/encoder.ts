@@ -50,11 +50,32 @@ interface Segment {
   end: number;
 }
 
-/** Convert string to byte array (Latin-1 / ISO 8859-1) */
+// ISO-8859-15 differs from ISO-8859-1 at these code points
+const ISO_8859_15_MAP: Record<number, number> = {
+  0x20ac: 0xa4, // € Euro sign
+  0x0160: 0xa6, // Š
+  0x0161: 0xa8, // š
+  0x017d: 0xb4, // Ž
+  0x017e: 0xb8, // ž
+  0x0152: 0xbc, // Œ
+  0x0153: 0xbd, // œ
+  0x0178: 0xbe, // Ÿ
+};
+
+/** Convert string to byte array with ISO-8859-15 support */
 function textToBytes(text: string): number[] {
   const bytes: number[] = [];
   for (let i = 0; i < text.length; i++) {
-    bytes.push(text.charCodeAt(i) & 0xff);
+    const code = text.charCodeAt(i);
+    const mapped = ISO_8859_15_MAP[code];
+    if (mapped !== undefined) {
+      bytes.push(mapped);
+    } else if (code <= 0xff) {
+      bytes.push(code);
+    } else {
+      // Fallback: use byte compaction for non-Latin characters
+      bytes.push(code & 0xff);
+    }
   }
   return bytes;
 }

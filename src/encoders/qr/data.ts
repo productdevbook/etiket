@@ -6,7 +6,14 @@ import type { ErrorCorrectionLevel, QRCodeOptions } from "./types";
 import { MODE_INDICATOR } from "./types";
 import { getECInfo, getCharCountBits } from "./tables";
 import { selectVersion, selectMode } from "./version";
-import { encodeNumericData, encodeAlphanumericData, encodeByteData, pushBits } from "./mode";
+import {
+  encodeNumericData,
+  encodeAlphanumericData,
+  encodeByteData,
+  encodeKanjiData,
+  unicodeToShiftJIS,
+  pushBits,
+} from "./mode";
 import { addErrorCorrection } from "./reed-solomon";
 
 export interface EncodedData {
@@ -78,10 +85,11 @@ function buildDataBits(
     case "byte":
       bits.push(...encodeByteData(data));
       break;
-    case "kanji":
-      throw new Error(
-        "Kanji encoding mode is not yet supported. Use byte mode for non-ASCII text.",
-      );
+    case "kanji": {
+      const sjisValues = unicodeToShiftJIS(text);
+      bits.push(...encodeKanjiData(sjisValues));
+      break;
+    }
   }
 
   // Terminator

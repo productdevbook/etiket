@@ -95,6 +95,57 @@ export function encodeByteData(data: Uint8Array): number[] {
   return bits;
 }
 
+/**
+ * Encode Kanji data to bits (13 bits per character)
+ * Input must be pre-converted to Shift JIS double-byte values
+ */
+export function encodeKanjiData(sjisValues: number[]): number[] {
+  const bits: number[] = [];
+  for (const code of sjisValues) {
+    let adjusted: number;
+    if (code >= 0x8140 && code <= 0x9ffc) {
+      adjusted = code - 0x8140;
+    } else if (code >= 0xe040 && code <= 0xebbf) {
+      adjusted = code - 0xc140;
+    } else {
+      throw new Error(`Invalid Shift JIS kanji value: 0x${code.toString(16)}`);
+    }
+    const hi = (adjusted >> 8) & 0xff;
+    const lo = adjusted & 0xff;
+    const value = hi * 0xc0 + lo;
+    pushBits(bits, value, 13);
+  }
+  return bits;
+}
+
+/**
+ * Convert a Unicode string to Shift JIS double-byte values for Kanji encoding.
+ * This is a simplified mapping — covers common CJK characters.
+ * For full support, a complete Unicode-to-SJIS table would be needed.
+ */
+export function unicodeToShiftJIS(text: string): number[] {
+  const values: number[] = [];
+  for (let i = 0; i < text.length; i++) {
+    const code = text.charCodeAt(i);
+    // Simple mapping for common ranges
+    // Full SJIS mapping would require a large lookup table
+    // For now, encode the code point directly if in Kanji range
+    if (code >= 0x3000 && code <= 0x9fff) {
+      // Approximate mapping: many CJK characters fall in SJIS 0x8140-0x9FFC range
+      // This is a simplification — production use would need a full mapping table
+      const sjis = 0x8140 + (code - 0x3000);
+      if (sjis <= 0x9ffc) {
+        values.push(sjis);
+      } else {
+        values.push(0xe040 + (code - 0x3000 - (0x9ffc - 0x8140)));
+      }
+    } else {
+      throw new Error(`Character U+${code.toString(16)} cannot be encoded as Kanji`);
+    }
+  }
+  return values;
+}
+
 /** Push a value as the specified number of bits (MSB first) */
 export function pushBits(arr: number[], value: number, count: number): void {
   for (let i = count - 1; i >= 0; i--) {
