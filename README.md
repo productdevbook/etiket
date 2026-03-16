@@ -4,7 +4,7 @@
   <br><br>
   Zero-dependency barcode & QR code SVG generator.
   <br>
-  20+ formats, styled QR codes, tree-shakeable. Pure TypeScript, works everywhere.
+  40+ formats, styled QR codes, tree-shakeable. Pure TypeScript, works everywhere.
   <br><br>
   <a href="https://npmjs.com/package/etiket"><img src="https://img.shields.io/npm/v/etiket?style=flat&colorA=18181B&colorB=F0DB4F" alt="npm version"></a>
   <a href="https://npmjs.com/package/etiket"><img src="https://img.shields.io/npm/dm/etiket?style=flat&colorA=18181B&colorB=F0DB4F" alt="npm downloads"></a>
@@ -145,6 +145,11 @@ barcode("HELLO", { type: "code39", code39CheckDigit: true });
 | `textAlign`    | `'center' \| 'left' \| 'right'` | `'center'`    | Text alignment              |
 | `rotation`     | `0 \| 90 \| 180 \| 270`         | `0`           | Barcode rotation            |
 | `bearerBars`   | `boolean`                       | `false`       | Bearer bars (ITF-14)        |
+| `barGap`       | `number`                        | `0`           | Extra spacing between bars  |
+| `unit`         | `'px' \| 'mm' \| 'in' \| 'cm'`  | `'px'`        | Measurement unit            |
+| `ariaLabel`    | `string`                        | —             | SVG aria-label attribute    |
+| `title`        | `string`                        | —             | SVG `<title>` element       |
+| `desc`         | `string`                        | —             | SVG `<desc>` element        |
 
 ### QR Codes
 
@@ -193,6 +198,10 @@ qrcode("Test", {
 | `corners`        | `object`                                          | —          | Finder pattern styling |
 | `logo`           | `LogoOptions`                                     | —          | Center logo embedding  |
 | `xmlDeclaration` | `boolean`                                         | `false`    | Add XML declaration    |
+| `unit`           | `'px' \| 'mm' \| 'in' \| 'cm'`                    | `'px'`     | Measurement unit       |
+| `ariaLabel`      | `string`                                          | —          | SVG aria-label         |
+| `title`          | `string`                                          | —          | SVG `<title>` element  |
+| `desc`           | `string`                                          | —          | SVG `<desc>` element   |
 
 **Dot types:** `square`, `rounded`, `dots`, `diamond`, `classy`, `classy-rounded`, `extra-rounded`, `vertical-line`, `horizontal-line`, `small-square`, `tiny-square`
 
@@ -338,6 +347,39 @@ gs1DigitalLink({ gtin: "09520123456788", batch: "ABC123", serial: "12345" });
 // HIBC (medical device labeling, FDA UDI)
 const hibc = encodeHIBCPrimary("A123", "PROD456");
 barcode(hibc, { type: "code128" }); // Encode in any symbology
+
+// ISBT 128 (blood bank labeling, ISO 7064 Mod 37-2 check character)
+const din = encodeISBT128DIN("US", "12345", "26", "000001");
+barcode(din, { type: "code128" });
+
+// MaxiCode (UPS shipping labels)
+const mc = encodeMaxiCode("Test shipment", {
+  mode: 2,
+  postalCode: "12345",
+  countryCode: 840,
+  serviceClass: 1,
+});
+```
+
+## SVG Accessibility
+
+All SVG renderers support accessibility attributes out of the box:
+
+```ts
+barcode("123456789", {
+  type: "ean13",
+  ariaLabel: "EAN-13 barcode for product 123456789",
+  title: "Product Barcode",
+  desc: "EAN-13 barcode encoding the GTIN 123456789",
+});
+
+qrcode("https://example.com", {
+  ariaLabel: "QR code linking to example.com",
+  title: "Website QR Code",
+});
+
+// CSS currentColor support for theme-aware barcodes
+barcode("HELLO", { color: "currentColor", background: "transparent" });
 ```
 
 ## Features
@@ -348,11 +390,15 @@ barcode(hibc, { type: "code128" }); // Encode in any symbology
 - Tree-shakeable sub-path exports
 - CLI tool (`npx etiket`)
 - SVG string output (no DOM required) + `optimizeSVG()` for compact inline
-- GS1 support (100+ AIs, Digital Link, GS1 DataMatrix)
-- HIBC medical device encoding
+- SVG accessibility (`ariaLabel`, `role`, `title`, `desc`)
+- Measurement units (`px`, `mm`, `in`, `cm`, `pt`) for print use cases
+- CSS `currentColor` support for theme-aware barcodes
+- Auto EC upgrade to H when QR logo is present
+- GS1 support (100+ AIs, Digital Link, GS1 DataMatrix, GS1 DataBar)
+- HIBC medical device encoding + ISBT 128 blood bank labeling
 - Swiss QR-bill payments
+- 4-state postal barcodes (RM4SCC, KIX, Australia Post, Japan Post, USPS IMb)
 - Works in browser, Node.js, Deno, Bun, Cloudflare Workers
-- ~27KB gzipped (full bundle)
 
 ## Comparison
 
@@ -361,7 +407,7 @@ barcode(hibc, { type: "code128" }); // Encode in any symbology
 | Zero dependencies                    | :white_check_mark: |         :white_check_mark:         |                  :x: (1.5MB+)                   |                   :x: (xmldom)                    |                           :x: (qrcode)                           |
 | TypeScript-first                     | :white_check_mark: |         :white_check_mark:         |                       :x:                       |                        :x:                        |                             Partial                              |
 | Tree-shakeable                       | :white_check_mark: |                :x:                 |                       :x:                       |                        :x:                        |                               :x:                                |
-| 1D barcodes (18 types)               | :white_check_mark: |                :x:                 |            :white_check_mark: (100+)            |              :white_check_mark: (13)              |                               :x:                                |
+| 1D barcodes (22 types)               | :white_check_mark: |                :x:                 |            :white_check_mark: (100+)            |              :white_check_mark: (13)              |                               :x:                                |
 | QR Code (v1-40, all EC)              | :white_check_mark: |         :white_check_mark:         |               :white_check_mark:                |                        :x:                        |                        :white_check_mark:                        |
 | Data Matrix                          | :white_check_mark: |                :x:                 |               :white_check_mark:                |                        :x:                        |                               :x:                                |
 | PDF417                               | :white_check_mark: |                :x:                 |               :white_check_mark:                |                        :x:                        |                               :x:                                |
@@ -390,7 +436,7 @@ Built from scratch, inspired by these excellent libraries:
 - [JsBarcode](https://github.com/lindell/JsBarcode) — Encoding table validation, barcode rendering patterns
 - [qr-code-styling](https://github.com/kozakdenys/qr-code-styling) — QR styling concepts (dot types, gradients, corners, logos)
 
-Standards: [ISO/IEC 15417](https://www.iso.org/standard/43896.html) (Code 128), [ISO/IEC 15420](https://www.iso.org/standard/46143.html) (EAN/UPC), [ISO/IEC 18004](https://www.iso.org/standard/62021.html) (QR), [ISO/IEC 16022](https://www.iso.org/standard/44230.html) (Data Matrix), [ISO/IEC 15438](https://www.iso.org/standard/43816.html) (PDF417), [ISO/IEC 24778](https://www.iso.org/standard/41548.html) (Aztec).
+Standards: [ISO/IEC 15417](https://www.iso.org/standard/43896.html) (Code 128), [ISO/IEC 15420](https://www.iso.org/standard/46143.html) (EAN/UPC), [ISO/IEC 18004](https://www.iso.org/standard/62021.html) (QR), [ISO/IEC 16022](https://www.iso.org/standard/44230.html) (Data Matrix), [ISO/IEC 15438](https://www.iso.org/standard/43816.html) (PDF417), [ISO/IEC 24778](https://www.iso.org/standard/41548.html) (Aztec), [ISO/IEC 24724](https://www.iso.org/standard/51426.html) (GS1 DataBar), [ISO/IEC 16023](https://www.iso.org/standard/29835.html) (MaxiCode), [ISO/IEC 23941](https://www.iso.org/standard/77404.html) (rMQR), [ISO/IEC 20830](https://www.iso.org/standard/69321.html) (Han Xin), [ISO/IEC 23634](https://www.iso.org/standard/76478.html) (JAB Code), [AIM ISS DotCode 4.0](https://www.aimglobal.org) (DotCode), [USPS-B-3200](https://postalpro.usps.com/mailing/intelligent-mail-barcode) (IMb).
 
 ## License
 
