@@ -35,8 +35,14 @@ describe("Codablock F", () => {
     expect(() => encodeCodablockF("")).toThrow();
   });
 
-  it("throws on non-printable characters", () => {
-    expect(() => encodeCodablockF("\x01")).toThrow();
+  it("throws on non-encodable characters", () => {
+    expect(() => encodeCodablockF("\x80")).toThrow();
+  });
+
+  it("encodes control characters via Code A", () => {
+    const result = encodeCodablockF("\x01\x02\x03");
+    expect(result.matrix.length).toBeGreaterThan(0);
+    expect(result.rows).toBeGreaterThan(0);
   });
 
   it("respects column count", () => {
