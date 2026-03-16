@@ -1,6 +1,6 @@
 {
   "name": "etiket",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Zero-dependency barcode & QR code SVG generator. 20+ formats, styled QR codes, tree-shakeable. Pure TypeScript, works everywhere.",
   "keywords": [
     "aztec",
