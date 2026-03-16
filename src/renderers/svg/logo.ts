@@ -3,8 +3,11 @@
  * Calculates which modules to hide and generates the logo SVG element
  */
 
+import { InvalidInputError } from "../../errors";
 import type { LogoOptions } from "./types";
 import { escapeAttr } from "./utils";
+
+const SVG_DANGEROUS_PATTERN = /<script[\s>]|javascript:|on[a-z]+\s*=|<foreignObject[\s>]/i;
 
 export interface LogoPlacement {
   /** SVG element string for the logo */
@@ -60,13 +63,21 @@ export function calculateLogoPlacement(
 
   if (options.svg) {
     // Inline SVG logo — placed within a nested SVG to properly scale regardless of viewBox
+    if (SVG_DANGEROUS_PATTERN.test(options.svg)) {
+      throw new InvalidInputError(
+        "logo.svg contains potentially dangerous content (script, event handlers, or foreignObject)",
+      );
+    }
     svg += `<svg x="${logoX}" y="${logoY}" width="${logoPixelSize}" height="${logoPixelSize}" viewBox="0 0 1 1">`;
     svg += `<g transform="scale(${1})">${options.svg}</g></svg>`;
   } else if (options.path) {
     // SVG path data — assumes 100x100 coordinate space
-    svg += `<path d="${options.path}" transform="translate(${logoX},${logoY}) scale(${logoPixelSize / 100})" fill="currentColor"/>`;
+    svg += `<path d="${escapeAttr(options.path)}" transform="translate(${logoX},${logoY}) scale(${logoPixelSize / 100})" fill="currentColor"/>`;
   } else if (options.imageUrl) {
     // External image URL or data URI — embedded via SVG <image> element
+    if (!/^(https?:|data:image\/)/i.test(options.imageUrl)) {
+      throw new InvalidInputError("imageUrl must use https:, http:, or data:image/ scheme");
+    }
     const imgW = options.imageWidth ?? logoPixelSize;
     const imgH = options.imageHeight ?? logoPixelSize;
     // Center the image within the logo area

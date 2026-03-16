@@ -128,6 +128,44 @@ export function encodeKIX(text: string): FourState[] {
 }
 
 // Australia Post 4-State barcode
+
+// GF(4) arithmetic for Australia Post Reed-Solomon
+// GF(4) = GF(2²) with irreducible polynomial x² + x + 1
+// Elements: 0, 1, 2(=α), 3(=α+1=α²)
+// Addition: XOR
+// Multiplication table:
+const GF4_MUL: number[][] = [
+  [0, 0, 0, 0],
+  [0, 1, 2, 3],
+  [0, 2, 3, 1],
+  [0, 3, 1, 2],
+];
+
+const BAR_TO_GF4: Record<FourState, number> = { T: 0, A: 1, D: 2, F: 3 };
+const GF4_TO_BAR: FourState[] = ["T", "A", "D", "F"];
+
+// Generator polynomial: g(x) = (x-1)(x-α)(x-α²)(x-α³)
+// Since α³=1 in GF(4), this is (x+1)²(x+2)(x+3)
+// = (x²+1)(x²+x+1) = x⁴+x³+x+1
+// Coefficients [x⁴, x³, x², x¹, x⁰] = [1, 1, 0, 1, 1]
+const AUSPOST_GEN = [1, 1, 0, 1, 1];
+
+/** Compute 4 Reed-Solomon parity symbols over GF(4) for Australia Post */
+function auspostReedSolomon(data: FourState[]): FourState[] {
+  const n = AUSPOST_GEN.length - 1; // 4 parity symbols
+  const remainder = [0, 0, 0, 0];
+
+  for (const bar of data) {
+    const feedback = BAR_TO_GF4[bar] ^ remainder[0]!;
+    for (let i = 0; i < n - 1; i++) {
+      remainder[i] = remainder[i + 1]! ^ GF4_MUL[feedback]![AUSPOST_GEN[i + 1]!]!;
+    }
+    remainder[n - 1] = GF4_MUL[feedback]![AUSPOST_GEN[n]!]!;
+  }
+
+  return remainder.map((v) => GF4_TO_BAR[v]!) as FourState[];
+}
+
 const AUSPOST_N_TABLE: Record<string, FourState[]> = {
   "0": ["F", "F"],
   "1": ["A", "D"],
@@ -162,8 +200,10 @@ export function encodeAustraliaPost(fcc: string, dpid: string): FourState[] {
     bars.push(...AUSPOST_N_TABLE[ch]!);
   }
 
-  // Simplified parity (production would use GF(4) RS)
-  bars.push("T", "F", "A", "D");
+  // Reed-Solomon parity over GF(4)
+  const dataBars = bars.slice(2); // exclude start bars
+  const parity = auspostReedSolomon(dataBars);
+  bars.push(...parity);
   bars.push("F", "A"); // Stop
 
   return bars;

@@ -3,6 +3,7 @@
  */
 
 import type { GradientOptions, LinearGradientOptions, RadialGradientOptions } from "./types";
+import { escapeAttr } from "./utils";
 
 let gradientCounter = 0;
 
@@ -42,7 +43,7 @@ function generateLinearGradient(id: string, options: LinearGradientOptions): str
   const y2 = Math.round((50 - Math.cos(rad) * 50) * 100) / 100;
 
   const stops = options.stops
-    .map((s) => `<stop offset="${s.offset * 100}%" stop-color="${s.color}"/>`)
+    .map((s) => `<stop offset="${s.offset * 100}%" stop-color="${escapeAttr(s.color)}"/>`)
     .join("");
 
   return `<linearGradient id="${id}" x1="${x1}%" y1="${y1}%" x2="${x2}%" y2="${y2}%">${stops}</linearGradient>`;
@@ -50,7 +51,7 @@ function generateLinearGradient(id: string, options: LinearGradientOptions): str
 
 function generateRadialGradient(id: string, options: RadialGradientOptions): string {
   const stops = options.stops
-    .map((s) => `<stop offset="${s.offset * 100}%" stop-color="${s.color}"/>`)
+    .map((s) => `<stop offset="${s.offset * 100}%" stop-color="${escapeAttr(s.color)}"/>`)
     .join("");
 
   return `<radialGradient id="${id}" cx="50%" cy="50%" r="50%">${stops}</radialGradient>`;

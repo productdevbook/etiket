@@ -29,17 +29,21 @@ export function encodeISBT128DIN(
   year: string,
   donationNumber: string,
 ): string {
-  if (countryCode.length !== 2) {
-    throw new InvalidInputError("ISBT 128 country code must be 2 characters");
+  if (!/^[A-Z]{2}$/.test(countryCode)) {
+    throw new InvalidInputError("ISBT 128 country code must be 2 uppercase letters");
   }
   if (facilityNumber.length > 5) {
     throw new InvalidInputError("ISBT 128 facility number must be max 5 characters");
   }
-  if (year.length !== 2) {
-    throw new InvalidInputError("ISBT 128 year must be 2 digits");
+  if (!/^\d{2}$/.test(year)) {
+    throw new InvalidInputError("ISBT 128 year must be exactly 2 digits");
   }
-  if (donationNumber.length > 6) {
-    throw new InvalidInputError("ISBT 128 donation number must be max 6 characters");
+  if (
+    donationNumber.length < 1 ||
+    donationNumber.length > 6 ||
+    !/^[A-Z0-9]+$/.test(donationNumber)
+  ) {
+    throw new InvalidInputError("ISBT 128 donation number must be 1-6 alphanumeric characters");
   }
 
   const facility = facilityNumber.padStart(5, "0");

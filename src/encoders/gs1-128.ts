@@ -451,6 +451,10 @@ function buildCodes(data: string): number[] {
             currentSet = "A";
           }
           codes.push(charCode + 64);
+        } else {
+          throw new InvalidInputError(
+            `Character at position ${pos} (code ${charCode}) is not encodable in GS1-128`,
+          );
         }
         pos++;
       }

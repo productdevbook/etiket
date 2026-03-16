@@ -36,6 +36,11 @@ export function encodeHIBCPrimary(lic: string, product: string, unitOfMeasure = 
   if (product.length < 1 || product.length > 18) {
     throw new InvalidInputError("HIBC product number must be 1-18 characters");
   }
+  if (!/^[0-9A-Z\-. $/+%]+$/.test(product)) {
+    throw new InvalidInputError(
+      "HIBC product number contains invalid characters (must be uppercase alphanumeric or - . $ / + %)",
+    );
+  }
   if (unitOfMeasure < 0 || unitOfMeasure > 9) {
     throw new InvalidInputError("HIBC unit of measure must be 0-9");
   }
@@ -53,6 +58,14 @@ export function encodeHIBCPrimary(lic: string, product: string, unitOfMeasure = 
  * @param lot - Lot/batch number (up to 18 chars)
  */
 export function encodeHIBCSecondary(expiry?: string, lot?: string): string {
+  if (!expiry && !lot) {
+    throw new InvalidInputError("HIBC Secondary requires at least expiry or lot");
+  }
+  if (lot && !/^[0-9A-Z\-. $/+%]+$/.test(lot)) {
+    throw new InvalidInputError(
+      "HIBC lot number contains invalid characters (must be uppercase alphanumeric or - . $ / + %)",
+    );
+  }
   let data = "+$$";
 
   if (expiry) {

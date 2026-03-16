@@ -90,13 +90,13 @@
   "devDependencies": {
     "@typescript/native-preview": "7.0.0-dev.20260316.1",
     "@vitest/coverage-v8": "^4.1.0",
-    "bumpp": "latest",
+    "bumpp": "^11.0.0",
     "citty": "^0.2.1",
     "consola": "^3.4.2",
     "obuild": "^0.4.32",
     "oxfmt": "^0.40.0",
-    "oxlint": "latest",
-    "typescript": "latest",
-    "vitest": "latest"
+    "oxlint": "^1.55.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.0"
   }
 }

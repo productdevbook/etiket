@@ -11,6 +11,7 @@
  */
 
 import { InvalidInputError } from "../errors";
+import { parseAIString } from "./gs1-128";
 
 // GS1 DataBar Omnidirectional: 96 modules wide
 // Each symbol half encodes 2 data characters using finder pattern + outer/inner pairs
@@ -167,9 +168,16 @@ export function encodeGS1DataBarExpanded(data: string): number[] {
     throw new InvalidInputError("GS1 DataBar Expanded: data must not be empty");
   }
 
+  // Parse AI-formatted input — strip parentheses and validate AI structure
+  let payload = data;
+  if (data.startsWith("(")) {
+    const fields = parseAIString(data); // throws on invalid AI syntax
+    payload = fields.map((f) => f.ai + f.data).join("");
+  }
+
   // Encode as bytes
   const bytes: number[] = [];
-  for (const ch of data) {
+  for (const ch of payload) {
     bytes.push(ch.charCodeAt(0));
   }
 

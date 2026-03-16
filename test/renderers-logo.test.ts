@@ -44,13 +44,37 @@ describe("QR logo embedding", () => {
     expect(svg).toContain('height="40"');
   });
 
+  it("rejects imageUrl with dangerous scheme", () => {
+    expect(() =>
+      renderQRCodeSVG(matrix, {
+        logo: { imageUrl: "javascript:alert(1)" },
+      }),
+    ).toThrow("imageUrl must use https:, http:, or data:image/ scheme");
+  });
+
   it("escapes imageUrl to prevent injection", () => {
     const svg = renderQRCodeSVG(matrix, {
-      logo: { imageUrl: 'test" onload="alert(1)' },
+      logo: { imageUrl: 'https://example.com/logo.png" onload="alert(1)' },
     });
     // The quote should be escaped so the attribute boundary is preserved
-    expect(svg).not.toContain('href="test"');
+    expect(svg).not.toContain('href="https://example.com/logo.png"');
     expect(svg).toContain("&quot;");
+  });
+
+  it("rejects inline SVG with script tags", () => {
+    expect(() =>
+      renderQRCodeSVG(matrix, {
+        logo: { svg: "<script>alert(1)</script>" },
+      }),
+    ).toThrow("potentially dangerous content");
+  });
+
+  it("rejects inline SVG with event handlers", () => {
+    expect(() =>
+      renderQRCodeSVG(matrix, {
+        logo: { svg: '<circle r="1" onload="alert(1)"/>' },
+      }),
+    ).toThrow("potentially dangerous content");
   });
 
   it("adds background behind logo", () => {
