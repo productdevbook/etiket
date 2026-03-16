@@ -39,7 +39,7 @@ function buildGeneratorPolynomial(ecLevel: number): number[] {
   for (let i = 0; i < k; i++) {
     // Multiply gen by (x - 3^i) = (x - alpha^i)
     const alpha = modPow(3, i, GF_MOD);
-    const newGen = new Array(gen.length + 1).fill(0);
+    const newGen = Array.from({ length: gen.length + 1 }, () => 0);
 
     for (let j = 0; j < gen.length; j++) {
       // x * gen[j]
@@ -98,7 +98,7 @@ export function generateECCodewords(dataCodewords: number[], ecLevel: number): n
 
   // Polynomial long division
   // We compute: data * x^k mod generator
-  const remainder = new Array(k).fill(0);
+  const remainder = Array.from({ length: k }, () => 0);
 
   for (const cw of dataCodewords) {
     const t = (cw + remainder[0]!) % GF_MOD;

@@ -2,7 +2,7 @@
  * Barcode input validation utilities
  */
 
-import { InvalidInputError, CheckDigitError } from "../errors";
+// import { InvalidInputError, CheckDigitError } from "../errors";
 
 /** Validate and calculate EAN/UPC check digit (modulo 10 weighted) */
 export function calculateEANCheckDigit(digits: number[]): number {
@@ -54,14 +54,14 @@ export function validateBarcode(text: string, type: string): { valid: boolean; e
     }
 
     case "code39": {
-      const valid = /^[0-9A-Z\-. $/+%]*$/.test(text);
+      const valid = /^[0-9A-Z-. $/+%]*$/.test(text);
       if (!valid)
         return { valid: false, error: "Code 39 only accepts 0-9, A-Z, -, ., space, $, /, +, %" };
       return { valid: true };
     }
 
     case "code93": {
-      const valid = /^[0-9A-Z\-. $/+%]*$/.test(text);
+      const valid = /^[0-9A-Z-. $/+%]*$/.test(text);
       if (!valid)
         return { valid: false, error: "Code 93 only accepts 0-9, A-Z, -, ., space, $, /, +, %" };
       return { valid: true };
@@ -97,7 +97,7 @@ export function validateBarcode(text: string, type: string): { valid: boolean; e
     }
 
     case "codabar": {
-      if (!/^[0-9\-$:/.+ABCDabcd]*$/.test(text)) {
+      if (!/^[0-9-$:/.+ABCDabcd]*$/.test(text)) {
         return {
           valid: false,
           error: "Codabar only accepts 0-9, -, $, :, /, ., +, and A-D start/stop",
@@ -120,7 +120,7 @@ export function validateBarcode(text: string, type: string): { valid: boolean; e
     }
 
     case "code11": {
-      if (!/^[0-9\-]*$/.test(text)) {
+      if (!/^[0-9-]*$/.test(text)) {
         return { valid: false, error: "Code 11 only accepts 0-9 and dash (-)" };
       }
       return { valid: true };

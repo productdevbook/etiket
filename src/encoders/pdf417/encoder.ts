@@ -413,7 +413,7 @@ function bytesToBase900(bytes: number[]): number[] {
   }
 
   // Convert to base 900, yielding 5 codewords
-  const result: number[] = new Array(5).fill(0);
+  const result: number[] = Array.from({ length: 5 }, () => 0);
   const base = BigInt(900);
   for (let i = 4; i >= 0; i--) {
     result[i] = Number(value % base);

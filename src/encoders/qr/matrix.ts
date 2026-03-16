@@ -138,7 +138,7 @@ function reserveVersionInfo(matrix: Module[][], size: number): void {
  * Place data bits in the matrix using the zigzag pattern
  * Right-to-left, alternating upward/downward, 2-column wide
  */
-export function placeData(matrix: Module[][], bits: number[], version: number): void {
+export function placeData(matrix: Module[][], bits: number[], _version: number): void {
   const size = matrix.length;
   let bitIdx = 0;
   let upward = true;

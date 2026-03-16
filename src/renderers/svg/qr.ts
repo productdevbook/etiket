@@ -2,7 +2,7 @@
  * QR Code SVG renderer with styling support
  */
 
-import type { QRCodeSVGOptions, GradientOptions, CornerOptions } from "./types";
+import type { QRCodeSVGOptions, CornerOptions } from "./types";
 import { getModulePath, getFinderOuterPath, getFinderInnerPath } from "./shapes";
 import { isGradient, generateGradientDef, resetGradientCounter } from "./gradient";
 import { calculateLogoPlacement } from "./logo";

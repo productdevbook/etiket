@@ -119,7 +119,7 @@ const PATTERNS: number[][] = [
 
 const STOP_PATTERN = [2, 3, 3, 1, 1, 1, 2]; // 7 elements
 
-const START_A = 103;
+const _START_A = 103;
 const START_B = 104;
 const START_C = 105;
 const CODE_A = 101;

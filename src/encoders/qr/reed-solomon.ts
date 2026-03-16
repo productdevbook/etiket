@@ -31,7 +31,7 @@ export function gfMultiply(a: number, b: number): number {
 /** Generate error correction codewords for a data block */
 export function generateECCodewords(data: number[], ecCount: number): number[] {
   // Build generator polynomial
-  const gen: number[] = new Array(ecCount + 1).fill(0);
+  const gen: number[] = Array.from({ length: ecCount + 1 }, () => 0);
   gen[0] = 1;
   for (let i = 0; i < ecCount; i++) {
     // Multiply gen by (x - alpha^i)
@@ -42,7 +42,7 @@ export function generateECCodewords(data: number[], ecCount: number): number[] {
   }
 
   // Polynomial division
-  const result = new Array(ecCount).fill(0);
+  const result = Array.from({ length: ecCount }, () => 0);
   for (const byte of data) {
     const lead = byte ^ result[0]!;
     for (let j = 0; j < ecCount - 1; j++) {

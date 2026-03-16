@@ -65,7 +65,7 @@ export function renderText(matrix: boolean[][], options: TextRenderOptions = {})
  */
 function renderCompact(matrix: boolean[][], size: number, margin: number, invert: boolean): string {
   const lines: string[] = [];
-  const totalWidth = size + margin * 2;
+  // const totalWidth = size + margin * 2;
 
   // Process 2 rows at a time
   for (let r = -margin; r < size + margin; r += 2) {

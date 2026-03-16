@@ -80,7 +80,7 @@ export function encodePDF417(text: string, options: PDF417Options = {}): PDF417R
   // Step 3: Calculate symbol dimensions
   // Total codewords = 1 (length descriptor) + data + EC
   const totalDataWithLength = 1 + dataCodewords.length;
-  const totalCodewords = totalDataWithLength + ecCount;
+  // const totalCodewords = totalDataWithLength + ecCount;
 
   const { rows, cols } = calculateDimensions(totalDataWithLength, ecCount, options.columns);
 
@@ -209,7 +209,7 @@ function buildMatrix(
 
   for (let row = 0; row < rows; row++) {
     const cluster = getRowCluster(row);
-    const rowModules: boolean[] = new Array(modulesPerRow).fill(false);
+    const rowModules: boolean[] = Array.from({ length: modulesPerRow }, () => false);
     let modulePos = 0;
 
     // Start pattern

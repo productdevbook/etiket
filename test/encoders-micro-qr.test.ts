@@ -41,8 +41,8 @@ describe("Micro QR Code", () => {
   });
 
   it("has NO finder at other corners (single finder)", () => {
-    const matrix = encodeMicroQR("123");
-    const size = matrix.length;
+    const _matrix = encodeMicroQR("123");
+    // const size = matrix.length;
     // Bottom-right should not have a finder
     // (unlike standard QR which has 3 finders)
   });

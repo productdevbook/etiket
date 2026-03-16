@@ -44,8 +44,8 @@ function getGF(wordSize: number): GFTables {
 
   const size = 1 << wordSize;
   const max = size - 1;
-  const exp = new Array<number>(size * 2);
-  const log = new Array<number>(size).fill(0);
+  const exp = Array.from<number>({ length: size * 2 });
+  const log = Array.from<number>({ length: size }).fill(0);
 
   let x = 1;
   for (let i = 0; i < max; i++) {
@@ -86,7 +86,7 @@ export function rsEncode(data: number[], ecCount: number, wordSize: number): num
   const gf = getGF(wordSize);
 
   // Build generator polynomial: g(x) = (x - a^0)(x - a^1)...(x - a^(ecCount-1))
-  const gen = new Array<number>(ecCount + 1).fill(0);
+  const gen = Array.from<number>({ length: ecCount + 1 }).fill(0);
   gen[0] = 1;
 
   for (let i = 0; i < ecCount; i++) {
@@ -97,7 +97,7 @@ export function rsEncode(data: number[], ecCount: number, wordSize: number): num
   }
 
   // Polynomial long division: data polynomial / generator polynomial
-  const result = new Array<number>(ecCount).fill(0);
+  const result = Array.from<number>({ length: ecCount }).fill(0);
   for (const cw of data) {
     const lead = cw ^ result[0]!;
     for (let j = 0; j < ecCount - 1; j++) {

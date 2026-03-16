@@ -96,7 +96,7 @@ describe("QR penalty evaluation", () => {
     const allDark: (boolean | null)[][] = Array.from({ length: size }, () =>
       Array.from({ length: size }, () => true),
     );
-    const allLight: (boolean | null)[][] = Array.from({ length: size }, () =>
+    const _allLight: (boolean | null)[][] = Array.from({ length: size }, () =>
       Array.from({ length: size }, () => false),
     );
     const checkerboard: (boolean | null)[][] = Array.from({ length: size }, (_, r) =>
@@ -112,8 +112,8 @@ describe("QR penalty evaluation", () => {
 
   it("returns non-negative penalty", () => {
     const size = 21;
-    const matrix: (boolean | null)[][] = Array.from({ length: size }, (_, r) =>
-      Array.from({ length: size }, (_, c) => Math.random() > 0.5),
+    const matrix: (boolean | null)[][] = Array.from({ length: size }, () =>
+      Array.from({ length: size }, () => Math.random() > 0.5),
     );
     const penalty = evaluatePenalty(matrix, size);
     expect(penalty).toBeGreaterThanOrEqual(0);

@@ -54,35 +54,63 @@ import { aztec } from "etiket/aztec";
 
 ### 1D Barcodes
 
-| Format          | Type         | Description                    |
-| :-------------- | :----------- | :----------------------------- |
-| **Code 128**    | `code128`    | Auto charset (A/B/C)           |
-| **Code 39**     | `code39`     | 43-char set, optional check    |
-| **Code 39 Ext** | `code39ext`  | Full ASCII                     |
-| **Code 93**     | `code93`     | Higher density, 2 check digits |
-| **Code 93 Ext** | `code93ext`  | Full ASCII                     |
-| **EAN-13**      | `ean13`      | Auto check digit               |
-| **EAN-8**       | `ean8`       | Auto check digit               |
-| **EAN-5**       | `ean5`       | Addon (book price)             |
-| **EAN-2**       | `ean2`       | Addon (issue number)           |
-| **UPC-A**       | `upca`       | 12-digit, auto check digit     |
-| **UPC-E**       | `upce`       | Compressed 8-digit             |
-| **ITF**         | `itf`        | Interleaved 2 of 5             |
-| **ITF-14**      | `itf14`      | 14-digit with bearer bars      |
-| **Codabar**     | `codabar`    | Libraries, blood banks         |
-| **MSI Plessey** | `msi`        | Mod10/11/1010/1110             |
-| **Pharmacode**  | `pharmacode` | Pharmaceutical                 |
-| **Code 11**     | `code11`     | Telecommunications             |
-| **GS1-128**     | `gs1-128`    | AI parsing, FNC1               |
+| Format                   | Type                   | Description                    |
+| :----------------------- | :--------------------- | :----------------------------- |
+| **Code 128**             | `code128`              | Auto charset (A/B/C)           |
+| **Code 39**              | `code39`               | 43-char set, optional check    |
+| **Code 39 Ext**          | `code39ext`            | Full ASCII                     |
+| **Code 93**              | `code93`               | Higher density, 2 check digits |
+| **Code 93 Ext**          | `code93ext`            | Full ASCII                     |
+| **EAN-13**               | `ean13`                | Auto check digit               |
+| **EAN-8**                | `ean8`                 | Auto check digit               |
+| **EAN-5**                | `ean5`                 | Addon (book price)             |
+| **EAN-2**                | `ean2`                 | Addon (issue number)           |
+| **UPC-A**                | `upca`                 | 12-digit, auto check digit     |
+| **UPC-E**                | `upce`                 | Compressed 8-digit             |
+| **ITF**                  | `itf`                  | Interleaved 2 of 5             |
+| **ITF-14**               | `itf14`                | 14-digit with bearer bars      |
+| **Codabar**              | `codabar`              | Libraries, blood banks         |
+| **MSI Plessey**          | `msi`                  | Mod10/11/1010/1110             |
+| **Pharmacode**           | `pharmacode`           | Pharmaceutical                 |
+| **Code 11**              | `code11`               | Telecommunications             |
+| **GS1-128**              | `gs1-128`              | AI parsing, FNC1, 100+ AIs     |
+| **GS1 DataBar**          | `gs1-databar`          | Omnidirectional, 14-digit GTIN |
+| **GS1 DataBar Limited**  | `gs1-databar-limited`  | GTIN starting with 0/1         |
+| **GS1 DataBar Expanded** | `gs1-databar-expanded` | Variable-length AI data        |
+| **Identcode**            | `identcode`            | Deutsche Post / DHL            |
+| **Leitcode**             | `leitcode`             | Deutsche Post routing          |
+| **POSTNET**              | `postnet`              | USPS legacy postal             |
+| **PLANET**               | `planet`               | USPS confirmation tracking     |
+| **Plessey**              | `plessey`              | UK library systems             |
 
 ### 2D Codes
 
-| Format          | Function       | Description                               |
-| :-------------- | :------------- | :---------------------------------------- |
-| **QR Code**     | `qrcode()`     | Versions 1-40, all EC levels, all modes   |
-| **Data Matrix** | `datamatrix()` | ECC 200, 24 square + 6 rectangular sizes  |
-| **PDF417**      | `pdf417()`     | Text/Byte/Numeric compaction, 9 EC levels |
-| **Aztec**       | `aztec()`      | Compact + full-range, no quiet zone       |
+| Format             | Function              | Description                                 |
+| :----------------- | :-------------------- | :------------------------------------------ |
+| **QR Code**        | `qrcode()`            | Versions 1-40, all EC levels, all modes     |
+| **Micro QR**       | `encodeMicroQR()`     | M1-M4 (11x11 to 17x17)                      |
+| **Data Matrix**    | `datamatrix()`        | ECC 200, ASCII/C40/Text auto encoding       |
+| **GS1 DataMatrix** | `gs1datamatrix()`     | FNC1 + AI parsing                           |
+| **PDF417**         | `pdf417()`            | Text/Byte/Numeric, 9 EC levels, ISO-8859-15 |
+| **MicroPDF417**    | `encodeMicroPDF417()` | Compact PDF417 for small items              |
+| **Aztec**          | `aztec()`             | Compact + full-range, no quiet zone         |
+| **MaxiCode**       | `encodeMaxiCode()`    | 33×30 hexagonal, UPS shipping labels        |
+| **rMQR**           | `encodeRMQR()`        | Rectangular Micro QR (R7x43 to R17x139)     |
+| **Codablock F**    | `encodeCodablockF()`  | Stacked Code 128                            |
+| **Code 16K**       | `encodeCode16K()`     | Stacked barcode, 2-16 rows                  |
+| **DotCode**        | `encodeDotCode()`     | Checkerboard dots, high-speed printing      |
+| **Han Xin**        | `encodeHanXin()`      | Chinese market, 84 versions, 4 finders      |
+| **JAB Code**       | `encodeJABCode()`     | Polychrome (4/8 color), ISO/IEC 23634       |
+
+### 4-State Postal Barcodes
+
+| Format             | Function                | Description           |
+| :----------------- | :---------------------- | :-------------------- |
+| **RM4SCC**         | `encodeRM4SCC()`        | Royal Mail (UK)       |
+| **KIX**            | `encodeKIX()`           | PostNL (Netherlands)  |
+| **Australia Post** | `encodeAustraliaPost()` | Australia Post        |
+| **Japan Post**     | `encodeJapanPost()`     | Japan Post (Kasutama) |
+| **USPS IMb**       | `encodeIMb()`           | Intelligent Mail (US) |
 
 ## Usage
 

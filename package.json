@@ -1,6 +1,6 @@
 {
   "name": "etiket",
-  "version": "0.3.0",
+  "version": "0.6.0",
   "description": "Zero-dependency barcode & QR code SVG generator. 20+ formats, styled QR codes, tree-shakeable. Pure TypeScript, works everywhere.",
   "keywords": [
     "aztec",
@@ -77,22 +77,20 @@
   },
   "scripts": {
     "build": "obuild",
-    "dev": "tsdown --watch",
+    "dev": "vitest",
     "lint": "oxlint . && oxfmt --check .",
     "lint:fix": "oxlint . --fix && oxfmt .",
     "fmt": "oxfmt .",
-    "test": "vitest run",
-    "test:watch": "vitest",
+    "test": "pnpm lint && pnpm typecheck && vitest run",
     "typecheck": "tsgo --noEmit",
     "docs:dev": "npx mdzilla ./docs",
-    "bumpp": "bumpp package.json --commit --tag --push --all",
-    "release": "pnpm build && pnpm bumpp",
-    "prepublishOnly": "pnpm run build"
+    "release": "pnpm test && pnpm build && bumpp --commit --tag --push --all",
+    "prepack": "pnpm build"
   },
   "devDependencies": {
     "@typescript/native-preview": "7.0.0-dev.20260316.1",
+    "@vitest/coverage-v8": "^4.1.0",
     "bumpp": "latest",
-    "changelogen": "latest",
     "citty": "^0.2.1",
     "consola": "^3.4.2",
     "obuild": "^0.4.32",

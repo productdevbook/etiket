@@ -7,10 +7,10 @@
  * ```
  */
 
-export { barcode } from "./index";
-export type { BarcodeType, BarcodeOptions, BarcodeSVGOptions } from "./index";
+export { barcode } from "./_barcode";
+export type { BarcodeType, BarcodeOptions } from "./_types";
+export type { BarcodeSVGOptions } from "./renderers/svg/types";
 
-// Encoders
 export { encodeCode128 } from "./encoders/code128";
 export { encodeEAN13, encodeEAN8 } from "./encoders/ean";
 export { encodeCode39, encodeCode39Extended } from "./encoders/code39";
@@ -24,6 +24,4 @@ export type { MSICheckDigitType } from "./encoders/msi";
 export { encodePharmacode } from "./encoders/pharmacode";
 export { encodeCode11 } from "./encoders/code11";
 export { encodeGS1128 } from "./encoders/gs1-128";
-
-// Renderer
 export { renderBarcodeSVG } from "./renderers/svg/barcode";

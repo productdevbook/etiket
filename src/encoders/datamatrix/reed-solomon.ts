@@ -38,7 +38,7 @@ function gfMultiply(a: number, b: number): number {
 export function generateECCodewords(data: number[], ecCount: number): number[] {
   // Build generator polynomial
   // g(x) = (x - a^0)(x - a^1)...(x - a^(ecCount-1))
-  const gen: number[] = new Array(ecCount + 1).fill(0);
+  const gen: number[] = Array.from({ length: ecCount + 1 }, () => 0);
   gen[0] = 1;
 
   for (let i = 0; i < ecCount; i++) {
@@ -49,7 +49,7 @@ export function generateECCodewords(data: number[], ecCount: number): number[] {
   }
 
   // Polynomial long division: data polynomial / generator polynomial
-  const result = new Array(ecCount).fill(0);
+  const result = Array.from({ length: ecCount }, () => 0);
   for (const byte of data) {
     const lead = byte ^ result[0]!;
     for (let j = 0; j < ecCount - 1; j++) {

@@ -59,14 +59,14 @@ describe("Reed-Solomon EC generation", () => {
 
 describe("Error correction with interleaving", () => {
   it("produces correct total length for single block", () => {
-    const data = new Array(16).fill(0).map((_, i) => i);
+    const data = Array.from({ length: 16 }, () => 0).map((_, i) => i);
     const result = addErrorCorrection(data, 10, 1, 16, 0, 0);
     // 16 data + 10 EC = 26 total
     expect(result.length).toBe(26);
   });
 
   it("produces correct total length for multiple blocks", () => {
-    const data = new Array(64).fill(0).map((_, i) => i % 256);
+    const data = Array.from({ length: 64 }, () => 0).map((_, i) => i % 256);
     // 2 blocks of 32 each, 18 EC per block
     const result = addErrorCorrection(data, 18, 2, 32, 0, 0);
     // 64 data + 2*18 EC = 100 total
@@ -74,14 +74,14 @@ describe("Error correction with interleaving", () => {
   });
 
   it("handles two group types", () => {
-    const data = new Array(86).fill(0).map((_, i) => i % 256);
+    const data = Array.from({ length: 86 }, () => 0).map((_, i) => i % 256);
     // 2 blocks of 43, 0 group 2 blocks, 24 EC per block
     const result = addErrorCorrection(data, 24, 2, 43, 0, 0);
     expect(result.length).toBe(86 + 2 * 24);
   });
 
   it("all output bytes are in range 0-255", () => {
-    const data = new Array(44).fill(0).map((_, i) => (i * 7) % 256);
+    const data = Array.from({ length: 44 }, () => 0).map((_, i) => (i * 7) % 256);
     const result = addErrorCorrection(data, 26, 1, 44, 0, 0);
     for (const byte of result) {
       expect(byte).toBeGreaterThanOrEqual(0);

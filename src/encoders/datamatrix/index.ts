@@ -6,7 +6,7 @@
  */
 
 import { InvalidInputError, CapacityError } from "../../errors";
-import { encodeASCII, encodeAuto, padCodewords } from "./encoder";
+import { encodeAuto, padCodewords } from "./encoder";
 import { selectSymbolSize } from "./tables";
 import { generateInterleavedEC } from "./reed-solomon";
 import { placeModules } from "./placement";
