@@ -85,7 +85,7 @@
     "test:watch": "vitest",
     "typecheck": "tsgo --noEmit",
     "docs:dev": "npx mdzilla ./docs",
-    "bumpp": "bumpp package.json",
+    "bumpp": "bumpp package.json --commit --tag --push --all",
     "release": "pnpm build && pnpm bumpp",
     "prepublishOnly": "pnpm run build"
   },
