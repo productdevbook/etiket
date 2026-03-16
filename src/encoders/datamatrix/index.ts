@@ -6,7 +6,7 @@
  */
 
 import { InvalidInputError, CapacityError } from "../../errors";
-import { encodeASCII, padCodewords } from "./encoder";
+import { encodeASCII, encodeAuto, padCodewords } from "./encoder";
 import { selectSymbolSize } from "./tables";
 import { generateInterleavedEC } from "./reed-solomon";
 import { placeModules } from "./placement";
@@ -30,8 +30,8 @@ export function encodeDataMatrix(text: string): boolean[][] {
     throw new InvalidInputError("Data Matrix input must not be empty");
   }
 
-  // Step 1: Encode text to data codewords (ASCII mode)
-  const dataCodewords = encodeASCII(text);
+  // Step 1: Encode text to data codewords (auto-select best mode)
+  const dataCodewords = encodeAuto(text);
 
   // Step 2: Select the smallest symbol size that fits the data
   const symbol = selectSymbolSize(dataCodewords.length);
