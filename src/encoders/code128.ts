@@ -132,6 +132,7 @@ const START_C = 105;
 const CODE_A = 101;
 const CODE_B = 100;
 const CODE_C = 99;
+const SHIFT = 98;
 
 /**
  * Encode text as Code 128 barcode
@@ -219,15 +220,32 @@ function autoEncode(text: string): number[] {
       } else {
         const charCode = text.charCodeAt(pos);
         if (charCode >= 32 && charCode <= 126) {
-          // Code B
+          // Printable character — needs Code B
+          if (currentSet === "A") {
+            codes.push(CODE_B);
+            currentSet = "B";
+          }
           codes.push(charCode - 32);
         } else if (charCode >= 0 && charCode < 32) {
-          // Need Code A for control chars
+          // Control character — needs Code A
           if (currentSet !== "A") {
-            codes.push(CODE_A);
-            currentSet = "A";
+            // Check if this is a single control char followed by printable text
+            // If so, use SHIFT to temporarily access Code A for one character
+            const nextCharCode = pos + 1 < text.length ? text.charCodeAt(pos + 1) : -1;
+            if (nextCharCode >= 32 && nextCharCode <= 126) {
+              // Single control char surrounded by printable text — use SHIFT
+              codes.push(SHIFT);
+              codes.push(charCode + 64);
+              // currentSet stays as "B" since SHIFT is temporary
+            } else {
+              // Multiple control chars or end of string — switch to Code A
+              codes.push(CODE_A);
+              currentSet = "A";
+              codes.push(charCode + 64);
+            }
+          } else {
+            codes.push(charCode + 64);
           }
-          codes.push(charCode + 64);
         }
         pos++;
       }
