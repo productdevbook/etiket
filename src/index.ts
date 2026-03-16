@@ -77,6 +77,9 @@ export type {
   LogoOptions,
 } from "./renderers/svg/types";
 
+export { barcodeData } from "./barcode";
+export { qrcodeData } from "./qr";
+
 // Re-export QR types
 export type { ErrorCorrectionLevel, EncodingMode } from "./encoders/qr/types";
 
