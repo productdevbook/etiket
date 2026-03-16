@@ -25,5 +25,23 @@ export { encodePharmacode } from "./encoders/pharmacode";
 export { encodeCode11 } from "./encoders/code11";
 export { encodeGS1128 } from "./encoders/gs1-128";
 
+
+export interface BarcodeData {
+  bars: number[];
+  text: string;
+  type: string;
+  checkDigit?: string;
+}
+
+export function barcodeData(text: string): BarcodeData {
+  const encoded = encodeCode128(text); // existing encoder
+
+  return {
+    bars: encoded.bars,
+    text: text,
+    type: "CODE128",
+    checkDigit: encoded.checkDigit
+  };
+}
 // Renderer
 export { renderBarcodeSVG } from "./renderers/svg/barcode";
