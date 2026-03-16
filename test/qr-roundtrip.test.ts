@@ -96,8 +96,12 @@ describe("QR round-trip (encode → decode)", () => {
     expect(roundTrip("VERSION 6 DATA", { version: 6 })).toBe("VERSION 6 DATA");
   });
 
-  // TODO: Version 7+ produces unscannable QR codes due to writeVersionInfo bug
-  it.todo("works with version 7+ (version info encoding)");
+  it("works with version 7+ (version info encoding)", () => {
+    const text = "VERSION 7+ DATA WITH ENOUGH CONTENT TO ENCODE";
+    expect(roundTrip(text, { version: 7 })).toBe(text);
+    expect(roundTrip(text, { version: 10 })).toBe(text);
+    expect(roundTrip(text, { version: 15 })).toBe(text);
+  });
 
   it("decodes longer data (multi-version)", () => {
     const medium = "A".repeat(100);
