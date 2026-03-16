@@ -1,0 +1,269 @@
+:root {
+  font-family: system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+  color-scheme: light dark;
+  color: #e0e0e0;
+  background-color: #0a0a0a;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+#app {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+  width: 100%;
+}
+
+header {
+  text-align: center;
+  padding: 2rem 0 1rem;
+}
+
+header h1 {
+  font-size: 2.4rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+header h1 span {
+  color: #f0db4f;
+}
+
+header p {
+  color: #888;
+  margin-top: 0.25rem;
+  font-size: 0.95rem;
+}
+
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+  border-bottom: 1px solid #222;
+  margin-bottom: 1.5rem;
+  overflow-x: auto;
+}
+
+.tab {
+  padding: 0.5rem 1rem;
+  background: none;
+  border: none;
+  color: #888;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-family: inherit;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.tab:hover {
+  color: #ccc;
+}
+
+.tab.active {
+  color: #f0db4f;
+  border-bottom-color: #f0db4f;
+}
+
+.panel {
+  display: none;
+}
+
+.panel.active {
+  display: block;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+  min-width: 180px;
+}
+
+.field.full {
+  flex-basis: 100%;
+}
+
+.field label {
+  font-size: 0.8rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.field input,
+.field select,
+.field textarea {
+  padding: 0.5rem 0.75rem;
+  background: #141414;
+  border: 1px solid #2a2a2a;
+  border-radius: 6px;
+  color: #e0e0e0;
+  font-size: 0.9rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  border-color: #f0db4f;
+}
+
+.field textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.output {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem;
+  background: #fff;
+  border-radius: 12px;
+  min-height: 200px;
+}
+
+.output svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.output .error {
+  color: #e53e3e;
+  font-size: 0.9rem;
+  background: #fff1f0;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  width: 100%;
+  text-align: center;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.actions button {
+  padding: 0.4rem 1rem;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 6px;
+  color: #e0e0e0;
+  font-size: 0.85rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.actions button:hover {
+  background: #252525;
+  border-color: #f0db4f;
+}
+
+.helpers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.helper-card {
+  background: #141414;
+  border: 1px solid #222;
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.helper-card h3 {
+  font-size: 0.95rem;
+  color: #f0db4f;
+}
+
+.helper-card .output {
+  padding: 1rem;
+  min-height: 120px;
+}
+
+footer {
+  text-align: center;
+  padding: 2rem 0;
+  color: #555;
+  font-size: 0.8rem;
+}
+
+footer a {
+  color: #f0db4f;
+  text-decoration: none;
+}
+
+footer a:hover {
+  text-decoration: underline;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #222;
+    background-color: #fafafa;
+  }
+
+  .field input,
+  .field select,
+  .field textarea {
+    background: #fff;
+    border-color: #ddd;
+    color: #222;
+  }
+
+  .tab {
+    color: #666;
+  }
+
+  .tab:hover {
+    color: #333;
+  }
+
+  .tabs {
+    border-bottom-color: #ddd;
+  }
+
+  .helper-card {
+    background: #fff;
+    border-color: #ddd;
+  }
+
+  .actions button {
+    background: #f0f0f0;
+    border-color: #ccc;
+    color: #222;
+  }
+
+  .actions button:hover {
+    background: #e8e8e8;
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "extends": ["nitro/tsconfig"],
+  "compilerOptions": {
+    "paths": {
+      "~/*": ["./*"],
+      "etiket": ["../src/index.ts"]
+    }
+  }
+}

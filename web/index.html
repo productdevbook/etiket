@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/nitro.svg" />
+    <title>etiket — Barcode & QR Code Generator</title>
+    <style>
+      @import "~/app/assets/main.css";
+    </style>
+  </head>
+  <body>
+    <main id="app">
+      <header>
+        <h1><span>etiket</span></h1>
+        <p>Zero-dependency barcode &amp; QR code SVG generator</p>
+      </header>
+
+      <nav class="tabs">
+        <button class="tab active" data-tab="barcode">Barcode</button>
+        <button class="tab" data-tab="qrcode">QR Code</button>
+        <button class="tab" data-tab="2d">Data Matrix / PDF417 / Aztec</button>
+        <button class="tab" data-tab="helpers">Helpers</button>
+      </nav>
+
+      <section class="panel active" data-panel="barcode">
+        <div class="controls">
+          <div class="field full">
+            <label>Data</label>
+            <input id="bc-data" type="text" value="Hello World" />
+          </div>
+          <div class="field">
+            <label>Type</label>
+            <select id="bc-type">
+              <option value="code128">code128</option>
+              <option value="ean13">ean13</option>
+              <option value="ean8">ean8</option>
+              <option value="code39">code39</option>
+              <option value="code93">code93</option>
+              <option value="itf">itf</option>
+              <option value="itf14">itf14</option>
+              <option value="upca">upca</option>
+              <option value="upce">upce</option>
+              <option value="codabar">codabar</option>
+              <option value="msi">msi</option>
+              <option value="pharmacode">pharmacode</option>
+              <option value="code11">code11</option>
+              <option value="gs1-128">gs1-128</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Height</label>
+            <input id="bc-height" type="number" value="80" min="20" max="300" />
+          </div>
+          <div class="field">
+            <label>Bar Width</label>
+            <input id="bc-barwidth" type="number" value="2" min="1" max="6" />
+          </div>
+          <div class="field">
+            <label>Color</label>
+            <input id="bc-color" type="color" value="#000000" />
+          </div>
+          <div class="field">
+            <label>Show Text</label>
+            <select id="bc-showtext">
+              <option value="false">No</option>
+              <option value="true">Yes</option>
+            </select>
+          </div>
+        </div>
+        <div class="output" id="bc-output"></div>
+        <div class="actions">
+          <button id="bc-copy">Copy SVG</button>
+          <button id="bc-download">Download SVG</button>
+        </div>
+      </section>
+
+      <section class="panel" data-panel="qrcode">
+        <div class="controls">
+          <div class="field full">
+            <label>Data</label>
+            <input id="qr-data" type="text" value="https://example.com" />
+          </div>
+          <div class="field">
+            <label>Size</label>
+            <input id="qr-size" type="number" value="250" min="50" max="800" />
+          </div>
+          <div class="field">
+            <label>EC Level</label>
+            <select id="qr-ec">
+              <option value="L">L (7%)</option>
+              <option value="M" selected>M (15%)</option>
+              <option value="Q">Q (25%)</option>
+              <option value="H">H (30%)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Dot Type</label>
+            <select id="qr-dot">
+              <option value="square">square</option>
+              <option value="rounded">rounded</option>
+              <option value="dots">dots</option>
+              <option value="diamond">diamond</option>
+              <option value="classy">classy</option>
+              <option value="classy-rounded">classy-rounded</option>
+              <option value="extra-rounded">extra-rounded</option>
+              <option value="vertical-line">vertical-line</option>
+              <option value="horizontal-line">horizontal-line</option>
+              <option value="small-square">small-square</option>
+              <option value="tiny-square">tiny-square</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Color</label>
+            <input id="qr-color" type="color" value="#000000" />
+          </div>
+          <div class="field">
+            <label>Background</label>
+            <input id="qr-bg" type="color" value="#ffffff" />
+          </div>
+          <div class="field">
+            <label>Margin</label>
+            <input id="qr-margin" type="number" value="4" min="0" max="10" />
+          </div>
+        </div>
+        <div class="output" id="qr-output"></div>
+        <div class="actions">
+          <button id="qr-copy">Copy SVG</button>
+          <button id="qr-download">Download SVG</button>
+        </div>
+      </section>
+
+      <section class="panel" data-panel="2d">
+        <div class="controls">
+          <div class="field full">
+            <label>Data</label>
+            <input id="m2d-data" type="text" value="Hello World" />
+          </div>
+          <div class="field">
+            <label>Format</label>
+            <select id="m2d-format">
+              <option value="datamatrix">Data Matrix</option>
+              <option value="pdf417">PDF417</option>
+              <option value="aztec">Aztec</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Color</label>
+            <input id="m2d-color" type="color" value="#000000" />
+          </div>
+        </div>
+        <div class="output" id="m2d-output"></div>
+        <div class="actions">
+          <button id="m2d-copy">Copy SVG</button>
+          <button id="m2d-download">Download SVG</button>
+        </div>
+      </section>
+
+      <section class="panel" data-panel="helpers">
+        <div class="helpers-grid">
+          <div class="helper-card">
+            <h3>WiFi</h3>
+            <div class="field"><label>SSID</label><input id="h-wifi-ssid" value="MyNetwork" /></div>
+            <div class="field"><label>Password</label><input id="h-wifi-pass" value="secret123" /></div>
+            <div class="output" id="h-wifi-out"></div>
+          </div>
+          <div class="helper-card">
+            <h3>Email</h3>
+            <div class="field"><label>Address</label><input id="h-email" value="hello@example.com" /></div>
+            <div class="output" id="h-email-out"></div>
+          </div>
+          <div class="helper-card">
+            <h3>Phone</h3>
+            <div class="field"><label>Number</label><input id="h-phone" value="+1234567890" /></div>
+            <div class="output" id="h-phone-out"></div>
+          </div>
+          <div class="helper-card">
+            <h3>Geo</h3>
+            <div class="field"><label>Lat</label><input id="h-geo-lat" type="number" value="37.7749" step="0.0001" /></div>
+            <div class="field"><label>Lng</label><input id="h-geo-lng" type="number" value="-122.4194" step="0.0001" /></div>
+            <div class="output" id="h-geo-out"></div>
+          </div>
+          <div class="helper-card">
+            <h3>vCard</h3>
+            <div class="field"><label>First Name</label><input id="h-vc-fn" value="John" /></div>
+            <div class="field"><label>Last Name</label><input id="h-vc-ln" value="Doe" /></div>
+            <div class="field"><label>Phone</label><input id="h-vc-phone" value="+1234567890" /></div>
+            <div class="field"><label>Email</label><input id="h-vc-email" value="john@example.com" /></div>
+            <div class="output" id="h-vcard-out"></div>
+          </div>
+          <div class="helper-card">
+            <h3>Event</h3>
+            <div class="field"><label>Title</label><input id="h-ev-title" value="Meeting" /></div>
+            <div class="field"><label>Start</label><input id="h-ev-start" type="datetime-local" value="2026-04-01T10:00" /></div>
+            <div class="field"><label>End</label><input id="h-ev-end" type="datetime-local" value="2026-04-01T11:00" /></div>
+            <div class="output" id="h-event-out"></div>
+          </div>
+        </div>
+      </section>
+
+      <footer>
+        <a href="https://github.com/productdevbook/etiket">etiket</a> — Zero-dependency barcode &amp; QR code SVG generator
+      </footer>
+    </main>
+    <script type="module" src="/app/entry-client.ts"></script>
+  </body>
+</html>
