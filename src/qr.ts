@@ -7,13 +7,11 @@
  * ```
  */
 
-export { qrcode, qrcodeTerminal, qrcodeDataURI, qrcodeBase64 } from "./index";
-export type { QRCodeSVGOptions, QRCodeOptions, ErrorCorrectionLevel, EncodingMode } from "./index";
+export { qrcode, qrcodeTerminal, qrcodeDataURI, qrcodeBase64 } from "./_qrcode";
+export type { QRCodeSVGOptions } from "./renderers/svg/types";
+export type { QRCodeOptions, ErrorCorrectionLevel, EncodingMode } from "./encoders/qr/types";
 export type { DotType, GradientOptions, CornerOptions, LogoOptions } from "./renderers/svg/types";
 
-// Encoder
 export { encodeQR } from "./encoders/qr/index";
-
-// Renderer
 export { renderQRCodeSVG } from "./renderers/svg/qr";
 export { renderText } from "./renderers/text";
