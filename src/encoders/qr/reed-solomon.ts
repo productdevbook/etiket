@@ -30,15 +30,18 @@ export function gfMultiply(a: number, b: number): number {
 
 /** Generate error correction codewords for a data block */
 export function generateECCodewords(data: number[], ecCount: number): number[] {
-  // Build generator polynomial
-  const gen: number[] = Array.from({ length: ecCount + 1 }, () => 0);
-  gen[0] = 1;
+  // Build generator polynomial: gen[0] = leading coeff (x^ecCount), gen[ecCount] = constant
+  // Polynomial is product of (x - alpha^i) for i = 0..ecCount-1
+  let gen = new Uint8Array([1]);
   for (let i = 0; i < ecCount; i++) {
-    // Multiply gen by (x - alpha^i)
-    for (let j = gen.length - 1; j >= 1; j--) {
-      gen[j] = gen[j - 1]! ^ gfMultiply(gen[j]!, GF_EXP[i]!);
+    const factor = new Uint8Array([1, GF_EXP[i]!]);
+    const newGen = new Uint8Array(gen.length + 1);
+    for (let j = 0; j < gen.length; j++) {
+      for (let k = 0; k < factor.length; k++) {
+        newGen[j + k] ^= gfMultiply(gen[j]!, factor[k]!);
+      }
     }
-    gen[0] = gfMultiply(gen[0]!, GF_EXP[i]!);
+    gen = newGen;
   }
 
   // Polynomial division
