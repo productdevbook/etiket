@@ -4,6 +4,7 @@
  */
 
 import type { LogoOptions } from "./types";
+import { escapeAttr } from "./utils";
 
 export interface LogoPlacement {
   /** SVG element string for the logo */
@@ -54,7 +55,7 @@ export function calculateLogoPlacement(
 
   if (options.backgroundColor) {
     const bgPad = logoMargin;
-    svg += `<rect x="${logoX - bgPad}" y="${logoY - bgPad}" width="${logoPixelSize + 2 * bgPad}" height="${logoPixelSize + 2 * bgPad}" fill="${options.backgroundColor}" rx="4"/>`;
+    svg += `<rect x="${logoX - bgPad}" y="${logoY - bgPad}" width="${logoPixelSize + 2 * bgPad}" height="${logoPixelSize + 2 * bgPad}" fill="${escapeAttr(options.backgroundColor)}" rx="4"/>`;
   }
 
   if (options.svg) {

@@ -3,6 +3,8 @@
  * Used for Data Matrix, Aztec, and other 2D codes
  */
 
+import { escapeAttr } from "./utils";
+
 export interface MatrixSVGOptions {
   size?: number;
   color?: string;
@@ -31,7 +33,7 @@ export function renderMatrixSVG(matrix: boolean[][], options: MatrixSVGOptions =
   ];
 
   if (background !== "transparent") {
-    parts.push(`<rect width="100%" height="100%" fill="${background}"/>`);
+    parts.push(`<rect width="100%" height="100%" fill="${escapeAttr(background)}"/>`);
   }
 
   // Draw modules as a single path
@@ -47,7 +49,7 @@ export function renderMatrixSVG(matrix: boolean[][], options: MatrixSVGOptions =
   }
 
   if (pathParts.length > 0) {
-    parts.push(`<path d="${pathParts.join("")}" fill="${color}"/>`);
+    parts.push(`<path d="${pathParts.join("")}" fill="${escapeAttr(color)}"/>`);
   }
 
   parts.push("</svg>");

@@ -3,6 +3,7 @@
  */
 
 import type { BarcodeSVGOptions } from "./types";
+import { escapeAttr } from "./utils";
 
 /**
  * Render 1D barcode bars as SVG string
@@ -50,7 +51,7 @@ export function renderBarcodeSVG(bars: number[], options: BarcodeSVGOptions = {}
   ];
 
   if (background !== "transparent") {
-    parts.push(`<rect width="100%" height="100%" fill="${background}"/>`);
+    parts.push(`<rect width="100%" height="100%" fill="${escapeAttr(background)}"/>`);
   }
 
   // Apply rotation transform
@@ -71,16 +72,16 @@ export function renderBarcodeSVG(bars: number[], options: BarcodeSVGOptions = {}
   if (bearerBars) {
     const bbTop = mTop + textOffset;
     parts.push(
-      `<rect x="${mLeft}" y="${bbTop}" width="${barcodeWidth}" height="${bearerBarWidth}" fill="${color}"/>`,
+      `<rect x="${mLeft}" y="${bbTop}" width="${barcodeWidth}" height="${bearerBarWidth}" fill="${escapeAttr(color)}"/>`,
     );
     parts.push(
-      `<rect x="${mLeft}" y="${barTop + barHeight}" width="${barcodeWidth}" height="${bearerBarWidth}" fill="${color}"/>`,
+      `<rect x="${mLeft}" y="${barTop + barHeight}" width="${barcodeWidth}" height="${bearerBarWidth}" fill="${escapeAttr(color)}"/>`,
     );
     parts.push(
-      `<rect x="${mLeft}" y="${bbTop}" width="${bearerBarWidth}" height="${barHeight + bearerHeight}" fill="${color}"/>`,
+      `<rect x="${mLeft}" y="${bbTop}" width="${bearerBarWidth}" height="${barHeight + bearerHeight}" fill="${escapeAttr(color)}"/>`,
     );
     parts.push(
-      `<rect x="${mLeft + barcodeWidth - bearerBarWidth}" y="${bbTop}" width="${bearerBarWidth}" height="${barHeight + bearerHeight}" fill="${color}"/>`,
+      `<rect x="${mLeft + barcodeWidth - bearerBarWidth}" y="${bbTop}" width="${bearerBarWidth}" height="${barHeight + bearerHeight}" fill="${escapeAttr(color)}"/>`,
     );
   }
 
@@ -91,7 +92,7 @@ export function renderBarcodeSVG(bars: number[], options: BarcodeSVGOptions = {}
     const barPixelWidth = w * barWidth;
     if (isBar) {
       parts.push(
-        `<rect x="${x}" y="${barTop}" width="${barPixelWidth}" height="${barHeight}" fill="${color}"/>`,
+        `<rect x="${x}" y="${barTop}" width="${barPixelWidth}" height="${barHeight}" fill="${escapeAttr(color)}"/>`,
       );
     }
     x += barPixelWidth;
@@ -125,7 +126,7 @@ export function renderBarcodeSVG(bars: number[], options: BarcodeSVGOptions = {}
     }
 
     parts.push(
-      `<text x="${textX}" y="${textY}" text-anchor="${anchor}" font-family="${fontFamily}" font-size="${fontSize}" fill="${color}">${escapeXml(text)}</text>`,
+      `<text x="${textX}" y="${textY}" text-anchor="${anchor}" font-family="${escapeAttr(fontFamily)}" font-size="${fontSize}" fill="${escapeAttr(color)}">${escapeXml(text)}</text>`,
     );
   }
 

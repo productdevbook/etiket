@@ -6,6 +6,7 @@ import type { QRCodeSVGOptions, GradientOptions, CornerOptions } from "./types";
 import { getModulePath, getFinderOuterPath, getFinderInnerPath } from "./shapes";
 import { isGradient, generateGradientDef, resetGradientCounter } from "./gradient";
 import { calculateLogoPlacement } from "./logo";
+import { escapeAttr } from "./utils";
 
 /**
  * Render a QR code matrix as an SVG string with optional styling
@@ -47,7 +48,7 @@ export function renderQRCodeSVG(matrix: boolean[][], options: QRCodeSVGOptions =
       defs.push(grad.svg);
       parts.push(`<rect width="100%" height="100%" fill="url(#${grad.id})"/>`);
     } else {
-      parts.push(`<rect width="100%" height="100%" fill="${background}"/>`);
+      parts.push(`<rect width="100%" height="100%" fill="${escapeAttr(background as string)}"/>`);
     }
   }
 
@@ -58,7 +59,7 @@ export function renderQRCodeSVG(matrix: boolean[][], options: QRCodeSVGOptions =
     defs.push(grad.svg);
     moduleColor = `url(#${grad.id})`;
   } else {
-    moduleColor = color as string;
+    moduleColor = escapeAttr(color as string);
   }
 
   // Calculate logo hidden modules
@@ -103,7 +104,7 @@ export function renderQRCodeSVG(matrix: boolean[][], options: QRCodeSVGOptions =
           defs.push(grad.svg);
           outerColor = `url(#${grad.id})`;
         } else {
-          outerColor = cornerOpts.outerColor;
+          outerColor = escapeAttr(cornerOpts.outerColor);
         }
       }
       parts.push(
@@ -119,7 +120,7 @@ export function renderQRCodeSVG(matrix: boolean[][], options: QRCodeSVGOptions =
           defs.push(grad.svg);
           innerColor = `url(#${grad.id})`;
         } else {
-          innerColor = cornerOpts.innerColor;
+          innerColor = escapeAttr(cornerOpts.innerColor);
         }
       }
       parts.push(
