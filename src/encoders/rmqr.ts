@@ -94,6 +94,20 @@ const RMQR_CCI_LENGTHS: [number, number, number, number][] = [
   [9, 8, 8, 7], // 31: R17x139
 ];
 
+/** Generate 18-bit rMQR format info with BCH error correction */
+function rmqrFormatInfo(formatData: number): number {
+  // BCH(18,6) encoding for rMQR format info
+  // Generator polynomial for BCH(18,6)
+  let bch = formatData << 12;
+  const gen = 0x1f25; // x^12 + x^11 + x^10 + x^9 + x^8 + x^5 + x^2 + 1
+  for (let i = 5; i >= 0; i--) {
+    if (bch & (1 << (i + 12))) {
+      bch ^= gen << i;
+    }
+  }
+  return ((formatData << 12) | bch) ^ 0x1faf2; // XOR mask
+}
+
 export interface RMQROptions {
   ecLevel?: "M" | "H";
   version?: number; // index into RMQR_SIZES (0-31)
@@ -211,70 +225,154 @@ export function encodeRMQR(text: string, options: RMQROptions = {}): boolean[][]
   const ecBytes = generateECCodewords(dataBytes, ecCW);
   const allBytes = [...dataBytes, ...ecBytes];
 
-  // Build matrix
+  // Build matrix (null = data area, boolean = function pattern)
   const matrix: (boolean | null)[][] = Array.from({ length: rows }, () =>
     Array.from<boolean | null>({ length: cols }).fill(null),
   );
 
-  // Finder pattern (7×7 at top-left)
-  for (let r = 0; r < 7 && r < rows; r++) {
-    for (let c = 0; c < 7 && c < cols; c++) {
+  // 1. Finder pattern (7×7 at top-left)
+  for (let r = 0; r < 7; r++) {
+    for (let c = 0; c < 7; c++) {
       const isOuter = r === 0 || r === 6 || c === 0 || c === 6;
       const isInner = r >= 2 && r <= 4 && c >= 2 && c <= 4;
       matrix[r]![c] = isOuter || isInner;
     }
   }
+  // Separator around finder
+  if (rows > 7) for (let c = 0; c < 8 && c < cols; c++) matrix[7]![c] = false;
+  for (let r = 0; r < 7 && 7 < cols; r++) matrix[r]![7] = false;
 
-  // Separator
-  for (let i = 0; i < 8 && i < cols; i++) {
-    if (7 < rows && matrix[7]![i] === null) matrix[7]![i] = false;
-  }
-  for (let i = 0; i < 8 && i < rows; i++) {
-    if (7 < cols && matrix[i]![7] === null) matrix[i]![7] = false;
-  }
-
-  // Timing patterns
-  for (let c = 8; c < cols; c++) {
-    if (matrix[0]![c] === null) matrix[0]![c] = c % 2 === 0;
-  }
-  for (let r = 8; r < rows; r++) {
-    if (matrix[r]![0] === null) matrix[r]![0] = r % 2 === 0;
-  }
-
-  // Corner finder (bottom-right 5×5)
-  const cr = rows - 1;
-  const cc = cols - 1;
-  for (let r = -2; r <= 2; r++) {
-    for (let c = -2; c <= 2; c++) {
-      const rr = cr + r;
-      const ccc = cc + c;
-      if (rr >= 0 && rr < rows && ccc >= 0 && ccc < cols) {
-        const isOuter = Math.abs(r) === 2 || Math.abs(c) === 2;
-        const isCenter = r === 0 && c === 0;
-        if (matrix[rr]![ccc] === null) {
-          matrix[rr]![ccc] = isOuter || isCenter;
-        }
-      }
+  // 2. Bottom-right alignment pattern (5×5)
+  const arx = cols - 5;
+  const ary = rows - 5;
+  const AP = [0x1f, 0x11, 0x15, 0x11, 0x1f]; // 5x5 alignment
+  for (let r = 0; r < 5; r++) {
+    for (let c = 0; c < 5; c++) {
+      matrix[ary + r]![arx + c] = ((AP[r]! >> (4 - c)) & 1) === 1;
     }
   }
 
-  // Place data
+  // 3. Corner markers (2×2 at bottom-left and top-right)
+  // Bottom-left
+  matrix[rows - 2]![0] = true;
+  matrix[rows - 2]![1] = true;
+  matrix[rows - 1]![0] = true;
+  matrix[rows - 1]![1] = false;
+  // Top-right
+  matrix[0]![cols - 2] = true;
+  matrix[0]![cols - 1] = true;
+  matrix[1]![cols - 2] = false;
+  matrix[1]![cols - 1] = true;
+
+  // 4. Timing patterns on all 4 edges
+  for (let c = 7; c < cols - 1; c++) {
+    if (matrix[0]![c] === null) matrix[0]![c] = c % 2 === 0;
+    if (matrix[rows - 1]![c] === null) matrix[rows - 1]![c] = (c + rows + 1) % 2 === 0;
+  }
+  for (let r = 1; r < rows - 1; r++) {
+    if (matrix[r]![0] === null) matrix[r]![0] = r % 2 === 0;
+    if (matrix[r]![cols - 1] === null) matrix[r]![cols - 1] = (r + 1) % 2 === 0;
+  }
+
+  // 5. Format info (18 bits total: version + EC level encoded with BCH)
+  // Reserve format info positions (around finder and alignment)
+  // Format info left: 3 rows (1,3,5) x 3 cols (8,9,10) + extra positions
+  // Format info right: near bottom-right alignment
+  // For now: use Zint's format lookup tables
+  const formatData = sizeIdx + (ecLevel === "H" ? 32 : 0);
+  const formatInfo = rmqrFormatInfo(formatData);
+
+  // Place format info: 18 bits split between left and right sides
+  // Left side: around top-left finder (rows 1-5, cols 8-10)
+  const leftPos: [number, number][] = [
+    [1, 8],
+    [2, 8],
+    [3, 8],
+    [4, 8],
+    [5, 8],
+    [1, 9],
+    [2, 9],
+    [3, 9],
+    [4, 9],
+    [5, 9],
+    [1, 10],
+    [2, 10],
+    [3, 10],
+    [4, 10],
+    [5, 10],
+    [1, 11],
+    [2, 11],
+    [3, 11],
+  ];
+  for (let i = 0; i < 18 && i < leftPos.length; i++) {
+    const [r, c] = leftPos[i]!;
+    if (r < rows && c < cols) matrix[r]![c] = ((formatInfo >> i) & 1) === 1;
+  }
+  // Right side: near bottom-right alignment
+  const rightPos: [number, number][] = [
+    [rows - 6, arx - 1],
+    [rows - 5, arx - 1],
+    [rows - 4, arx - 1],
+    [rows - 3, arx - 1],
+    [rows - 2, arx - 1],
+    [rows - 6, arx - 2],
+    [rows - 5, arx - 2],
+    [rows - 4, arx - 2],
+    [rows - 3, arx - 2],
+    [rows - 2, arx - 2],
+    [rows - 6, arx - 3],
+    [rows - 5, arx - 3],
+    [rows - 4, arx - 3],
+    [rows - 3, arx - 3],
+    [rows - 2, arx - 3],
+    [rows - 6, arx - 4],
+    [rows - 5, arx - 4],
+    [rows - 4, arx - 4],
+  ];
+  for (let i = 0; i < 18 && i < rightPos.length; i++) {
+    const [r, c] = rightPos[i]!;
+    if (r >= 0 && r < rows && c >= 0 && c < cols) {
+      matrix[r]![c] = ((formatInfo >> i) & 1) === 1;
+    }
+  }
+
+  // 6. Place data bits (column-pair zigzag, skip timing columns)
   const allBits: number[] = [];
   for (const byte of allBytes) {
     pushBits(allBits, byte, 8);
   }
 
   let bitIdx = 0;
-  for (let c = cols - 1; c >= 1; c -= 2) {
-    for (let r = 0; r < rows; r++) {
-      for (const cc2 of [c, c - 1]) {
-        if (cc2 >= 0 && matrix[r]![cc2] === null) {
-          matrix[r]![cc2] = bitIdx < allBits.length ? allBits[bitIdx]! === 1 : false;
+  let upward = true;
+  for (let col = cols - 2; col >= 1; col -= 2) {
+    // Skip timing column (not applicable for rMQR — no column 6 timing)
+    const rowOrder = upward
+      ? Array.from({ length: rows }, (_, i) => rows - 1 - i)
+      : Array.from({ length: rows }, (_, i) => i);
+
+    for (const r of rowOrder) {
+      for (const c of [col, col - 1]) {
+        if (c >= 0 && c < cols && matrix[r]![c] === null) {
+          matrix[r]![c] = bitIdx < allBits.length ? allBits[bitIdx]! === 1 : false;
           bitIdx++;
+        }
+      }
+    }
+    upward = !upward;
+  }
+
+  // 7. Apply mask: (row/2 + col/3) % 2 == 0 (fixed mask per ISO/IEC 23941)
+  const result = matrix.map((row) => row.map((cell) => cell === true));
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      // Only mask data modules (null in original matrix)
+      if (matrix[r]![c] === null) {
+        if ((Math.floor(r / 2) + Math.floor(c / 3)) % 2 === 0) {
+          result[r]![c] = !result[r]![c];
         }
       }
     }
   }
 
-  return matrix.map((row) => row.map((cell) => cell === true));
+  return result;
 }
