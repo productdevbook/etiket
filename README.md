@@ -21,6 +21,19 @@ const svg = barcode("Hello World");
 const qr = qrcode("https://example.com", { dotType: "dots", ecLevel: "H" });
 ```
 
+## CLI
+
+```sh
+npx etiket qr "Hello World" -o qr.svg
+npx etiket qr "Hello" --terminal
+npx etiket qr "Hello" --size 300 --ec H --dot-type dots
+npx etiket barcode "4006381333931" --type ean13 --show-text -o barcode.svg
+npx etiket datamatrix "Hello" -o dm.svg
+npx etiket pdf417 "Hello" -o pdf.svg
+npx etiket aztec "Hello" -o aztec.svg
+npx etiket wifi "MyNetwork" "secret123" -o wifi.svg
+```
+
 ## Tree Shaking
 
 Import only what you need:
@@ -81,19 +94,25 @@ barcode("(01)12345678901234(17)260101", { type: "gs1-128" });
 barcode("HELLO", { type: "code39", code39CheckDigit: true });
 ```
 
-| Option       | Type                                   | Default      | Description                   |
-| :----------- | :------------------------------------- | :----------- | :---------------------------- |
-| `type`       | `BarcodeType`                          | `'code128'`  | Barcode format                |
-| `height`     | `number`                               | `80`         | Bar height in pixels          |
-| `barWidth`   | `number`                               | `2`          | Width multiplier per module   |
-| `color`      | `string`                               | `'#000'`     | Bar color                     |
-| `background` | `string`                               | `'#fff'`     | Background color              |
-| `showText`   | `boolean`                              | `false`      | Show text below barcode       |
-| `fontSize`   | `number`                               | `14`         | Text font size                |
-| `fontFamily` | `string`                               | `'monospace'`| Text font family              |
-| `margin`     | `number`                               | `10`         | Margin around barcode         |
-| `textAlign`  | `'center' \| 'left' \| 'right'`       | `'center'`   | Text alignment                |
-| `bearerBars` | `boolean`                              | `false`      | Bearer bars (ITF-14)          |
+| Option         | Type                                   | Default      | Description                    |
+| :------------- | :------------------------------------- | :----------- | :----------------------------- |
+| `type`         | `BarcodeType`                          | `'code128'`  | Barcode format                 |
+| `height`       | `number`                               | `80`         | Bar height in pixels           |
+| `barWidth`     | `number`                               | `2`          | Width multiplier per module    |
+| `color`        | `string`                               | `'#000'`     | Bar color                      |
+| `background`   | `string`                               | `'#fff'`     | Background color               |
+| `showText`     | `boolean`                              | `false`      | Show human-readable text       |
+| `textPosition` | `'bottom' \| 'top'`                   | `'bottom'`   | Text position                  |
+| `fontSize`     | `number`                               | `14`         | Text font size                 |
+| `fontFamily`   | `string`                               | `'monospace'`| Text font family               |
+| `margin`       | `number`                               | `10`         | Margin around barcode          |
+| `marginTop`    | `number`                               | `margin`     | Top margin                     |
+| `marginBottom` | `number`                               | `margin`     | Bottom margin                  |
+| `marginLeft`   | `number`                               | `margin`     | Left margin                    |
+| `marginRight`  | `number`                               | `margin`     | Right margin                   |
+| `textAlign`    | `'center' \| 'left' \| 'right'`       | `'center'`   | Text alignment                 |
+| `rotation`     | `0 \| 90 \| 180 \| 270`               | `0`          | Barcode rotation               |
+| `bearerBars`   | `boolean`                              | `false`      | Bearer bars (ITF-14)           |
 
 ### QR Codes
 
@@ -176,13 +195,34 @@ const term = qrcodeTerminal("Hello"); // Terminal (UTF-8 blocks)
 ## Convenience Helpers
 
 ```ts
-import { wifi, email, sms, geo, url } from "etiket";
+import { wifi, email, sms, geo, url, phone, vcard, mecard, event } from "etiket";
 
 wifi("MyNetwork", "password123"); // WiFi QR
 email("test@example.com"); // mailto: QR
 sms("+1234567890", "Hello!"); // SMS QR
 geo(37.7749, -122.4194); // Location QR
 url("https://example.com"); // URL QR
+phone("+1234567890"); // tel: QR
+
+// vCard QR
+vcard({
+  firstName: "John",
+  lastName: "Doe",
+  phone: "+1234567890",
+  email: "john@example.com",
+  org: "Acme Inc",
+});
+
+// MeCard QR (simpler, used by Android)
+mecard({ name: "John Doe", phone: "+1234567890", email: "john@example.com" });
+
+// Calendar event QR
+event({
+  title: "Meeting",
+  start: "2026-04-01T10:00:00",
+  end: "2026-04-01T11:00:00",
+  location: "Office",
+});
 ```
 
 ## Validation
@@ -226,6 +266,7 @@ const qrSvg = renderQRCodeSVG(matrix, { size: 400, dotType: "dots" });
 - Pure ESM
 - TypeScript-first with strict types
 - Tree-shakeable sub-path exports
+- CLI tool (`npx etiket`)
 - SVG string output (no DOM required)
 - Works in browser, Node.js, Deno, Bun, workers
 - ~24KB gzipped (full bundle)
@@ -237,7 +278,7 @@ Built from scratch, inspired by:
 - [uqr](https://github.com/unjs/uqr) — Pure SVG QR approach
 - [bwip-js](https://github.com/metafloor/bwip-js) — Comprehensive barcode formats
 - [JsBarcode](https://github.com/lindell/JsBarcode) — Encoding table reference
-- [qr-code-styling](https://github.com/nicolo-ribaudo/qr-code-styling) — QR styling concepts
+- [qr-code-styling](https://github.com/kozakdenys/qr-code-styling) — QR styling concepts
 
 Standards: [ISO/IEC 15417](https://www.iso.org/standard/43896.html) (Code 128), [ISO/IEC 15420](https://www.iso.org/standard/46143.html) (EAN/UPC), [ISO/IEC 18004](https://www.iso.org/standard/62021.html) (QR), [ISO/IEC 16022](https://www.iso.org/standard/44230.html) (Data Matrix), [ISO/IEC 15438](https://www.iso.org/standard/43816.html) (PDF417), [ISO/IEC 24778](https://www.iso.org/standard/41548.html) (Aztec).
 
