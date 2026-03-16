@@ -73,16 +73,36 @@ import { aztec } from "etiket/aztec";
 | **MSI Plessey** | `msi`        | Mod10/11/1010/1110             |
 | **Pharmacode**  | `pharmacode` | Pharmaceutical                 |
 | **Code 11**     | `code11`     | Telecommunications             |
-| **GS1-128**     | `gs1-128`    | AI parsing, FNC1               |
+| **GS1-128**     | `gs1-128`    | AI parsing, FNC1, 100+ AIs     |
+| **Identcode**   | `identcode`  | Deutsche Post / DHL             |
+| **Leitcode**    | `leitcode`   | Deutsche Post routing            |
+| **POSTNET**     | `postnet`    | USPS legacy postal               |
+| **PLANET**      | `planet`     | USPS confirmation tracking       |
+| **Plessey**     | `plessey`    | UK library systems               |
 
 ### 2D Codes
 
-| Format          | Function       | Description                               |
-| :-------------- | :------------- | :---------------------------------------- |
-| **QR Code**     | `qrcode()`     | Versions 1-40, all EC levels, all modes   |
-| **Data Matrix** | `datamatrix()` | ECC 200, 24 square + 6 rectangular sizes  |
-| **PDF417**      | `pdf417()`     | Text/Byte/Numeric compaction, 9 EC levels |
-| **Aztec**       | `aztec()`      | Compact + full-range, no quiet zone       |
+| Format           | Function               | Description                               |
+| :--------------- | :--------------------- | :---------------------------------------- |
+| **QR Code**      | `qrcode()`             | Versions 1-40, all EC levels, all modes   |
+| **Micro QR**     | `encodeMicroQR()`      | M1-M4 (11x11 to 17x17)                   |
+| **Data Matrix**  | `datamatrix()`         | ECC 200, ASCII/C40/Text auto encoding     |
+| **GS1 DataMatrix** | `gs1datamatrix()`   | FNC1 + AI parsing                         |
+| **PDF417**       | `pdf417()`             | Text/Byte/Numeric, 9 EC levels, ISO-8859-15 |
+| **MicroPDF417**  | `encodeMicroPDF417()`  | Compact PDF417 for small items            |
+| **Aztec**        | `aztec()`              | Compact + full-range, no quiet zone       |
+| **Codablock F**  | `encodeCodablockF()`   | Stacked Code 128                          |
+| **Code 16K**     | `encodeCode16K()`      | Stacked barcode, 2-16 rows               |
+
+### 4-State Postal Barcodes
+
+| Format              | Function               | Description                  |
+| :------------------ | :--------------------- | :--------------------------- |
+| **RM4SCC**          | `encodeRM4SCC()`       | Royal Mail (UK)              |
+| **KIX**             | `encodeKIX()`          | PostNL (Netherlands)         |
+| **Australia Post**  | `encodeAustraliaPost()`| Australia Post               |
+| **Japan Post**      | `encodeJapanPost()`    | Japan Post (Kasutama)        |
+| **USPS IMb**        | `encodeIMb()`          | Intelligent Mail (US)        |
 
 ## Usage
 
