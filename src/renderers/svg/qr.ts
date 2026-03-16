@@ -19,6 +19,7 @@ export function renderQRCodeSVG(matrix: boolean[][], options: QRCodeSVGOptions =
     margin = 4,
     dotType = "square",
     dotSize = 1,
+    shape = "square",
     corners,
     logo,
     xmlDeclaration = false,
@@ -153,6 +154,23 @@ export function renderQRCodeSVG(matrix: boolean[][], options: QRCodeSVGOptions =
   // Add logo
   if (logoSvg) {
     parts.push(logoSvg);
+  }
+
+  // Circle shape: wrap content in clipPath
+  if (shape === "circle") {
+    const cx = size / 2;
+    const cy = size / 2;
+    const r = size / 2;
+    defs.push(
+      `<clipPath id="etiket-circle-clip"><circle cx="${cx}" cy="${cy}" r="${r}"/></clipPath>`,
+    );
+    // Extract all content after the <svg> tag (and optional background rect)
+    const bgIndex = xmlDeclaration ? 2 : 1;
+    const contentStart = background !== "transparent" ? bgIndex + 1 : bgIndex;
+    const content = parts.splice(contentStart);
+    parts.push(`<g clip-path="url(#etiket-circle-clip)">`);
+    parts.push(...content);
+    parts.push("</g>");
   }
 
   // Insert defs if any

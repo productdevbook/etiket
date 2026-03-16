@@ -161,6 +161,7 @@ qrcode("Test", {
 | `margin`         | `number`                                          | `4`        | Quiet zone in modules  |
 | `dotType`        | `DotType`                                         | `'square'` | Module shape           |
 | `dotSize`        | `number`                                          | `1`        | Module size (0.1-1)    |
+| `shape`          | `'square' \| 'circle'`                            | `'square'` | Overall QR shape       |
 | `corners`        | `object`                                          | —          | Finder pattern styling |
 | `logo`           | `LogoOptions`                                     | —          | Center logo embedding  |
 | `xmlDeclaration` | `boolean`                                         | `false`    | Add XML declaration    |
