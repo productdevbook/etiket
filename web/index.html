@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -161,12 +161,16 @@
           <div class="helper-card">
             <h3>WiFi</h3>
             <div class="field"><label>SSID</label><input id="h-wifi-ssid" value="MyNetwork" /></div>
-            <div class="field"><label>Password</label><input id="h-wifi-pass" value="secret123" /></div>
+            <div class="field">
+              <label>Password</label><input id="h-wifi-pass" value="secret123" />
+            </div>
             <div class="output" id="h-wifi-out"></div>
           </div>
           <div class="helper-card">
             <h3>Email</h3>
-            <div class="field"><label>Address</label><input id="h-email" value="hello@example.com" /></div>
+            <div class="field">
+              <label>Address</label><input id="h-email" value="hello@example.com" />
+            </div>
             <div class="output" id="h-email-out"></div>
           </div>
           <div class="helper-card">
@@ -176,30 +180,46 @@
           </div>
           <div class="helper-card">
             <h3>Geo</h3>
-            <div class="field"><label>Lat</label><input id="h-geo-lat" type="number" value="37.7749" step="0.0001" /></div>
-            <div class="field"><label>Lng</label><input id="h-geo-lng" type="number" value="-122.4194" step="0.0001" /></div>
+            <div class="field">
+              <label>Lat</label><input id="h-geo-lat" type="number" value="37.7749" step="0.0001" />
+            </div>
+            <div class="field">
+              <label>Lng</label
+              ><input id="h-geo-lng" type="number" value="-122.4194" step="0.0001" />
+            </div>
             <div class="output" id="h-geo-out"></div>
           </div>
           <div class="helper-card">
             <h3>vCard</h3>
             <div class="field"><label>First Name</label><input id="h-vc-fn" value="John" /></div>
             <div class="field"><label>Last Name</label><input id="h-vc-ln" value="Doe" /></div>
-            <div class="field"><label>Phone</label><input id="h-vc-phone" value="+1234567890" /></div>
-            <div class="field"><label>Email</label><input id="h-vc-email" value="john@example.com" /></div>
+            <div class="field">
+              <label>Phone</label><input id="h-vc-phone" value="+1234567890" />
+            </div>
+            <div class="field">
+              <label>Email</label><input id="h-vc-email" value="john@example.com" />
+            </div>
             <div class="output" id="h-vcard-out"></div>
           </div>
           <div class="helper-card">
             <h3>Event</h3>
             <div class="field"><label>Title</label><input id="h-ev-title" value="Meeting" /></div>
-            <div class="field"><label>Start</label><input id="h-ev-start" type="datetime-local" value="2026-04-01T10:00" /></div>
-            <div class="field"><label>End</label><input id="h-ev-end" type="datetime-local" value="2026-04-01T11:00" /></div>
+            <div class="field">
+              <label>Start</label
+              ><input id="h-ev-start" type="datetime-local" value="2026-04-01T10:00" />
+            </div>
+            <div class="field">
+              <label>End</label
+              ><input id="h-ev-end" type="datetime-local" value="2026-04-01T11:00" />
+            </div>
             <div class="output" id="h-event-out"></div>
           </div>
         </div>
       </section>
 
       <footer>
-        <a href="https://github.com/productdevbook/etiket">etiket</a> — Zero-dependency barcode &amp; QR code SVG generator
+        <a href="https://github.com/productdevbook/etiket">etiket</a> — Zero-dependency barcode
+        &amp; QR code SVG generator
       </footer>
     </main>
     <script type="module" src="/app/entry-client.ts"></script>

@@ -29,14 +29,13 @@ export function setupApp() {
 
   // Utils
   const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
-  const val = (id: string) => ($<HTMLInputElement>(id)).value;
+  const val = (id: string) => $<HTMLInputElement>(id).value;
   const numVal = (id: string) => Number(val(id));
 
   function renderSafe(target: HTMLElement, fn: () => string) {
     try {
       target.innerHTML = fn();
-    }
-    catch (err) {
+    } catch (err) {
       target.innerHTML = `<div class="error">${(err as Error).message}</div>`;
     }
   }
@@ -45,8 +44,7 @@ export function setupApp() {
     $(`${prefix}-copy`).addEventListener("click", () => {
       try {
         navigator.clipboard.writeText(getFn());
-      }
-      catch {}
+      } catch {}
     });
     $(`${prefix}-download`).addEventListener("click", () => {
       try {
@@ -56,8 +54,7 @@ export function setupApp() {
         a.download = `${prefix}.svg`;
         a.click();
         URL.revokeObjectURL(a.href);
-      }
-      catch {}
+      } catch {}
     });
   }
 
@@ -163,9 +160,19 @@ export function setupApp() {
   }
 
   const helperInputIds = [
-    "h-wifi-ssid", "h-wifi-pass", "h-email", "h-phone",
-    "h-geo-lat", "h-geo-lng", "h-vc-fn", "h-vc-ln",
-    "h-vc-phone", "h-vc-email", "h-ev-title", "h-ev-start", "h-ev-end",
+    "h-wifi-ssid",
+    "h-wifi-pass",
+    "h-email",
+    "h-phone",
+    "h-geo-lat",
+    "h-geo-lng",
+    "h-vc-fn",
+    "h-vc-ln",
+    "h-vc-phone",
+    "h-vc-email",
+    "h-ev-title",
+    "h-ev-start",
+    "h-ev-end",
   ];
   for (const id of helperInputIds) {
     $(id).addEventListener("input", renderHelpers);
