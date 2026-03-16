@@ -23,9 +23,11 @@ export function renderBarcodeSVG(bars: number[], options: BarcodeSVGOptions = {}
     textAlign = "center",
     textPosition = "bottom",
     rotation = 0,
+    unit = "px",
     bearerBars = false,
     bearerBarWidth = 4,
   } = options;
+  const u = unit === "px" ? "" : unit;
 
   const mTop = options.marginTop ?? margin;
   const mBottom = options.marginBottom ?? margin;
@@ -48,7 +50,7 @@ export function renderBarcodeSVG(bars: number[], options: BarcodeSVGOptions = {}
   const svgHeight = rotation === 90 || rotation === 270 ? contentWidth : contentHeight;
 
   const parts: string[] = [
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${svgWidth} ${svgHeight}" width="${svgWidth}" height="${svgHeight}">`,
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${svgWidth} ${svgHeight}" width="${svgWidth}${u}" height="${svgHeight}${u}">`,
   ];
 
   if (background !== "transparent") {

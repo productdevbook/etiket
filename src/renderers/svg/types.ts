@@ -72,10 +72,15 @@ export interface QRCodeSVGOptions {
   xmlDeclaration?: boolean;
 }
 
+/** Measurement unit for SVG dimensions */
+export type MeasurementUnit = "px" | "mm" | "in" | "pt" | "cm";
+
 export interface BarcodeSVGOptions {
   width?: number;
   height?: number;
   barWidth?: number;
+  /** Measurement unit for dimensions (default 'px'). Affects SVG width/height attributes. */
+  unit?: MeasurementUnit;
   /** Extra spacing between bars. Each bar is narrowed by barGap/2 on each side. Default 0. */
   barGap?: number;
   color?: string;
