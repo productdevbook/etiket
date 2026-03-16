@@ -23,6 +23,7 @@ import { encodeMSI } from "./encoders/msi";
 import { encodePharmacode } from "./encoders/pharmacode";
 import { encodeCode11 } from "./encoders/code11";
 import { encodeGS1128 } from "./encoders/gs1-128";
+import { encodeIdentcode, encodeLeitcode } from "./encoders/deutsche-post";
 import { encodeDataMatrix, encodeGS1DataMatrix } from "./encoders/datamatrix/index";
 import { encodePDF417 } from "./encoders/pdf417/index";
 import { encodeAztec } from "./encoders/aztec/index";
@@ -52,7 +53,9 @@ export type BarcodeType =
   | "msi"
   | "pharmacode"
   | "code11"
-  | "gs1-128";
+  | "gs1-128"
+  | "identcode"
+  | "leitcode";
 
 export interface BarcodeOptions extends BarcodeSVGOptions {
   type?: BarcodeType;
@@ -171,6 +174,12 @@ export function barcode(text: string, options: BarcodeOptions = {}): string {
       break;
     case "gs1-128":
       bars = encodeGS1128(text);
+      break;
+    case "identcode":
+      bars = encodeIdentcode(text);
+      break;
+    case "leitcode":
+      bars = encodeLeitcode(text);
       break;
     default:
       throw new Error(`Unsupported barcode type: ${type}`);
@@ -716,6 +725,12 @@ export function encode(text: string, options: EncodeOptions = {}): EncodeResult 
     case "gs1-128":
       bars = encodeGS1128(text);
       break;
+    case "identcode":
+      bars = encodeIdentcode(text);
+      break;
+    case "leitcode":
+      bars = encodeLeitcode(text);
+      break;
     default:
       throw new Error(`Unsupported encode type: ${type}`);
   }
@@ -739,6 +754,7 @@ export type { MSICheckDigitType } from "./encoders/msi";
 export { encodePharmacode } from "./encoders/pharmacode";
 export { encodeCode11 } from "./encoders/code11";
 export { encodeGS1128 } from "./encoders/gs1-128";
+export { encodeIdentcode, encodeLeitcode } from "./encoders/deutsche-post";
 export { encodeHIBCPrimary, encodeHIBCSecondary, encodeHIBCConcatenated } from "./encoders/hibc";
 export { encodeDataMatrix, encodeGS1DataMatrix } from "./encoders/datamatrix/index";
 export { encodePDF417 } from "./encoders/pdf417/index";
