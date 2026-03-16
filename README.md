@@ -13,9 +13,9 @@
 </p>
 
 > [!IMPORTANT]
-> **Scan-verified formats:** QR Code, Data Matrix, PDF417, Aztec, Micro QR, Code 128, EAN-13, EAN-8, UPC-A, Code 39, Code 93, ITF, Codabar, GS1-128 — all verified with round-trip encode/decode tests.
+> **Scan-verified formats (16):** QR Code, Data Matrix, PDF417, Aztec, Micro QR, rMQR, MaxiCode, Code 128, EAN-13, EAN-8, UPC-A, Code 39, Code 93, ITF, Codabar, GS1-128 — all verified with round-trip encode/decode tests using zxing-wasm, rxing (Rust), and gozxing (Go).
 >
-> **Experimental formats:** rMQR, MicroPDF417, MaxiCode, DotCode, Han Xin, JAB Code, Code 16K — these encoders produce structurally valid output but have not been verified with external scanners. They may not scan correctly on all devices. PRs and bug reports are welcome.
+> **Experimental formats:** MicroPDF417, DotCode, Han Xin, JAB Code — no open-source barcode decoder exists for these formats (even bwip-js/Zint reference images cannot be scanned). Encoders produce structurally valid output. PRs welcome.
 >
 > **Contributions welcome!** If you find a scanning issue or want to improve an encoder, please [open an issue](https://github.com/productdevbook/etiket/issues) or submit a PR. See [Contributing](#contributing) below.
 
