@@ -8,10 +8,9 @@ describe("DotCode", () => {
     expect(matrix[0]!.length).toBeGreaterThan(0);
   });
 
-  it("odd dimensions", () => {
+  it("height + width is odd (DotCode spec requirement)", () => {
     const matrix = encodeDotCode("Test");
-    expect(matrix.length % 2).toBe(1); // height odd
-    expect(matrix[0]!.length % 2).toBe(1); // width odd
+    expect((matrix.length + matrix[0]!.length) % 2).toBe(1);
   });
 
   it("checkerboard pattern — no adjacent dots", () => {
