@@ -278,11 +278,27 @@ export function encodeRMQR(text: string, options: RMQROptions = {}): boolean[][]
   // 4. Timing patterns on all 4 edges
   for (let c = 7; c < cols - 1; c++) {
     if (matrix[0]![c] === null) matrix[0]![c] = c % 2 === 0;
-    if (matrix[rows - 1]![c] === null) matrix[rows - 1]![c] = (c + rows + 1) % 2 === 0;
+    if (matrix[rows - 1]![c] === null) matrix[rows - 1]![c] = (c + 1) % 2 === 0;
   }
   for (let r = 1; r < rows - 1; r++) {
-    if (matrix[r]![0] === null) matrix[r]![0] = r % 2 === 0;
-    if (matrix[r]![cols - 1] === null) matrix[r]![cols - 1] = (r + 1) % 2 === 0;
+    if (matrix[r]![0] === null) matrix[r]![0] = (r + 1) % 2 === 0;
+    if (matrix[r]![cols - 1] === null) matrix[r]![cols - 1] = r % 2 === 0;
+  }
+
+  // 4b. Sub-alignment vertical timing columns (rMQR-specific)
+  // Column positions from rmqr_table_d1, indexed by width group
+  // These must be placed BEFORE data, as they are function patterns
+  const widthGroupIdx = [43, 59, 77, 99, 139].indexOf(cols);
+  // prettier-ignore
+  const SUB_ALIGN: number[][] = [
+    [21], [19,39], [25,51], [23,49,75], [27,55,83,111],
+  ];
+  if (widthGroupIdx >= 0) {
+    for (const ac of SUB_ALIGN[widthGroupIdx]!) {
+      for (let r = 0; r < rows; r++) {
+        matrix[r]![ac] = r % 2 === 0;
+      }
+    }
   }
 
   // 5. Format info from pre-computed Zint tables (18 bits each side)
@@ -319,7 +335,6 @@ export function encodeRMQR(text: string, options: RMQROptions = {}): boolean[][]
   let bitIdx = 0;
   let upward = true;
   for (let col = cols - 2; col >= 1; col -= 2) {
-    // Skip timing column (not applicable for rMQR — no column 6 timing)
     const rowOrder = upward
       ? Array.from({ length: rows }, (_, i) => rows - 1 - i)
       : Array.from({ length: rows }, (_, i) => i);
