@@ -99,6 +99,7 @@
     "oxlint": "^1.55.0",
     "typescript": "^5.9.3",
     "vitest": "^4.1.0",
-    "zbar.wasm": "^2.1.1"
+    "zbar.wasm": "^2.1.1",
+    "zxing-wasm": "^3.0.1"
   }
 }
