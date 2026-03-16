@@ -90,6 +90,8 @@ export type { RMQROptions } from "./encoders/rmqr";
 export { encodeDotCode } from "./encoders/dotcode";
 export { encodeHanXin } from "./encoders/hanxin";
 export type { HanXinOptions } from "./encoders/hanxin";
+export { encodeJABCode, JAB_COLORS_4, JAB_COLORS_8 } from "./encoders/jabcode";
+export type { JABCodeOptions, JABCodeResult } from "./encoders/jabcode";
 export { encodeDataMatrix, encodeGS1DataMatrix } from "./encoders/datamatrix/index";
 export { encodePDF417 } from "./encoders/pdf417/index";
 export type { PDF417Options } from "./encoders/pdf417/index";

@@ -95,6 +95,9 @@ import { aztec } from "etiket/aztec";
 | **rMQR**           | `encodeRMQR()`        | Rectangular Micro QR (R7x43 to R17x139)     |
 | **Codablock F**    | `encodeCodablockF()`  | Stacked Code 128                            |
 | **Code 16K**       | `encodeCode16K()`     | Stacked barcode, 2-16 rows                  |
+| **DotCode**        | `encodeDotCode()`     | Checkerboard dots, high-speed printing      |
+| **Han Xin**        | `encodeHanXin()`      | Chinese market, 84 versions, 4 finders      |
+| **JAB Code**       | `encodeJABCode()`     | Polychrome (4/8 color), ISO/IEC 23634       |
 
 ### 4-State Postal Barcodes
 
