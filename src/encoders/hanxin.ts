@@ -97,7 +97,7 @@ function hanxinSize(version: number): number {
  *
  * Total modules minus function patterns:
  *   - 4 finder patterns (7×7 each = 196 modules)
- *   - 4 timing strips along edges (between finders)
+ *   - Separator bands around finders
  *   - Version/format info areas
  *
  * Returns the total number of data codewords (bytes) available
@@ -110,15 +110,13 @@ function hanxinTotalCodewords(version: number): number {
   // 4 finder patterns — 7×7 each
   const finderModules = 4 * 7 * 7;
 
-  // Timing patterns along all 4 edges (between finders)
-  // Each edge has (size - 14) modules in the timing strip
-  const timingModules = 4 * (size - 14);
+  // Separator bands around finders: 4 L-shaped bands, ~8 modules each
+  const separatorModules = 4 * (8 + 7);
 
-  // Format/version info: Han Xin uses structural regions
-  // along finder edges — approximate as 36 modules per version
+  // Format/version info regions around finders
   const formatModules = Math.min(36 + version * 2, size * 4);
 
-  const usableModules = totalModules - finderModules - timingModules - formatModules;
+  const usableModules = totalModules - finderModules - separatorModules - formatModules;
 
   return Math.floor(usableModules / 8);
 }
@@ -331,12 +329,21 @@ export function encodeHanXin(text: string, options: HanXinOptions = {}): boolean
   placeFinderHX(matrix, size - 7, 0, FINDER_BL, size);
   placeFinderHX(matrix, size - 7, size - 7, FINDER_BR, size);
 
-  // Timing patterns along all 4 edges
-  for (let i = 7; i < size - 7; i++) {
-    if (matrix[0]![i] === null) matrix[0]![i] = i % 2 === 0;
-    if (matrix[i]![0] === null) matrix[i]![0] = i % 2 === 0;
-    if (matrix[size - 1]![i] === null) matrix[size - 1]![i] = i % 2 === 0;
-    if (matrix[i]![size - 1] === null) matrix[i]![size - 1] = i % 2 === 0;
+  // Han Xin has NO timing patterns — only separator bands around finders
+  // 1-module white separator around each 7x7 finder
+  for (let i = -1; i <= 7; i++) {
+    // Top-left separator
+    setSafeNull(matrix, 7, i, size);
+    setSafeNull(matrix, i, 7, size);
+    // Top-right separator
+    setSafeNull(matrix, 7, size - 8 + i, size);
+    setSafeNull(matrix, i, size - 8, size);
+    // Bottom-left separator
+    setSafeNull(matrix, size - 8, i, size);
+    setSafeNull(matrix, size - 8 + i, 7, size);
+    // Bottom-right separator
+    setSafeNull(matrix, size - 8, size - 8 + i, size);
+    setSafeNull(matrix, size - 8 + i, size - 8, size);
   }
 
   // Place data bits into available modules
@@ -358,6 +365,12 @@ export function encodeHanXin(text: string, options: HanXinOptions = {}): boolean
   }
 
   return matrix.map((row) => row.map((cell) => cell === true));
+}
+
+function setSafeNull(matrix: (boolean | null)[][], r: number, c: number, size: number): void {
+  if (r >= 0 && r < size && c >= 0 && c < size && matrix[r]![c] === null) {
+    matrix[r]![c] = false;
+  }
 }
 
 function placeFinderHX(
