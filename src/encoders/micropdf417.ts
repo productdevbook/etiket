@@ -334,73 +334,52 @@ function renderPattern(pattern: number[]): boolean[] {
 
 const GF_MOD = 929;
 
-// Build log/antilog tables for GF(929) with primitive element 3
-const RSALOG: number[] = Array.from({ length: GF_MOD });
-RSALOG[0] = 1;
-for (let _i = 1; _i < GF_MOD; _i++) {
-  RSALOG[_i] = (RSALOG[_i - 1]! * 3) % GF_MOD;
-}
-const RSLOG: number[] = Array.from({ length: GF_MOD });
-for (let _i = 0; _i < GF_MOD - 1; _i++) {
-  RSLOG[RSALOG[_i]!] = _i;
-}
-
-/** Multiply two GF(929) elements */
-function rsProd(a: number, b: number): number {
-  if (a === 0 || b === 0) return 0;
-  return RSALOG[(RSLOG[a]! + RSLOG[b]!) % (GF_MOD - 1)]!;
-}
-
-/**
- * Generate RS generator polynomial coefficients for k EC codewords.
- * g(x) = (x - 3^1)(x - 3^2)...(x - 3^k)
- * Returns k coefficients with alternating sign adjustment per BWIPP.
- */
-function genECCoeffs(k: number): number[] {
-  const coeffs: number[] = Array.from({ length: k + 1 }, () => 0);
-  coeffs[0] = 1;
-  for (let i = 1; i <= k; i++) {
-    coeffs[i] = coeffs[i - 1]!;
-    for (let j = i - 1; j >= 1; j--) {
-      coeffs[j] = (coeffs[j - 1]! + rsProd(coeffs[j]!, RSALOG[i]!)) % GF_MOD;
-    }
-    coeffs[0] = rsProd(coeffs[0]!, RSALOG[i]!);
-  }
-  // Remove leading coefficient (x^k term), keep g_0..g_{k-1}
-  const result = coeffs.slice(0, k);
-  // Negate alternate coefficients (per BWIPP convention)
-  for (let i = k - 1; i >= 0; i -= 2) {
-    result[i] = (GF_MOD - result[i]!) % GF_MOD;
-  }
-  return result;
-}
+// MicroPDF417 EC coefficients from ISO/IEC 24728 / Zint zint_pdf_Microcoeffs
+// Indexed by EC count (k), offset into the flat array
+// prettier-ignore
+const MICRO_EC_COEFFS: Record<number, number[]> = {
+  7: [76,925,537,597,784,691,437],
+  8: [237,308,436,284,646,653,428,379],
+  9: [567,527,622,257,289,362,501,441,205],
+  10: [377,457,64,244,826,841,818,691,266,612],
+  11: [462,45,565,708,825,213,15,68,327,602,904],
+  12: [597,864,757,201,646,684,347,127,388,7,69,851],
+  13: [764,713,342,384,606,583,322,592,678,204,184,394,692],
+  14: [669,677,154,187,241,286,274,354,478,915,691,833,105,215],
+  15: [460,829,476,109,904,664,230,5,80,74,550,575,147,868,642],
+  16: [274,562,232,755,599,524,801,132,295,116,442,428,295,42,176,65],
+  18: [279,577,315,624,37,855,275,739,120,297,312,202,560,321,233,756,760,573],
+  21: [108,519,781,534,129,425,681,553,422,716,763,693,624,610,310,691,347,165,193,259,568],
+  26: [443,284,887,544,788,93,477,760,331,608,269,121,159,830,446,893,699,245,441,454,325,858,131,847,764,169],
+  32: [361,575,922,525,176,586,640,321,536,742,677,742,687,284,193,517,273,494,263,147,593,800,571,320,803,133,231,390,685,330,63,410],
+  38: [234,228,438,848,133,703,529,721,788,322,280,159,738,586,388,684,445,680,245,595,614,233,812,32,284,658,745,229,95,689,920,771,554,289,231,125,117,518],
+  44: [476,36,659,848,678,64,764,840,157,915,470,876,109,25,632,405,417,436,714,60,376,97,413,706,446,21,3,773,569,267,272,213,31,560,231,758,103,271,572,436,339,730,82,285],
+  50: [923,797,576,875,156,706,63,81,257,874,411,416,778,50,205,303,188,535,909,155,637,230,534,96,575,102,264,233,919,593,865,26,579,623,766,146,10,739,246,127,71,244,211,477,920,876,427,820,718,435],
+};
 
 /**
- * Generate RS error correction codewords over GF(929) for MicroPDF417.
- * Supports arbitrary EC codeword count (not limited to powers of 2).
+ * MicroPDF417 RS error correction using spec-specific coefficients.
+ * Algorithm from Zint pdf417.c — uses pre-computed Microcoeffs table.
  */
-function generateMicroPDF417EC(dataCodewords: number[], ecCount: number): number[] {
-  const n = dataCodewords.length;
-  const coeffs = genECCoeffs(ecCount);
+function microPDF417RS(data: number[], ecCW: number): number[] {
+  const coeffs = MICRO_EC_COEFFS[ecCW];
+  if (!coeffs) throw new Error(`No MicroPDF417 EC coefficients for k=${ecCW}`);
 
-  // Working array: data codewords followed by EC slots + 1 sentinel
-  const cws: number[] = Array.from({ length: n + ecCount + 1 }, () => 0);
-  for (let i = 0; i < n; i++) {
-    cws[i] = dataCodewords[i]!;
-  }
-
-  // Polynomial long division
-  for (let i = 0; i < n; i++) {
-    const t = (cws[i]! + cws[n]!) % GF_MOD;
-    for (let j = 0; j < ecCount; j++) {
-      cws[n + j] = (cws[n + j + 1]! + GF_MOD - ((t * coeffs[ecCount - j - 1]!) % GF_MOD)) % GF_MOD;
+  const ec = Array.from<number>({ length: ecCW }).fill(0);
+  for (const cw of data) {
+    const total = (cw + ec[ecCW - 1]!) % GF_MOD;
+    for (let j = ecCW - 1; j >= 0; j--) {
+      if (j === 0) {
+        ec[j] = (GF_MOD - ((total * coeffs[j]!) % GF_MOD)) % GF_MOD;
+      } else {
+        ec[j] = (ec[j - 1]! + GF_MOD - ((total * coeffs[j]!) % GF_MOD)) % GF_MOD;
+      }
     }
   }
 
-  // Negate non-zero EC codewords
-  const ec: number[] = [];
-  for (let i = n; i < n + ecCount; i++) {
-    ec.push(cws[i] !== 0 ? (GF_MOD - cws[i]!) % GF_MOD : 0);
+  // Negate non-zero values
+  for (let j = 0; j < ecCW; j++) {
+    if (ec[j] !== 0) ec[j] = GF_MOD - ec[j]!;
   }
   return ec;
 }
@@ -442,13 +421,15 @@ export function encodeMicroPDF417(
   const [cols, rows, ecCW, rapl, rapc, rapr] = metric;
   const maxDataCW = rows * cols - ecCW;
 
-  // Pad data codewords to fill data capacity
+  // Pad data codewords: MicroPDF417 prepends 900 (text latch) as padding
+  // This matches Zint/bwip-js behavior where padding goes BEFORE data
   while (dataCW.length < maxDataCW) {
-    dataCW.push(900); // text compaction latch as pad
+    dataCW.unshift(900);
   }
 
   // Generate EC codewords using RS over GF(929)
-  const ec = generateMicroPDF417EC(dataCW, ecCW);
+  // Generate EC using RS over GF(929) with roots 3^1..3^ecCW
+  const ec = microPDF417RS(dataCW, ecCW);
 
   // Combine data + EC codewords
   const allCW = [...dataCW, ...ec];
