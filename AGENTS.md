@@ -1,6 +1,6 @@
 # etiket
 
-Zero-dependency barcode & QR code SVG generator. 40+ formats, styled QR codes, tree-shakeable. Pure TypeScript.
+Zero-dependency barcode & QR code generator — SVG & PNG output. 40+ formats, styled QR codes, tree-shakeable. Pure TypeScript.
 
 > [!IMPORTANT]
 > Keep `AGENTS.md` updated with project status.

@@ -222,7 +222,9 @@ function setupPreviewToggles() {
       previewMode[target] = mode;
 
       // Toggle active class
-      btn.parentElement!.querySelectorAll(".toggle-btn").forEach((b) => b.classList.remove("active"));
+      btn
+        .parentElement!.querySelectorAll(".toggle-btn")
+        .forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
 
       // Toggle output visibility
@@ -247,14 +249,16 @@ function renderPNGPreview(target: string, pngData: Uint8Array) {
 }
 
 function renderPNGPreviewFromSVG(target: string, svg: string) {
-  svgToPNG(svg).then((png) => {
-    const el = $(`${target}-output-png`);
-    const blob = new Blob([png], { type: "image/png" });
-    const url = URL.createObjectURL(blob);
-    el.innerHTML = `<img src="${url}" alt="PNG preview" style="max-width:100%" />`;
-  }).catch(() => {
-    $(`${target}-output-png`).innerHTML = `<div class="error">PNG render failed</div>`;
-  });
+  svgToPNG(svg)
+    .then((png) => {
+      const el = $(`${target}-output-png`);
+      const blob = new Blob([png], { type: "image/png" });
+      const url = URL.createObjectURL(blob);
+      el.innerHTML = `<img src="${url}" alt="PNG preview" style="max-width:100%" />`;
+    })
+    .catch(() => {
+      $(`${target}-output-png`).innerHTML = `<div class="error">PNG render failed</div>`;
+    });
 }
 
 function setupCopyDownload(prefix: string, getFn: () => string) {

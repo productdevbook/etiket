@@ -1,10 +1,10 @@
 <p align="center">
   <br>
-  <img src=".github/assets/cover.png" alt="etiket — Zero-dependency barcode & QR code SVG generator" width="100%">
+  <img src=".github/assets/cover.png" alt="etiket — Zero-dependency barcode & QR code generator (SVG & PNG)" width="100%">
   <br><br>
   <b style="font-size: 2em;">etiket</b>
   <br><br>
-  Zero-dependency barcode & QR code SVG generator.
+  Zero-dependency barcode & QR code generator — SVG & PNG output.
   <br>
   40+ formats, styled QR codes, tree-shakeable. Pure TypeScript, works everywhere.
   <br><br>
@@ -57,6 +57,7 @@ import { qrcode } from "etiket/qr"; // QR codes only
 import { datamatrix } from "etiket/datamatrix";
 import { pdf417 } from "etiket/pdf417";
 import { aztec } from "etiket/aztec";
+import { barcodePNG, qrcodePNG } from "etiket/png"; // PNG output
 ```
 
 ## Supported Formats
@@ -235,12 +236,22 @@ import {
   barcodeBase64,
   qrcodeBase64,
   qrcodeTerminal,
+  barcodePNG,
+  qrcodePNG,
+  barcodePNGDataURI,
+  qrcodePNGDataURI,
 } from "etiket";
 
+// SVG
 const svg = qrcode("Hello"); // SVG string
 const uri = qrcodeDataURI("Hello"); // data:image/svg+xml,...
 const b64 = qrcodeBase64("Hello"); // data:image/svg+xml;base64,...
 const term = qrcodeTerminal("Hello"); // Terminal (UTF-8 blocks)
+
+// PNG (zero-dependency raster output)
+const png = qrcodePNG("Hello"); // Uint8Array
+const pngUri = qrcodePNGDataURI("Hello"); // data:image/png;base64,...
+const barPng = barcodePNG("12345", { type: "code128" }); // Uint8Array
 ```
 
 ## Convenience Helpers
@@ -318,14 +329,21 @@ import {
   renderBarcodeSVG,
   renderQRCodeSVG,
   renderMatrixSVG,
+  renderBarcodePNG,
+  renderMatrixPNG,
 } from "etiket";
 
 const bars = encodeCode128("data"); // number[] (bar/space widths)
 const matrix = encodeQR("data"); // boolean[][] (QR matrix)
 const dm = encodeDataMatrix("data"); // boolean[][] (Data Matrix)
 
+// SVG rendering
 const svg = renderBarcodeSVG(bars, { height: 100 });
 const qrSvg = renderQRCodeSVG(matrix, { size: 400, dotType: "dots" });
+
+// PNG rendering
+const png = renderBarcodePNG(bars, { height: 100, scale: 2 });
+const qrPng = renderMatrixPNG(matrix, { moduleSize: 10, margin: 4 });
 ```
 
 ## Industry Standards
@@ -399,6 +417,7 @@ barcode("HELLO", { color: "currentColor", background: "transparent" });
 - Tree-shakeable sub-path exports
 - CLI tool (`npx etiket`)
 - SVG string output (no DOM required) + `optimizeSVG()` for compact inline
+- PNG raster output (pure JS, zero dependencies) via `etiket/png`
 - SVG accessibility (`ariaLabel`, `role`, `title`, `desc`)
 - Measurement units (`px`, `mm`, `in`, `cm`, `pt`) for print use cases
 - CSS `currentColor` support for theme-aware barcodes
@@ -430,11 +449,11 @@ barcode("HELLO", { color: "currentColor", background: "transparent" });
 | Convenience helpers (WiFi, vCard...) | :white_check_mark: |                :x:                 |                       :x:                       |                        :x:                        |                               :x:                                |
 | Input validation                     | :white_check_mark: |                :x:                 |                       :x:                       |                        :x:                        |                               :x:                                |
 | SVG output                           | :white_check_mark: |         :white_check_mark:         |               :white_check_mark:                |                :white_check_mark:                 |                        :white_check_mark:                        |
-| PNG/Canvas output                    |        :x:         |                :x:                 |               :white_check_mark:                |                :white_check_mark:                 |                        :white_check_mark:                        |
+| PNG output                           | :white_check_mark: |                :x:                 |               :white_check_mark:                |                :white_check_mark:                 |                        :white_check_mark:                        |
 | Pure ESM                             | :white_check_mark: |         :white_check_mark:         |                    :x: (CJS)                    |                     :x: (CJS)                     |                            :x: (CJS)                             |
 | Bundle size (gzip)                   |       ~24KB        |               ~12KB                |                     ~160KB                      |                       ~15KB                       |                            ~30KB+deps                            |
 
-**etiket is the only library that combines** 1D barcodes + 2D codes + styled QR codes + zero dependencies + tree-shaking in a single package.
+**etiket is the only library that combines** 1D barcodes + 2D codes + styled QR codes + SVG & PNG output + zero dependencies + tree-shaking in a single package.
 
 ## Inspiration & Credits
 
@@ -459,7 +478,6 @@ Contributions are welcome! Here are some areas where help is especially apprecia
 
 **Other contributions:**
 
-- PNG/raster output support ([#3](https://github.com/productdevbook/etiket/issues/3))
 - Data Matrix DMRE rectangular sizes ([#71](https://github.com/productdevbook/etiket/issues/71))
 - GS1 DataBar stacked variants ([#61](https://github.com/productdevbook/etiket/issues/61))
 - Round-trip scan tests for experimental formats
