@@ -52,9 +52,9 @@ npx etiket wifi "MyNetwork" "secret123" -o wifi.svg
 Import only what you need:
 
 ```ts
-import { barcode } from "etiket/barcode"; // 1D barcodes only
-import { qrcode } from "etiket/qr"; // QR codes only
-import { datamatrix } from "etiket/datamatrix";
+import { barcode, barcodeDataURI, barcodeBase64 } from "etiket/barcode";
+import { qrcode, qrcodeDataURI, qrcodeBase64, qrcodeTerminal } from "etiket/qr";
+import { datamatrix, gs1datamatrix } from "etiket/datamatrix";
 import { pdf417 } from "etiket/pdf417";
 import { aztec } from "etiket/aztec";
 import { barcodePNG, qrcodePNG } from "etiket/png"; // PNG output

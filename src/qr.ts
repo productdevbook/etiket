@@ -13,5 +13,7 @@ export type { QRCodeOptions, ErrorCorrectionLevel, EncodingMode } from "./encode
 export type { DotType, GradientOptions, CornerOptions, LogoOptions } from "./renderers/svg/types";
 
 export { encodeQR } from "./encoders/qr/index";
+export { encodeMicroQR } from "./encoders/qr/micro";
+export type { MicroQROptions } from "./encoders/qr/micro";
 export { renderQRCodeSVG } from "./renderers/svg/qr";
 export { renderText } from "./renderers/text";
