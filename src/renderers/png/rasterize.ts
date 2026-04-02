@@ -7,19 +7,29 @@ import { parseHexColor } from "./types";
 import type { BarcodePNGOptions, MatrixPNGOptions } from "./types";
 
 /**
- * Render a 1D barcode bar pattern as PNG
+ * Raster data result with raw pixel rows
  */
-export function renderBarcodePNG(bars: number[], options: BarcodePNGOptions = {}): Uint8Array {
+export interface RasterData {
+  /** Image width in pixels */
+  width: number;
+  /** Image height in pixels */
+  height: number;
+  /** Pixel rows — each Uint8Array where 0 = background, 1 = foreground */
+  rows: Uint8Array[];
+}
+
+/**
+ * Rasterize a 1D barcode bar pattern to raw pixel rows
+ */
+export function renderBarcodeRaster(
+  bars: number[],
+  options: BarcodePNGOptions = {},
+): RasterData {
   const {
     scale = 2,
     height = 80,
     margin = 10,
-    color = "#000000",
-    background = "#ffffff",
   } = options;
-
-  const fg = parseHexColor(color);
-  const bg = parseHexColor(background);
 
   let totalBarWidth = 0;
   for (let i = 0; i < bars.length; i++) {
@@ -47,17 +57,28 @@ export function renderBarcodePNG(bars: number[], options: BarcodePNGOptions = {}
   for (let y = 0; y < height; y++) rows.push(barRow);
   for (let y = 0; y < margin; y++) rows.push(marginRow);
 
-  return encodePNG(width, totalHeight, rows, fg, bg, false);
+  return { width, height: totalHeight, rows };
 }
 
 /**
- * Render a 2D matrix (QR, DataMatrix, Aztec, PDF417) as PNG
+ * Render a 1D barcode bar pattern as PNG
  */
-export function renderMatrixPNG(matrix: boolean[][], options: MatrixPNGOptions = {}): Uint8Array {
-  const { moduleSize = 10, margin = 4, color = "#000000", background = "#ffffff" } = options;
-
+export function renderBarcodePNG(bars: number[], options: BarcodePNGOptions = {}): Uint8Array {
+  const { color = "#000000", background = "#ffffff" } = options;
   const fg = parseHexColor(color);
   const bg = parseHexColor(background);
+  const { width, height, rows } = renderBarcodeRaster(bars, options);
+  return encodePNG(width, height, rows, fg, bg, false);
+}
+
+/**
+ * Rasterize a 2D matrix (QR, DataMatrix, Aztec, PDF417) to raw pixel rows
+ */
+export function renderMatrixRaster(
+  matrix: boolean[][],
+  options: MatrixPNGOptions = {},
+): RasterData {
+  const { moduleSize = 10, margin = 4 } = options;
 
   const matRows = matrix.length;
   const matCols = matRows > 0 ? matrix[0]!.length : 0;
@@ -85,5 +106,16 @@ export function renderMatrixPNG(matrix: boolean[][], options: MatrixPNGOptions =
 
   for (let y = 0; y < marginPixels; y++) rows.push(marginRow);
 
+  return { width, height, rows };
+}
+
+/**
+ * Render a 2D matrix (QR, DataMatrix, Aztec, PDF417) as PNG
+ */
+export function renderMatrixPNG(matrix: boolean[][], options: MatrixPNGOptions = {}): Uint8Array {
+  const { color = "#000000", background = "#ffffff" } = options;
+  const fg = parseHexColor(color);
+  const bg = parseHexColor(background);
+  const { width, height, rows } = renderMatrixRaster(matrix, options);
   return encodePNG(width, height, rows, fg, bg, true);
 }

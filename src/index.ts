@@ -133,7 +133,9 @@ export {
   aztecPNGDataURI,
 } from "./_png";
 export type { BarcodePNGOptions, MatrixPNGOptions } from "./renderers/png/types";
-export { renderBarcodePNG, renderMatrixPNG } from "./renderers/png/rasterize";
+export { renderBarcodeRaster, renderMatrixRaster, renderBarcodePNG, renderMatrixPNG } from "./renderers/png/rasterize";
+export type { RasterData } from "./renderers/png/rasterize";
+export { encodePNG } from "./renderers/png/png-encoder";
 
 // --- Renderers ---
 export { renderBarcodeSVG } from "./renderers/svg/barcode";
