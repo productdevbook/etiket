@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  renderBarcodeRaster,
-  renderMatrixRaster,
-} from "../src/renderers/png/rasterize";
+import { renderBarcodeRaster, renderMatrixRaster } from "../src/renderers/png/rasterize";
 import type { RasterData } from "../src/renderers/png/rasterize";
 
 describe("renderBarcodeRaster", () => {

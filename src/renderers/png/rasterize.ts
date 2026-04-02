@@ -21,15 +21,8 @@ export interface RasterData {
 /**
  * Rasterize a 1D barcode bar pattern to raw pixel rows
  */
-export function renderBarcodeRaster(
-  bars: number[],
-  options: BarcodePNGOptions = {},
-): RasterData {
-  const {
-    scale = 2,
-    height = 80,
-    margin = 10,
-  } = options;
+export function renderBarcodeRaster(bars: number[], options: BarcodePNGOptions = {}): RasterData {
+  const { scale = 2, height = 80, margin = 10 } = options;
 
   let totalBarWidth = 0;
   for (let i = 0; i < bars.length; i++) {
