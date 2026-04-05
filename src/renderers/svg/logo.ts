@@ -83,18 +83,19 @@ export function calculateLogoPlacement(
     const icoMatch = options.imageUrl.match(
       /^data:image\/(x-icon|vnd\.microsoft\.icon);base64,(.+)$/i,
     );
+    let imageUrl = options.imageUrl;
     if (icoMatch) {
       const binary = atob(icoMatch[2]!);
       const bytes = new Uint8Array(binary.length);
       for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-      options = { ...options, imageUrl: icoToPngDataURI(bytes) };
+      imageUrl = icoToPngDataURI(bytes);
     }
     const imgW = options.imageWidth ?? logoPixelSize;
     const imgH = options.imageHeight ?? logoPixelSize;
     // Center the image within the logo area
     const imgX = logoX + (logoPixelSize - imgW) / 2;
     const imgY = logoY + (logoPixelSize - imgH) / 2;
-    svg += `<image href="${escapeAttr(options.imageUrl)}" x="${imgX}" y="${imgY}" width="${imgW}" height="${imgH}"/>`;
+    svg += `<image href="${escapeAttr(imageUrl)}" x="${imgX}" y="${imgY}" width="${imgW}" height="${imgH}"/>`;
   }
 
   return { svg, hiddenModules };
