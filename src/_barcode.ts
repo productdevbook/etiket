@@ -20,11 +20,16 @@ import { encodePharmacode } from "./encoders/pharmacode";
 import { encodeCode11 } from "./encoders/code11";
 import { encodeGS1128 } from "./encoders/gs1-128";
 import { encodeIdentcode, encodeLeitcode } from "./encoders/deutsche-post";
-import { encodePOSTNET, encodePLANET } from "./encoders/postnet";
 import { encodePlessey } from "./encoders/plessey";
 import { renderBarcodeSVG } from "./renderers/svg/barcode";
+import { renderPostalSVG } from "./renderers/svg/postal";
 import { svgToDataURI, svgToBase64 } from "./renderers/data-uri";
+import { encodePostal } from "./_postal";
+import { InvalidInputError } from "./errors";
 import type { BarcodeEncodingOptions, BarcodeOptions } from "./_types";
+
+/** Types whose data lives in bar height rather than bar width. */
+const POSTAL_TYPES = new Set<string>(["postnet", "planet"]);
 
 /**
  * Encode barcode text to bar width pattern
@@ -80,26 +85,13 @@ export function encodeBars(text: string, options: BarcodeEncodingOptions = {}): 
       return encodeIdentcode(text);
     case "leitcode":
       return encodeLeitcode(text);
-    case "postnet": {
-      const heights = encodePOSTNET(text);
-      const bars: number[] = [];
-      for (const _h of heights) {
-        bars.push(1);
-        bars.push(1);
-      }
-      bars.pop();
-      return bars;
-    }
-    case "planet": {
-      const heights = encodePLANET(text);
-      const bars: number[] = [];
-      for (const _h of heights) {
-        bars.push(1);
-        bars.push(1);
-      }
-      bars.pop();
-      return bars;
-    }
+    case "postnet":
+    case "planet":
+      // POSTNET/PLANET encode data in bar *height*, not bar width, so they have
+      // no meaningful bar-width pattern. Use encodePostal()/postal() instead.
+      throw new InvalidInputError(
+        `${type} is a height-modulated postal symbology — use encodePostal()/postal() instead of encodeBars()`,
+      );
     case "plessey":
       return encodePlessey(text);
     case "gs1-databar":
@@ -126,6 +118,18 @@ export function barcode(text: string, options: BarcodeOptions = {}): string {
     code128Charset: _c128,
     ...svgOptions
   } = options;
+
+  // POSTNET/PLANET are height-modulated: render them with the postal renderer
+  // so the tall/short distinction that carries the data is preserved.
+  if (options.type && POSTAL_TYPES.has(options.type)) {
+    const postalBars = encodePostal(text, { type: options.type as "postnet" | "planet" });
+    return renderPostalSVG(postalBars, {
+      ...svgOptions,
+      text: svgOptions.showText !== false ? (svgOptions.text ?? text) : undefined,
+      showText: svgOptions.showText ?? false,
+    });
+  }
+
   const bars = encodeBars(text, options);
 
   return renderBarcodeSVG(bars, {

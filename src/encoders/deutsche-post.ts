@@ -9,7 +9,7 @@ import { encodeITF } from "./itf";
 /**
  * Calculate Deutsche Post check digit (mod 10, weights 4 and 9 alternating)
  */
-function dpCheckDigit(digits: string): number {
+export function dpCheckDigit(digits: string): number {
   let sum = 0;
   for (let i = 0; i < digits.length; i++) {
     const weight = i % 2 === 0 ? 4 : 9;

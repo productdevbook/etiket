@@ -3,7 +3,7 @@
  */
 
 import type { BarcodeSVGOptions } from "./types";
-import { escapeAttr } from "./utils";
+import { escapeAttr, escapeXml } from "./utils";
 
 /**
  * Render 1D barcode bars as SVG string
@@ -160,12 +160,4 @@ export function renderBarcodeSVG(bars: number[], options: BarcodeSVGOptions = {}
 
   parts.push("</svg>");
   return parts.join("");
-}
-
-function escapeXml(str: string): string {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
 }

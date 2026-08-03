@@ -25,7 +25,7 @@ const POSTNET_PATTERNS: number[][] = [
 ];
 
 /** Calculate POSTNET/PLANET check digit (sum of digits mod 10, then 10 - remainder) */
-function checkDigit(digits: string): number {
+export function postnetCheckDigit(digits: string): number {
   let sum = 0;
   for (const ch of digits) {
     sum += Number.parseInt(ch, 10);
@@ -52,7 +52,7 @@ export function encodePOSTNET(zip: string): number[] {
     throw new InvalidInputError("POSTNET requires 5, 9, or 11 digits");
   }
 
-  const check = checkDigit(digits);
+  const check = postnetCheckDigit(digits);
   const allDigits = digits + check;
 
   const bars: number[] = [1]; // Start frame bar (tall)
@@ -81,7 +81,7 @@ export function encodePLANET(code: string): number[] {
     throw new InvalidInputError("PLANET requires 11 or 13 digits");
   }
 
-  const check = checkDigit(digits);
+  const check = postnetCheckDigit(digits);
   const allDigits = digits + check;
 
   const bars: number[] = [1]; // Start frame bar
