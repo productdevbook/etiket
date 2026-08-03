@@ -13,7 +13,23 @@
 // --- High-level API ---
 export { barcode, barcodeDataURI, barcodeBase64, encodeBars } from "./_barcode";
 export { qrcode, qrcodeTerminal, qrcodeDataURI, qrcodeBase64 } from "./_qrcode";
-export { datamatrix, gs1datamatrix, pdf417, aztec } from "./_2d";
+export {
+  datamatrix,
+  gs1datamatrix,
+  pdf417,
+  aztec,
+  microqr,
+  rmqr,
+  maxicode,
+  dotcode,
+  hanxin,
+  micropdf417,
+  codablockf,
+  code16k,
+  jabcode,
+} from "./_2d";
+export { postal, postalDataURI, postalBase64, encodePostal } from "./_postal";
+export type { PostalType, PostalEncodingOptions, PostalOptions } from "./_postal";
 export { encode } from "./_encode";
 export {
   wifi,
@@ -39,6 +55,7 @@ export type {
   EncodeResult,
   Encode1DResult,
   Encode2DResult,
+  EncodePostalResult,
 } from "./_types";
 export type { BarcodeSVGOptions, QRCodeSVGOptions } from "./renderers/svg/types";
 export type { QRCodeOptions } from "./encoders/qr/types";
@@ -131,13 +148,35 @@ export {
   pdf417PNGDataURI,
   aztecPNG,
   aztecPNGDataURI,
+  postalPNG,
+  postalPNGDataURI,
+  microqrPNG,
+  microqrPNGDataURI,
+  rmqrPNG,
+  rmqrPNGDataURI,
+  hanxinPNG,
+  hanxinPNGDataURI,
+  dotcodePNG,
+  dotcodePNGDataURI,
+  micropdf417PNG,
+  micropdf417PNGDataURI,
+  codablockfPNG,
+  codablockfPNGDataURI,
+  code16kPNG,
+  code16kPNGDataURI,
+  maxicodePNG,
+  maxicodePNGDataURI,
 } from "./_png";
-export type { BarcodePNGOptions, MatrixPNGOptions } from "./renderers/png/types";
+export type { BarcodePNGOptions, MatrixPNGOptions, PostalPNGOptions } from "./renderers/png/types";
 export {
   renderBarcodeRaster,
   renderMatrixRaster,
+  renderPostalRaster,
   renderBarcodePNG,
   renderMatrixPNG,
+  renderPostalPNG,
+  renderMaxiCodeRaster,
+  renderMaxiCodePNG,
 } from "./renderers/png/rasterize";
 export type { RasterData } from "./renderers/png/rasterize";
 export { encodePNG } from "./renderers/png/png-encoder";
@@ -147,6 +186,10 @@ export { renderBarcodeSVG } from "./renderers/svg/barcode";
 export { renderQRCodeSVG } from "./renderers/svg/qr";
 export { renderMatrixSVG, renderMaxiCodeSVG } from "./renderers/svg/matrix";
 export type { MatrixSVGOptions } from "./renderers/svg/matrix";
+export { renderPostalSVG } from "./renderers/svg/postal";
+export type { PostalSVGOptions, PostalBar } from "./renderers/svg/postal";
+export { renderColorMatrixSVG } from "./renderers/svg/color-matrix";
+export type { ColorMatrixSVGOptions } from "./renderers/svg/color-matrix";
 export { renderText } from "./renderers/text";
 export { svgToDataURI, svgToBase64, svgToBase64Raw } from "./renderers/data-uri";
 export { optimizeSVG } from "./renderers/svg/optimize";

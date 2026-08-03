@@ -77,6 +77,10 @@
       "types": "./dist/aztec.d.mts",
       "default": "./dist/aztec.mjs"
     },
+    "./postal": {
+      "types": "./dist/postal.d.mts",
+      "default": "./dist/postal.mjs"
+    },
     "./png": {
       "types": "./dist/png.d.mts",
       "default": "./dist/png.mjs"
