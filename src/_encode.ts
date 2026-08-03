@@ -2,132 +2,89 @@
  * Unified encode() function — raw encoding without SVG rendering
  */
 
-import { encodeCode128 } from "./encoders/code128";
-import { encodeEAN13, encodeEAN8 } from "./encoders/ean";
+import { encodeBars } from "./_barcode";
+import { encodePostal } from "./_postal";
 import { encodeQR } from "./encoders/qr/index";
-import { encodeCode39, encodeCode39Extended } from "./encoders/code39";
-import { encodeCode93, encodeCode93Extended } from "./encoders/code93";
-import { encodeITF, encodeITF14 } from "./encoders/itf";
-import { encodeUPCA, encodeUPCE } from "./encoders/upc";
-import { encodeEAN2, encodeEAN5 } from "./encoders/ean-addon";
-import { encodeCodabar } from "./encoders/codabar";
-import { encodeMSI } from "./encoders/msi";
-import { encodePharmacode } from "./encoders/pharmacode";
-import { encodeCode11 } from "./encoders/code11";
-import { encodeGS1128 } from "./encoders/gs1-128";
-import { encodeIdentcode, encodeLeitcode } from "./encoders/deutsche-post";
-import {
-  encodeGS1DataBarOmni,
-  encodeGS1DataBarLimited,
-  encodeGS1DataBarExpanded,
-} from "./encoders/gs1-databar";
-import { encodePOSTNET, encodePLANET } from "./encoders/postnet";
-import { encodePlessey } from "./encoders/plessey";
-import { encodeDataMatrix } from "./encoders/datamatrix/index";
+import { encodeMicroQR } from "./encoders/qr/micro";
+import { encodeRMQR } from "./encoders/rmqr";
+import { encodeDataMatrix, encodeGS1DataMatrix } from "./encoders/datamatrix/index";
 import { encodePDF417 } from "./encoders/pdf417/index";
+import { encodeMicroPDF417 } from "./encoders/micropdf417";
 import { encodeAztec } from "./encoders/aztec/index";
-import type { EncodeOptions, EncodeResult } from "./_types";
+import { encodeMaxiCode } from "./encoders/maxicode";
+import { encodeDotCode } from "./encoders/dotcode";
+import { encodeHanXin } from "./encoders/hanxin";
+import { encodeCodablockF } from "./encoders/codablock-f";
+import { encodeCode16K } from "./encoders/code16k";
+import type { BarcodeType, EncodeOptions, EncodeResult, EncodeType } from "./_types";
+import type { PostalType } from "./_postal";
+
+const POSTAL_TYPES = new Set<EncodeType>([
+  "postnet",
+  "planet",
+  "rm4scc",
+  "kix",
+  "auspost",
+  "jppost",
+  "imb",
+]);
 
 /**
- * Encode data without rendering — returns raw bars or matrix
+ * Encode data without rendering — returns raw bars, a matrix, or postal bar
+ * states depending on the symbology family.
+ *
+ * The `type` field on the result discriminates the three families:
+ * - `"1d"` — `bars` holds alternating bar/space widths in modules
+ * - `"2d"` — `matrix` holds the module grid
+ * - `"postal"` — `bars` holds 4-state letters or POSTNET/PLANET height flags
  */
 export function encode(text: string, options: EncodeOptions = {}): EncodeResult {
-  const { type = "code128", msiCheckDigit, code128Charset } = options;
+  const { type = "code128" } = options;
 
   // 2D codes
   switch (type) {
     case "qr":
-      return { type: "2d", matrix: encodeQR(text) };
+      return { type: "2d", matrix: encodeQR(text, options.qr) };
+    case "microqr":
+      return { type: "2d", matrix: encodeMicroQR(text, options.microqr) };
+    case "rmqr":
+      return { type: "2d", matrix: encodeRMQR(text, options.rmqr) };
     case "datamatrix":
       return { type: "2d", matrix: encodeDataMatrix(text) };
+    case "gs1-datamatrix":
+      return { type: "2d", matrix: encodeGS1DataMatrix(text) };
     case "pdf417":
-      return { type: "2d", matrix: encodePDF417(text).matrix };
+      return { type: "2d", matrix: encodePDF417(text, options.pdf417).matrix };
+    case "micropdf417":
+      return { type: "2d", matrix: encodeMicroPDF417(text, options.micropdf417).matrix };
     case "aztec":
-      return { type: "2d", matrix: encodeAztec(text) };
+      return { type: "2d", matrix: encodeAztec(text, options.aztec) };
+    case "maxicode":
+      return { type: "2d", matrix: encodeMaxiCode(text, options.maxicode) };
+    case "dotcode":
+      return { type: "2d", matrix: encodeDotCode(text) };
+    case "hanxin":
+      return { type: "2d", matrix: encodeHanXin(text, options.hanxin) };
+    case "codablock-f":
+      return { type: "2d", matrix: encodeCodablockF(text, options.codablockf).matrix };
+    case "code16k":
+      return { type: "2d", matrix: encodeCode16K(text).matrix };
   }
 
-  // 1D codes
-  let bars: number[];
-  switch (type) {
-    case "code128":
-      bars = encodeCode128(text, code128Charset ? { charset: code128Charset } : undefined);
-      break;
-    case "ean13":
-      bars = encodeEAN13(text).bars;
-      break;
-    case "ean8":
-      bars = encodeEAN8(text).bars;
-      break;
-    case "code39":
-      bars = encodeCode39(text);
-      break;
-    case "code39ext":
-      bars = encodeCode39Extended(text);
-      break;
-    case "code93":
-      bars = encodeCode93(text);
-      break;
-    case "code93ext":
-      bars = encodeCode93Extended(text);
-      break;
-    case "itf":
-      bars = encodeITF(text);
-      break;
-    case "itf14":
-      bars = encodeITF14(text);
-      break;
-    case "upca":
-      bars = encodeUPCA(text).bars;
-      break;
-    case "upce":
-      bars = encodeUPCE(text).bars;
-      break;
-    case "ean2":
-      bars = encodeEAN2(text);
-      break;
-    case "ean5":
-      bars = encodeEAN5(text);
-      break;
-    case "codabar":
-      bars = encodeCodabar(text);
-      break;
-    case "msi":
-      bars = encodeMSI(text, { checkDigit: msiCheckDigit });
-      break;
-    case "pharmacode":
-      bars = encodePharmacode(Number(text));
-      break;
-    case "code11":
-      bars = encodeCode11(text);
-      break;
-    case "gs1-128":
-      bars = encodeGS1128(text);
-      break;
-    case "identcode":
-      bars = encodeIdentcode(text);
-      break;
-    case "gs1-databar":
-      bars = encodeGS1DataBarOmni(text);
-      break;
-    case "gs1-databar-limited":
-      bars = encodeGS1DataBarLimited(text);
-      break;
-    case "gs1-databar-expanded":
-      bars = encodeGS1DataBarExpanded(text);
-      break;
-    case "leitcode":
-      bars = encodeLeitcode(text);
-      break;
-    case "postnet":
-      return { type: "1d", bars: encodePOSTNET(text) };
-    case "planet":
-      return { type: "1d", bars: encodePLANET(text) };
-    case "plessey":
-      bars = encodePlessey(text);
-      break;
-    default:
-      throw new Error(`Unsupported encode type: ${type}`);
+  // Height-modulated postal codes
+  if (POSTAL_TYPES.has(type)) {
+    return {
+      type: "postal",
+      bars: encodePostal(text, {
+        type: type as PostalType,
+        fcc: options.fcc,
+        routingCode: options.routingCode,
+      }),
+    };
   }
 
-  return { type: "1d", bars };
+  // 1D codes — share the dispatch used by barcode() so the two cannot diverge.
+  // Every 2D and postal type has been handled above, so what remains is a
+  // BarcodeType (or an unknown value, which encodeBars() rejects).
+  return { type: "1d", bars: encodeBars(text, { ...options, type: type as BarcodeType }) };
 }
