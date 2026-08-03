@@ -280,7 +280,9 @@ function emitBinaryShift(
   let pos = start;
 
   while (remaining > 0) {
-    const chunk = Math.min(remaining, 62);
+    // A binary shift run carries at most 2078 bytes: 31 encodable in the
+    // 5-bit length field, or 31 + 2047 via the extended 11-bit field.
+    const chunk = Math.min(remaining, 2078);
 
     // Emit binary shift intro code
     const bs = BINARY_SHIFT[currentMode];
@@ -292,13 +294,13 @@ function emitBinaryShift(
       pushBits(bits, 15, 4);
     }
 
-    // Emit length
+    // Emit length: 1-31 fits the 5-bit field directly; longer runs signal 0
+    // there and carry (length - 31) in a further 11 bits (ISO/IEC 24778).
     if (chunk <= 31) {
       pushBits(bits, chunk, 5);
     } else {
-      // Length 32-62: encode as 0 in 5 bits, then (chunk - 31) in 6 bits
       pushBits(bits, 0, 5);
-      pushBits(bits, chunk - 31, 6);
+      pushBits(bits, chunk - 31, 11);
     }
 
     // Emit raw bytes
@@ -393,7 +395,7 @@ function pushBitsFromValue(result: number[], value: number, wordSize: number): v
  * @returns Array of totalWords codewords, with data in first positions
  */
 export function bitsToWords(stuffedBits: number[], wordSize: number, totalWords: number): number[] {
-  const message = new Array<number>(totalWords).fill(0);
+  const message = Array.from<number>({ length: totalWords }).fill(0);
   const n = Math.floor(stuffedBits.length / wordSize);
   for (let i = 0; i < n; i++) {
     let value = 0;

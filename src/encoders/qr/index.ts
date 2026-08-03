@@ -8,6 +8,7 @@ import { encodeData } from "./data";
 import { createMatrix, placeFunctionPatterns, placeData } from "./matrix";
 import { selectBestMask, applyMask } from "./mask";
 import { writeFormatInfo, writeVersionInfo } from "./format";
+import { InvalidInputError } from "../../errors";
 
 export type { QRCodeOptions, ErrorCorrectionLevel, EncodingMode, QRSegment } from "./types";
 
@@ -16,6 +17,9 @@ export type { QRCodeOptions, ErrorCorrectionLevel, EncodingMode, QRSegment } fro
  * Returns a 2D boolean array (true = dark module)
  */
 export function encodeQR(text: string, options: QRCodeOptions = {}): boolean[][] {
+  if (text.length === 0) {
+    throw new InvalidInputError("QR Code input must not be empty");
+  }
   const { version, ecLevel, bits } = encodeData(text, options);
   const size = version * 4 + 17;
 

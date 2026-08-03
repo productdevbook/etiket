@@ -144,16 +144,16 @@ function encodeC40Text(
   // Track which source character index each value came from
   const valueCharIndex: number[] = [];
 
+  // Index of the first character that cannot be represented in C40/Text and
+  // must therefore be encoded in ASCII, or text.length when there is none.
+  let fallbackFrom = text.length;
+
   for (let i = 0; i < text.length; i++) {
     const ch = text.charCodeAt(i);
     const { set, value } = valueFn(ch);
     if (set === -1) {
-      // Fall back to ASCII for this character — unlatch
-      // For simplicity, encode rest as ASCII
-      codewords.push(254); // Unlatch to ASCII
-      const remaining = text.substring(i);
-      codewords.push(...encodeASCII(remaining));
-      return codewords;
+      fallbackFrom = i;
+      break;
     }
     if (set > 0) {
       values.push(set - 1); // Shift indicator (0=shift1, 1=shift2, 2=shift3)
@@ -175,22 +175,18 @@ function encodeC40Text(
     i += 3;
   }
 
-  // Handle remaining 1 or 2 values — unlatch to ASCII and encode remaining chars
-  if (i < values.length) {
-    codewords.push(254); // Unlatch to ASCII
-    // Find the first source character that wasn't fully packed in a triplet
-    const firstUnpackedCharIdx = valueCharIndex[i]!;
-    const remaining = text.substring(firstUnpackedCharIdx);
-    codewords.push(...encodeASCII(remaining));
-  } else {
-    // All values packed into complete triplets — still need to unlatch
-    // so that padding codewords are interpreted in ASCII mode.
-    // Per ISO 16022, if the C40/Text encoded data fills the symbol
-    // exactly (no padding needed), the implicit end-of-symbol acts
-    // as unlatch. But we can't know the symbol size here, so we
-    // always add the unlatch. The auto-encoder will skip C40/Text
-    // if the unlatch makes it longer than ASCII.
-    codewords.push(254); // Unlatch to ASCII
+  // Unlatch, then encode in ASCII everything the triplets did not cover: any
+  // 1-2 leftover values plus the non-encodable tail. Taking the earliest of the
+  // two start points ensures no character is dropped.
+  //
+  // The unlatch is emitted even when nothing follows, so that padding codewords
+  // are interpreted in ASCII mode. Per ISO 16022 an exact fit makes the unlatch
+  // redundant, but the symbol size is not known here; encodeAuto() discards
+  // C40/Text whenever the extra codeword makes it longer than plain ASCII.
+  const asciiFrom = i < values.length ? valueCharIndex[i]! : fallbackFrom;
+  codewords.push(254); // Unlatch to ASCII
+  if (asciiFrom < text.length) {
+    codewords.push(...encodeASCII(text.substring(asciiFrom)));
   }
 
   return codewords;

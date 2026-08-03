@@ -168,7 +168,12 @@ export function encodeHanXin(text: string, options: HanXinOptions = {}): boolean
   }
 
   const ecLevel = options.ecLevel ?? 1;
-  const ecRatio = [0, 0.08, 0.15, 0.23, 0.3][ecLevel]!;
+  const ecRatio = [0, 0.08, 0.15, 0.23, 0.3][ecLevel];
+  if (ecRatio === undefined) {
+    // Without this guard an out-of-range level yields NaN capacities and
+    // surfaces as a misleading "data too long" error.
+    throw new InvalidInputError(`Han Xin EC level must be 1, 2, 3 or 4 (got ${String(ecLevel)})`);
+  }
 
   // Build data bits with Han Xin mode indicators
   const bits: number[] = [];
@@ -210,7 +215,7 @@ export function encodeHanXin(text: string, options: HanXinOptions = {}): boolean
   const dataBitCount = bits.length;
   let version = options.version ?? 0;
 
-  if (!options.version) {
+  if (options.version === undefined) {
     for (let v = 1; v <= 84; v++) {
       const dataCap = hanxinDataCapacity(v, ecRatio);
       const neededBytes = Math.ceil(dataBitCount / 8);
@@ -222,6 +227,8 @@ export function encodeHanXin(text: string, options: HanXinOptions = {}): boolean
     if (version === 0) {
       throw new CapacityError("Data too long for any Han Xin Code version");
     }
+  } else if (!Number.isInteger(version) || version < 1 || version > 84) {
+    throw new InvalidInputError(`Han Xin version must be an integer 1-84 (got ${String(version)})`);
   }
 
   const size = hanxinSize(version);
@@ -380,12 +387,6 @@ export function encodeHanXin(text: string, options: HanXinOptions = {}): boolean
   }
 
   return matrix.map((row) => row.map((cell) => cell === true));
-}
-
-function setSafeNull(matrix: (boolean | null)[][], r: number, c: number, size: number): void {
-  if (r >= 0 && r < size && c >= 0 && c < size && matrix[r]![c] === null) {
-    matrix[r]![c] = false;
-  }
 }
 
 function placeFinderHX(
