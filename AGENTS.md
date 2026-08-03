@@ -118,7 +118,7 @@ pnpm lint           # oxlint + oxfmt --check
 pnpm lint:fix       # oxlint --fix + oxfmt
 pnpm fmt            # oxfmt
 pnpm test           # pnpm lint && pnpm typecheck && vitest run
-pnpm typecheck      # tsgo --noEmit
+pnpm typecheck      # tsc --noEmit
 pnpm release        # pnpm test && pnpm build && changelogen --release && npm publish && git push --follow-tags
 pnpm docs:dev       # npx mdzilla ./docs
 ```
@@ -127,7 +127,7 @@ pnpm docs:dev       # npx mdzilla ./docs
 
 - **Pure ESM** — no CJS
 - **Zero runtime dependencies** — CLI deps (citty, consola) are bundled
-- **TypeScript strict** — tsgo for typecheck
+- **TypeScript strict** — TypeScript 7 (`tsc`) for typecheck
 - **Formatter:** oxfmt (double quotes, semicolons)
 - **Linter:** oxlint (unicorn, typescript, oxc plugins)
 - **Tests:** vitest in `test/` directory, flat naming

@@ -89,26 +89,26 @@
     "lint:fix": "oxlint . --fix && oxfmt .",
     "fmt": "oxfmt .",
     "test": "pnpm lint && pnpm typecheck && vitest run",
-    "typecheck": "tsgo --noEmit",
+    "typecheck": "tsc --noEmit",
     "docs:dev": "npx mdzilla ./docs",
     "release": "pnpm test && pnpm build && bumpp --commit --tag --push --all",
     "prepack": "pnpm build"
   },
   "devDependencies": {
-    "@typescript/native-preview": "7.0.0-dev.20260316.1",
-    "@vitest/coverage-v8": "^4.1.2",
-    "bumpp": "^11.0.1",
-    "bwip-js": "^4.8.0",
-    "citty": "^0.2.1",
+    "@vitest/coverage-v8": "^4.1.10",
+    "bumpp": "^12.1.1",
+    "bwip-js": "^4.11.2",
+    "citty": "^0.2.2",
     "consola": "^3.4.2",
     "jsqr": "^1.4.0",
-    "obuild": "^0.4.32",
-    "oxfmt": "^0.42.0",
-    "oxlint": "^1.57.0",
+    "obuild": "^0.4.38",
+    "oxfmt": "^0.61.0",
+    "oxlint": "^1.76.0",
     "rmqr": "^0.3.0",
-    "typescript": "^6.0.2",
-    "vitest": "^4.1.2",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10",
     "zbar.wasm": "^2.1.1",
-    "zxing-wasm": "^3.0.1"
-  }
+    "zxing-wasm": "^3.1.2"
+  },
+  "packageManager": "pnpm@11.20.0"
 }

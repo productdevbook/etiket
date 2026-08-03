@@ -524,7 +524,7 @@ const svg = qrcode("https://example.com", { dotType: "dots", ecLevel: "H" });
 
 - Zero dependencies
 - Pure ESM, edge-runtime compatible (Cloudflare Workers, Deno, Bun)
-- TypeScript-first with strict types (tsgo)
+- TypeScript-first with strict types (TypeScript 7)
 - Tree-shakeable sub-path exports
 - CLI tool (`npx etiket`)
 - SVG string output (no DOM required) + `optimizeSVG()` for compact inline
