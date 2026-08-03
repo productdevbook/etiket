@@ -1,8 +1,12 @@
 /**
  * Barcode input validation utilities
+ *
+ * Check-digit helpers are imported from the encoders rather than reimplemented
+ * so validation and encoding can never disagree.
  */
 
-// import { InvalidInputError, CheckDigitError } from "../errors";
+import { dpCheckDigit } from "../encoders/deutsche-post";
+import { postnetCheckDigit } from "../encoders/postnet";
 
 /** Validate and calculate EAN/UPC check digit (modulo 10 weighted) */
 export function calculateEANCheckDigit(digits: number[]): number {
@@ -167,6 +171,127 @@ export function validateBarcode(text: string, type: string): { valid: boolean; e
       return { valid: true };
     }
 
+    case "identcode": {
+      const digits = text.replace(/\D/g, "");
+      if (digits.length !== 11 && digits.length !== 12) {
+        return { valid: false, error: "Identcode requires 11 or 12 digits" };
+      }
+      return { valid: true };
+    }
+
+    case "leitcode": {
+      const digits = text.replace(/\D/g, "");
+      if (digits.length !== 13 && digits.length !== 14) {
+        return { valid: false, error: "Leitcode requires 13 or 14 digits" };
+      }
+      return { valid: true };
+    }
+
+    case "postnet": {
+      const digits = text.replace(/[\s-]/g, "");
+      if (!/^\d+$/.test(digits)) {
+        return { valid: false, error: "POSTNET only accepts digits" };
+      }
+      if (digits.length !== 5 && digits.length !== 9 && digits.length !== 11) {
+        return { valid: false, error: "POSTNET requires 5, 9, or 11 digits" };
+      }
+      return { valid: true };
+    }
+
+    case "planet": {
+      const digits = text.replace(/[\s-]/g, "");
+      if (!/^\d+$/.test(digits)) {
+        return { valid: false, error: "PLANET only accepts digits" };
+      }
+      if (digits.length !== 11 && digits.length !== 13) {
+        return { valid: false, error: "PLANET requires 11 or 13 digits" };
+      }
+      return { valid: true };
+    }
+
+    case "plessey": {
+      if (!/^[0-9A-Fa-f]*$/.test(text)) {
+        return { valid: false, error: "Plessey only accepts hexadecimal digits (0-9, A-F)" };
+      }
+      if (text.length === 0) {
+        return { valid: false, error: "Plessey text cannot be empty" };
+      }
+      return { valid: true };
+    }
+
+    case "rm4scc":
+    case "kix": {
+      const upper = text.toUpperCase().replace(/\s/g, "");
+      if (!/^[0-9A-Z]+$/.test(upper)) {
+        return { valid: false, error: `${type} only accepts A-Z and 0-9` };
+      }
+      return { valid: true };
+    }
+
+    case "auspost": {
+      if (!/^\d{8}$/.test(text.replace(/\s/g, ""))) {
+        return { valid: false, error: "Australia Post requires an 8-digit DPID" };
+      }
+      return { valid: true };
+    }
+
+    case "jppost": {
+      const zip = text.replace(/-/g, "");
+      if (!/^\d{7}/.test(zip)) {
+        return { valid: false, error: "Japan Post requires a 7-digit postal code" };
+      }
+      return { valid: true };
+    }
+
+    case "imb": {
+      const digits = text.replace(/[\s-]/g, "");
+      if (!/^\d{20}$/.test(digits)) {
+        return { valid: false, error: "IMb requires a 20-digit tracking code" };
+      }
+      return { valid: true };
+    }
+
+    case "gs1-databar":
+    case "gs1-databar-limited": {
+      const digits = text.replace(/\D/g, "");
+      if (digits.length < 1 || digits.length > 14) {
+        return { valid: false, error: `${type} requires up to 14 digits` };
+      }
+      if (type === "gs1-databar-limited" && digits.length === 14 && !/^[01]/.test(digits)) {
+        return {
+          valid: false,
+          error: "GS1 DataBar Limited requires an indicator digit of 0 or 1",
+        };
+      }
+      return { valid: true };
+    }
+
+    case "gs1-databar-expanded": {
+      if (text.length === 0) {
+        return { valid: false, error: "GS1 DataBar Expanded text cannot be empty" };
+      }
+      return { valid: true };
+    }
+
+    case "qr":
+    case "datamatrix":
+    case "gs1-datamatrix":
+    case "pdf417":
+    case "micropdf417":
+    case "aztec":
+    case "microqr":
+    case "rmqr":
+    case "maxicode":
+    case "dotcode":
+    case "hanxin":
+    case "codablock-f":
+    case "code16k": {
+      if (text.length === 0) {
+        return { valid: false, error: `${type} input must not be empty` };
+      }
+      return { valid: true };
+    }
+
     default:
       return { valid: true };
   }
@@ -242,6 +367,30 @@ export function validateBarcodeInput(
       const dataDigits = digits.slice(0, 13);
       const checkDigit = calculateITF14CheckDigit(dataDigits);
       return { valid: true, checkDigit };
+    }
+
+    case "upce": {
+      // UPC-E check digits are defined on the expanded UPC-A form
+      const digits = text.replace(/\D/g, "");
+      const dataDigits = digits.slice(0, 6).split("").map(Number);
+      if (dataDigits.length < 6) return { valid: true };
+      return { valid: true, checkDigit: calculateUPCACheckDigit(dataDigits) };
+    }
+
+    case "identcode": {
+      const digits = text.replace(/\D/g, "").slice(0, 11);
+      return { valid: true, checkDigit: dpCheckDigit(digits) };
+    }
+
+    case "leitcode": {
+      const digits = text.replace(/\D/g, "").slice(0, 13);
+      return { valid: true, checkDigit: dpCheckDigit(digits) };
+    }
+
+    case "postnet":
+    case "planet": {
+      const digits = text.replace(/[\s-]/g, "");
+      return { valid: true, checkDigit: postnetCheckDigit(digits) };
     }
 
     default:
