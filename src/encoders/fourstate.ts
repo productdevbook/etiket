@@ -9,10 +9,10 @@
  * - Full (F): extends both above and below
  */
 
-import { InvalidInputError } from "../errors";
+import { InvalidInputError } from "../errors"
 
 /** Bar state in a 4-state barcode */
-export type FourState = "T" | "A" | "D" | "F";
+export type FourState = "T" | "A" | "D" | "F"
 
 // RM4SCC encoding derived from 6x6 row/col matrix per Royal Mail specification
 // Characters 0-9, A-Z are assigned sequential indices 0-35 in a 6x6 grid.
@@ -27,37 +27,37 @@ const ROW_COL_BARS: FourState[][] = [
   ["A", "T"], // 3
   ["A", "F"], // 4
   ["F", "T"], // 5
-];
+]
 
-const RM4SCC_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const RM4SCC_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 function rm4sccEncode(ch: string): FourState[] {
-  const idx = RM4SCC_CHARS.indexOf(ch);
-  if (idx === -1) throw new InvalidInputError(`Invalid RM4SCC character: ${ch}`);
-  const row = Math.floor(idx / 6);
-  const col = idx % 6;
-  return [...ROW_COL_BARS[row]!, ...ROW_COL_BARS[col]!];
+  const idx = RM4SCC_CHARS.indexOf(ch)
+  if (idx === -1) throw new InvalidInputError(`Invalid RM4SCC character: ${ch}`)
+  const row = Math.floor(idx / 6)
+  const col = idx % 6
+  return [...ROW_COL_BARS[row]!, ...ROW_COL_BARS[col]!]
 }
 
 // Build lookup table for fast access
-const RM4SCC_TABLE: Record<string, FourState[]> = {};
+const RM4SCC_TABLE: Record<string, FourState[]> = {}
 for (const ch of RM4SCC_CHARS) {
-  RM4SCC_TABLE[ch] = rm4sccEncode(ch);
+  RM4SCC_TABLE[ch] = rm4sccEncode(ch)
 }
 
 /** Calculate RM4SCC check digit (modulo 6 row+col system) */
 function rm4sccCheckDigit(text: string): string {
-  let rowSum = 0;
-  let colSum = 0;
-  const chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  let rowSum = 0
+  let colSum = 0
+  const chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
   for (const ch of text.toUpperCase()) {
-    const idx = chars.indexOf(ch);
-    if (idx === -1) continue;
-    rowSum += Math.floor(idx / 6);
-    colSum += idx % 6;
+    const idx = chars.indexOf(ch)
+    if (idx === -1) continue
+    rowSum += Math.floor(idx / 6)
+    colSum += idx % 6
   }
-  const checkIdx = (rowSum % 6) * 6 + (colSum % 6);
-  return chars[checkIdx]!;
+  const checkIdx = (rowSum % 6) * 6 + (colSum % 6)
+  return chars[checkIdx]!
 }
 
 /**
@@ -68,25 +68,25 @@ function rm4sccCheckDigit(text: string): string {
  * @returns Array of FourState values
  */
 export function encodeRM4SCC(text: string): FourState[] {
-  const upper = text.toUpperCase().replace(/\s/g, "");
+  const upper = text.toUpperCase().replace(/\s/g, "")
   if (!/^[0-9A-Z]+$/.test(upper)) {
-    throw new InvalidInputError("RM4SCC only accepts A-Z and 0-9");
+    throw new InvalidInputError("RM4SCC only accepts A-Z and 0-9")
   }
 
-  const check = rm4sccCheckDigit(upper);
-  const dataWithCheck = upper + check;
+  const check = rm4sccCheckDigit(upper)
+  const dataWithCheck = upper + check
 
-  const bars: FourState[] = ["A"]; // Start: ascender
+  const bars: FourState[] = ["A"] // Start: ascender
 
   for (const ch of dataWithCheck) {
-    const pattern = RM4SCC_TABLE[ch];
-    if (!pattern) throw new InvalidInputError(`Invalid RM4SCC character: ${ch}`);
-    bars.push(...pattern);
+    const pattern = RM4SCC_TABLE[ch]
+    if (!pattern) throw new InvalidInputError(`Invalid RM4SCC character: ${ch}`)
+    bars.push(...pattern)
   }
 
-  bars.push("F"); // Stop: full bar
+  bars.push("F") // Stop: full bar
 
-  return bars;
+  return bars
 }
 
 /**
@@ -97,20 +97,20 @@ export function encodeRM4SCC(text: string): FourState[] {
  * @returns Array of FourState values
  */
 export function encodeKIX(text: string): FourState[] {
-  const upper = text.toUpperCase().replace(/\s/g, "");
+  const upper = text.toUpperCase().replace(/\s/g, "")
   if (!/^[0-9A-Z]+$/.test(upper)) {
-    throw new InvalidInputError("KIX only accepts A-Z and 0-9");
+    throw new InvalidInputError("KIX only accepts A-Z and 0-9")
   }
 
-  const bars: FourState[] = [];
+  const bars: FourState[] = []
 
   for (const ch of upper) {
-    const pattern = RM4SCC_TABLE[ch];
-    if (!pattern) throw new InvalidInputError(`Invalid KIX character: ${ch}`);
-    bars.push(...pattern);
+    const pattern = RM4SCC_TABLE[ch]
+    if (!pattern) throw new InvalidInputError(`Invalid KIX character: ${ch}`)
+    bars.push(...pattern)
   }
 
-  return bars;
+  return bars
 }
 
 // Australia Post 4-State barcode
@@ -125,31 +125,31 @@ const GF4_MUL: number[][] = [
   [0, 1, 2, 3],
   [0, 2, 3, 1],
   [0, 3, 1, 2],
-];
+]
 
-const BAR_TO_GF4: Record<FourState, number> = { T: 0, A: 1, D: 2, F: 3 };
-const GF4_TO_BAR: FourState[] = ["T", "A", "D", "F"];
+const BAR_TO_GF4: Record<FourState, number> = { T: 0, A: 1, D: 2, F: 3 }
+const GF4_TO_BAR: FourState[] = ["T", "A", "D", "F"]
 
 // Generator polynomial: g(x) = (x-1)(x-α)(x-α²)(x-α³)
 // Since α³=1 in GF(4), this is (x+1)²(x+2)(x+3)
 // = (x²+1)(x²+x+1) = x⁴+x³+x+1
 // Coefficients [x⁴, x³, x², x¹, x⁰] = [1, 1, 0, 1, 1]
-const AUSPOST_GEN = [1, 1, 0, 1, 1];
+const AUSPOST_GEN = [1, 1, 0, 1, 1]
 
 /** Compute 4 Reed-Solomon parity symbols over GF(4) for Australia Post */
 function auspostReedSolomon(data: FourState[]): FourState[] {
-  const n = AUSPOST_GEN.length - 1; // 4 parity symbols
-  const remainder = [0, 0, 0, 0];
+  const n = AUSPOST_GEN.length - 1 // 4 parity symbols
+  const remainder = [0, 0, 0, 0]
 
   for (const bar of data) {
-    const feedback = BAR_TO_GF4[bar] ^ remainder[0]!;
+    const feedback = BAR_TO_GF4[bar] ^ remainder[0]!
     for (let i = 0; i < n - 1; i++) {
-      remainder[i] = remainder[i + 1]! ^ GF4_MUL[feedback]![AUSPOST_GEN[i + 1]!]!;
+      remainder[i] = remainder[i + 1]! ^ GF4_MUL[feedback]![AUSPOST_GEN[i + 1]!]!
     }
-    remainder[n - 1] = GF4_MUL[feedback]![AUSPOST_GEN[n]!]!;
+    remainder[n - 1] = GF4_MUL[feedback]![AUSPOST_GEN[n]!]!
   }
 
-  return remainder.map((v) => GF4_TO_BAR[v]!) as FourState[];
+  return remainder.map((v) => GF4_TO_BAR[v]!) as FourState[]
 }
 
 const AUSPOST_N_TABLE: Record<string, FourState[]> = {
@@ -163,7 +163,7 @@ const AUSPOST_N_TABLE: Record<string, FourState[]> = {
   "7": ["D", "T"],
   "8": ["F", "A"],
   "9": ["F", "D"],
-};
+}
 
 /**
  * Encode Australia Post 4-State barcode
@@ -173,26 +173,26 @@ const AUSPOST_N_TABLE: Record<string, FourState[]> = {
  */
 export function encodeAustraliaPost(fcc: string, dpid: string): FourState[] {
   if (!/^\d{2}$/.test(fcc)) {
-    throw new InvalidInputError("Australia Post FCC must be 2 digits");
+    throw new InvalidInputError("Australia Post FCC must be 2 digits")
   }
   if (!/^\d{8}$/.test(dpid)) {
-    throw new InvalidInputError("Australia Post DPID must be 8 digits");
+    throw new InvalidInputError("Australia Post DPID must be 8 digits")
   }
 
-  const data = fcc + dpid;
-  const bars: FourState[] = ["F", "A"]; // Start
+  const data = fcc + dpid
+  const bars: FourState[] = ["F", "A"] // Start
 
   for (const ch of data) {
-    bars.push(...AUSPOST_N_TABLE[ch]!);
+    bars.push(...AUSPOST_N_TABLE[ch]!)
   }
 
   // Reed-Solomon parity over GF(4)
-  const dataBars = bars.slice(2); // exclude start bars
-  const parity = auspostReedSolomon(dataBars);
-  bars.push(...parity);
-  bars.push("F", "A"); // Stop
+  const dataBars = bars.slice(2) // exclude start bars
+  const parity = auspostReedSolomon(dataBars)
+  bars.push(...parity)
+  bars.push("F", "A") // Stop
 
-  return bars;
+  return bars
 }
 
 // Japan Post 4-State barcode (Kasutama / JP4SCC)
@@ -200,8 +200,8 @@ export function encodeAustraliaPost(fcc: string, dpid: string): FourState[] {
 // KASUT_SET: '1','2','3','4','5','6','7','8','9','0','-','a','b','c','d','e','f','g','h'
 // CH_KASUT_SET defines the order for check digit calculation (mod 19)
 // CH_KASUT_SET: '0','1','2','3','4','5','6','7','8','9','-','a','b','c','d','e','f','g','h'
-const KASUT_SET = "1234567890-abcdefgh";
-const CH_KASUT_SET = "0123456789-abcdefgh";
+const KASUT_SET = "1234567890-abcdefgh"
+const CH_KASUT_SET = "0123456789-abcdefgh"
 
 // JAPAN_TABLE[i] = bar pattern for KASUT_SET[i]
 const JAPAN_TABLE: FourState[][] = [
@@ -224,12 +224,12 @@ const JAPAN_TABLE: FourState[][] = [
   ["T", "A", "D"], // 'f'
   ["T", "T", "F"], // 'g'
   ["F", "F", "F"], // 'h'
-];
+]
 
 // Build lookup from character to bar pattern
-const JP_TABLE: Record<string, FourState[]> = {};
+const JP_TABLE: Record<string, FourState[]> = {}
 for (let i = 0; i < KASUT_SET.length; i++) {
-  JP_TABLE[KASUT_SET[i]!] = JAPAN_TABLE[i]!;
+  JP_TABLE[KASUT_SET[i]!] = JAPAN_TABLE[i]!
 }
 
 /**
@@ -238,21 +238,21 @@ for (let i = 0; i < KASUT_SET.length; i++) {
  * sequences using internal characters a-h.
  */
 function jpExpandChar(c: string): string {
-  if ((c >= "0" && c <= "9") || c === "-") return c;
-  const code = c.charCodeAt(0);
+  if ((c >= "0" && c <= "9") || c === "-") return c
+  const code = c.charCodeAt(0)
   if (code >= 65 && code <= 74) {
     // A-J → 'a' + digit
-    return "a" + CH_KASUT_SET[code - 65]!;
+    return "a" + CH_KASUT_SET[code - 65]!
   }
   if (code >= 75 && code <= 84) {
     // K-T → 'b' + digit
-    return "b" + CH_KASUT_SET[code - 75]!;
+    return "b" + CH_KASUT_SET[code - 75]!
   }
   if (code >= 85 && code <= 90) {
     // U-Z → 'c' + digit
-    return "c" + CH_KASUT_SET[code - 85]!;
+    return "c" + CH_KASUT_SET[code - 85]!
   }
-  throw new InvalidInputError(`Invalid Japan Post character: ${c}`);
+  throw new InvalidInputError(`Invalid Japan Post character: ${c}`)
 }
 
 /**
@@ -262,47 +262,47 @@ function jpExpandChar(c: string): string {
  * @param address - Optional address characters (digits, dash, A-Z; up to 13 chars)
  */
 export function encodeJapanPost(zipcode: string, address?: string): FourState[] {
-  const zip = zipcode.replace(/-/g, "");
+  const zip = zipcode.replace(/-/g, "")
   if (!/^\d{7}$/.test(zip)) {
-    throw new InvalidInputError("Japan Post zipcode must be 7 digits");
+    throw new InvalidInputError("Japan Post zipcode must be 7 digits")
   }
 
   // Build intermediate representation
-  let inter = zip; // zipcode is always digits
+  let inter = zip // zipcode is always digits
   if (address) {
-    const clean = address.toUpperCase().replace(/\s/g, "");
+    const clean = address.toUpperCase().replace(/\s/g, "")
     if (!/^[\dA-Z-]+$/.test(clean)) {
-      throw new InvalidInputError("Japan Post address only accepts digits, dash, and A-Z");
+      throw new InvalidInputError("Japan Post address only accepts digits, dash, and A-Z")
     }
     for (const ch of clean) {
-      inter += jpExpandChar(ch);
+      inter += jpExpandChar(ch)
     }
   }
 
   // Pad to 20 characters with 'd' and truncate
-  while (inter.length < 20) inter += "d";
-  inter = inter.substring(0, 20);
+  while (inter.length < 20) inter += "d"
+  inter = inter.substring(0, 20)
 
   // Check digit: sum of CH_KASUT_SET positions, mod 19
-  let sum = 0;
+  let sum = 0
   for (const ch of inter) {
-    const pos = CH_KASUT_SET.indexOf(ch);
-    if (pos === -1) throw new InvalidInputError(`Invalid Japan Post character: ${ch}`);
-    sum += pos;
+    const pos = CH_KASUT_SET.indexOf(ch)
+    if (pos === -1) throw new InvalidInputError(`Invalid Japan Post character: ${ch}`)
+    sum += pos
   }
-  let check = 19 - (sum % 19);
-  if (check === 19) check = 0;
-  const checkChar = CH_KASUT_SET[check]!;
-  inter += checkChar;
+  let check = 19 - (sum % 19)
+  if (check === 19) check = 0
+  const checkChar = CH_KASUT_SET[check]!
+  inter += checkChar
 
-  const bars: FourState[] = ["F", "D"]; // Start
+  const bars: FourState[] = ["F", "D"] // Start
 
   for (const ch of inter) {
-    const pattern = JP_TABLE[ch];
-    if (!pattern) throw new InvalidInputError(`Invalid Japan Post character: ${ch}`);
-    bars.push(...pattern);
+    const pattern = JP_TABLE[ch]
+    if (!pattern) throw new InvalidInputError(`Invalid Japan Post character: ${ch}`)
+    bars.push(...pattern)
   }
 
-  bars.push("D", "F"); // Stop
-  return bars;
+  bars.push("D", "F") // Stop
+  return bars
 }

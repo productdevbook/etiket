@@ -6,15 +6,15 @@
  * documentation from drifting away from the code.
  */
 
-import { describe, expect, it } from "vitest";
-import * as etiket from "../src/index";
-import * as barcodeEntry from "../src/barcode";
-import * as postalEntry from "../src/postal";
-import * as qrEntry from "../src/qr";
-import * as datamatrixEntry from "../src/datamatrix";
-import * as pdf417Entry from "../src/pdf417";
-import * as aztecEntry from "../src/aztec";
-import * as pngEntry from "../src/png";
+import { describe, expect, it } from "vitest"
+import * as etiket from "../src/index"
+import * as barcodeEntry from "../src/barcode"
+import * as postalEntry from "../src/postal"
+import * as qrEntry from "../src/qr"
+import * as datamatrixEntry from "../src/datamatrix"
+import * as pdf417Entry from "../src/pdf417"
+import * as aztecEntry from "../src/aztec"
+import * as pngEntry from "../src/png"
 
 const DOCUMENTED_EXPORTS = [
   // 1D
@@ -128,33 +128,33 @@ const DOCUMENTED_EXPORTS = [
   "InvalidInputError",
   "CapacityError",
   "CheckDigitError",
-] as const;
+] as const
 
 describe("public API surface", () => {
   it("exports every documented name", () => {
-    const registry = etiket as unknown as Record<string, unknown>;
-    const missing = DOCUMENTED_EXPORTS.filter((name) => registry[name] === undefined);
-    expect(missing).toEqual([]);
-  });
+    const registry = etiket as unknown as Record<string, unknown>
+    const missing = DOCUMENTED_EXPORTS.filter((name) => registry[name] === undefined)
+    expect(missing).toEqual([])
+  })
 
   it("exposes every documented name as a function or class", () => {
-    const registry = etiket as unknown as Record<string, unknown>;
+    const registry = etiket as unknown as Record<string, unknown>
     for (const name of DOCUMENTED_EXPORTS) {
-      expect(typeof registry[name], name).toBe("function");
+      expect(typeof registry[name], name).toBe("function")
     }
-  });
+  })
 
   it("every *PNG function has a matching *PNGDataURI variant", () => {
-    const registry = etiket as unknown as Record<string, unknown>;
+    const registry = etiket as unknown as Record<string, unknown>
     const pngFns = Object.keys(registry).filter(
       (name) => name.endsWith("PNG") && !name.startsWith("render") && name !== "encodePNG",
-    );
-    expect(pngFns.length).toBeGreaterThan(10);
+    )
+    expect(pngFns.length).toBeGreaterThan(10)
     for (const name of pngFns) {
-      expect(registry[`${name}DataURI`], `${name}DataURI`).toBeTypeOf("function");
+      expect(registry[`${name}DataURI`], `${name}DataURI`).toBeTypeOf("function")
     }
-  });
-});
+  })
+})
 
 describe("sub-path entry points", () => {
   const cases: Array<[string, Record<string, unknown>, string[]]> = [
@@ -216,27 +216,27 @@ describe("sub-path entry points", () => {
         "encodePNG",
       ],
     ],
-  ];
+  ]
 
   for (const [name, mod, expected] of cases) {
     it(`${name} exports its documented surface`, () => {
       for (const key of expected) {
-        expect(mod[key], `${name} → ${key}`).toBeTypeOf("function");
+        expect(mod[key], `${name} → ${key}`).toBeTypeOf("function")
       }
-    });
+    })
   }
 
   it("sub-path exports are the same references as the main entry", () => {
-    const registry = etiket as unknown as Record<string, unknown>;
+    const registry = etiket as unknown as Record<string, unknown>
     for (const [, mod] of cases) {
       for (const [key, value] of Object.entries(mod)) {
-        if (typeof value !== "function") continue;
-        if (registry[key] === undefined) continue;
-        expect(registry[key], key).toBe(value);
+        if (typeof value !== "function") continue
+        if (registry[key] === undefined) continue
+        expect(registry[key], key).toBe(value)
       }
     }
-  });
-});
+  })
+})
 
 describe("documented snippets run", () => {
   const snippets: Array<[string, () => unknown]> = [
@@ -285,10 +285,10 @@ describe("documented snippets run", () => {
     [
       "jabcode custom palette",
       () => {
-        const result = etiket.encodeJABCode("HELLO", { colors: 4 });
+        const result = etiket.encodeJABCode("HELLO", { colors: 4 })
         return etiket.renderColorMatrixSVG(result.matrix, result.palette, {
           palette: ["#000000", "#e63946", "#457b9d", "#f1faee"],
-        });
+        })
       },
     ],
     ["gs1datamatrix", () => etiket.gs1datamatrix("(01)12345678901231")],
@@ -334,7 +334,7 @@ describe("documented snippets run", () => {
     [
       "raster then encodePNG",
       () => {
-        const raster = etiket.renderMatrixRaster(etiket.encodeQR("Hi"), { moduleSize: 4 });
+        const raster = etiket.renderMatrixRaster(etiket.encodeQR("Hi"), { moduleSize: 4 })
         return etiket.encodePNG(
           raster.width,
           raster.height,
@@ -342,7 +342,7 @@ describe("documented snippets run", () => {
           [0, 0, 0],
           [255, 255, 255],
           true,
-        );
+        )
       },
     ],
     [
@@ -357,18 +357,18 @@ describe("documented snippets run", () => {
     ["wifi hidden", () => etiket.wifi("MyNetwork", "password123", { hidden: true })],
     ["vcard", () => etiket.vcard({ firstName: "Ada", lastName: "Lovelace", email: "a@b.c" })],
     ["gs1DigitalLink", () => etiket.gs1DigitalLink({ gtin: "09520123456788", batch: "ABC" })],
-  ];
+  ]
 
   for (const [name, run] of snippets) {
     it(name, () => {
-      const result = run();
-      expect(result, name).toBeDefined();
-      expect(result, name).not.toBeNull();
+      const result = run()
+      expect(result, name).toBeDefined()
+      expect(result, name).not.toBeNull()
       if (typeof result === "string") {
-        expect(result.length, name).toBeGreaterThan(0);
-        expect(result, name).not.toContain("undefined");
-        expect(result, name).not.toContain("NaN");
+        expect(result.length, name).toBeGreaterThan(0)
+        expect(result, name).not.toContain("undefined")
+        expect(result, name).not.toContain("NaN")
       }
-    });
+    })
   }
-});
+})

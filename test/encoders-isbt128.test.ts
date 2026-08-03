@@ -1,89 +1,89 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest"
 import {
   encodeISBT128DIN,
   encodeISBT128Component,
   encodeISBT128Expiry,
   encodeISBT128BloodGroup,
   iso7064Mod37_2,
-} from "../src/encoders/isbt128";
-import { barcode } from "../src/index";
+} from "../src/encoders/isbt128"
+import { barcode } from "../src/index"
 
 describe("ISBT 128 DIN", () => {
   it("formats donation identification number with check character", () => {
-    const result = encodeISBT128DIN("US", "12345", "26", "000001");
-    expect(result).toBe("=US12345260000019");
-  });
+    const result = encodeISBT128DIN("US", "12345", "26", "000001")
+    expect(result).toBe("=US12345260000019")
+  })
 
   it("pads facility and donation numbers with check character", () => {
-    const result = encodeISBT128DIN("GB", "1", "26", "1");
-    expect(result).toBe("=GB0000126000001O");
-  });
+    const result = encodeISBT128DIN("GB", "1", "26", "1")
+    expect(result).toBe("=GB0000126000001O")
+  })
 
   it("throws on invalid country code", () => {
-    expect(() => encodeISBT128DIN("USA", "12345", "26", "1")).toThrow();
-  });
+    expect(() => encodeISBT128DIN("USA", "12345", "26", "1")).toThrow()
+  })
 
   it("throws on long facility number", () => {
-    expect(() => encodeISBT128DIN("US", "123456", "26", "1")).toThrow();
-  });
+    expect(() => encodeISBT128DIN("US", "123456", "26", "1")).toThrow()
+  })
 
   it("can be encoded as Code 128 barcode", () => {
-    const din = encodeISBT128DIN("US", "12345", "26", "000001");
-    const svg = barcode(din, { type: "code128" });
-    expect(svg).toContain("<svg");
-  });
-});
+    const din = encodeISBT128DIN("US", "12345", "26", "000001")
+    const svg = barcode(din, { type: "code128" })
+    expect(svg).toContain("<svg")
+  })
+})
 
 describe("ISBT 128 Component", () => {
   it("formats product code", () => {
-    expect(encodeISBT128Component("E0791")).toBe("=E0791");
-  });
+    expect(encodeISBT128Component("E0791")).toBe("=E0791")
+  })
 
   it("throws on wrong length", () => {
-    expect(() => encodeISBT128Component("E07")).toThrow();
-  });
-});
+    expect(() => encodeISBT128Component("E07")).toThrow()
+  })
+})
 
 describe("ISBT 128 Expiry", () => {
   it("formats expiry date", () => {
-    expect(encodeISBT128Expiry("260115")).toBe("&260115");
-  });
+    expect(encodeISBT128Expiry("260115")).toBe("&260115")
+  })
 
   it("throws on non-digits", () => {
-    expect(() => encodeISBT128Expiry("26Jan1")).toThrow();
-  });
-});
+    expect(() => encodeISBT128Expiry("26Jan1")).toThrow()
+  })
+})
 
 describe("ISBT 128 Blood Group", () => {
   it("formats blood group code", () => {
-    expect(encodeISBT128BloodGroup("51")).toBe("%51");
-  });
+    expect(encodeISBT128BloodGroup("51")).toBe("%51")
+  })
 
   it("throws on empty", () => {
-    expect(() => encodeISBT128BloodGroup("")).toThrow();
-  });
-});
+    expect(() => encodeISBT128BloodGroup("")).toThrow()
+  })
+})
 
 describe("ISO 7064 Mod 37-2 check character", () => {
   it("computes correct check for numeric input", () => {
-    expect(iso7064Mod37_2("0000000000")).toBe("0");
-  });
+    expect(iso7064Mod37_2("0000000000")).toBe("0")
+  })
 
   it("computes correct check for alphanumeric DIN data", () => {
-    expect(iso7064Mod37_2("US1234526000001")).toBe("9");
-  });
+    expect(iso7064Mod37_2("US1234526000001")).toBe("9")
+  })
 
   it("computes correct check for another DIN", () => {
-    expect(iso7064Mod37_2("GB0000126000001")).toBe("O");
-  });
+    expect(iso7064Mod37_2("GB0000126000001")).toBe("O")
+  })
 
   it("throws on invalid character", () => {
-    expect(() => iso7064Mod37_2("us12345")).toThrow();
-  });
+    expect(() => iso7064Mod37_2("us12345")).toThrow()
+  })
 
   it("handles asterisk in character set", () => {
     // * has value 36 in the Mod 37-2 character set
-    const result = iso7064Mod37_2("*");
-    expect(result).toMatch(/^[0-9A-Z*]$/);
-  });
-});
+    const result = iso7064Mod37_2("*")
+    expect(result).toMatch(/^[0-9A-Z*]$/)
+  })
+})

@@ -38,10 +38,10 @@ export {
   code16kPNGDataURI,
   maxicodePNG,
   maxicodePNGDataURI,
-} from "./_png";
-export type { BarcodeEncodingOptions } from "./_types";
-export type { PostalEncodingOptions, PostalType } from "./_postal";
-export type { BarcodePNGOptions, MatrixPNGOptions, PostalPNGOptions } from "./renderers/png/types";
+} from "./_png"
+export type { BarcodeEncodingOptions } from "./_types"
+export type { PostalEncodingOptions, PostalType } from "./_postal"
+export type { BarcodePNGOptions, MatrixPNGOptions, PostalPNGOptions } from "./renderers/png/types"
 export {
   renderBarcodeRaster,
   renderMatrixRaster,
@@ -51,6 +51,6 @@ export {
   renderPostalPNG,
   renderMaxiCodeRaster,
   renderMaxiCodePNG,
-} from "./renderers/png/rasterize";
-export type { RasterData } from "./renderers/png/rasterize";
-export { encodePNG } from "./renderers/png/png-encoder";
+} from "./renderers/png/rasterize"
+export type { RasterData } from "./renderers/png/rasterize"
+export { encodePNG } from "./renderers/png/png-encoder"

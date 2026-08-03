@@ -25,14 +25,14 @@ encoder returning the module matrix, and — apart from JAB Code — PNG output.
 ECC 200 standard. 24 square sizes (10x10 to 144x144) plus 6 rectangular sizes.
 
 ```ts
-import { datamatrix, encodeDataMatrix } from "etiket";
+import { datamatrix, encodeDataMatrix } from "etiket"
 
 // Convenience function — returns SVG
-datamatrix("Hello World");
-datamatrix("Data", { size: 200, color: "#333" });
+datamatrix("Hello World")
+datamatrix("Data", { size: 200, color: "#333" })
 
 // Raw encoder — returns boolean[][]
-const matrix = encodeDataMatrix("Hello");
+const matrix = encodeDataMatrix("Hello")
 ```
 
 Used in: electronics, healthcare, aerospace (small items requiring dense data).
@@ -42,14 +42,14 @@ Used in: electronics, healthcare, aerospace (small items requiring dense data).
 Stacked 2D barcode with 929 possible codeword values and 9 error correction levels.
 
 ```ts
-import { pdf417, encodePDF417 } from "etiket";
+import { pdf417, encodePDF417 } from "etiket"
 
 // Convenience function — returns SVG
-pdf417("Hello World");
-pdf417("Data", { ecLevel: 4, columns: 5, compact: true });
+pdf417("Hello World")
+pdf417("Data", { ecLevel: 4, columns: 5, compact: true })
 
 // Raw encoder — returns { matrix, rows, cols }
-const result = encodePDF417("Hello", { ecLevel: 2 });
+const result = encodePDF417("Hello", { ecLevel: 2 })
 ```
 
 | Option    | Type      | Default | Description                         |
@@ -65,14 +65,14 @@ Used in: government IDs, transport tickets, shipping labels.
 Bullseye-centered barcode. No quiet zone required — ideal for space-constrained applications.
 
 ```ts
-import { aztec, encodeAztec } from "etiket";
+import { aztec, encodeAztec } from "etiket"
 
 // Convenience function — returns SVG
-aztec("Hello World");
-aztec("Data", { ecPercent: 33, size: 200 });
+aztec("Hello World")
+aztec("Data", { ecPercent: 33, size: 200 })
 
 // Raw encoder — returns boolean[][]
-const matrix = encodeAztec("Hello", { compact: true });
+const matrix = encodeAztec("Hello", { compact: true })
 ```
 
 | Option      | Type      | Default | Description                               |
@@ -89,12 +89,12 @@ Compact QR variant (ISO/IEC 18004) with a single finder pattern. Versions M1–M
 11×11 to 17×17 modules.
 
 ```ts
-import { microqr, encodeMicroQR } from "etiket";
+import { microqr, encodeMicroQR } from "etiket"
 
-microqr("12345");
-microqr("12345", { version: 3, ecLevel: "M", size: 200 });
+microqr("12345")
+microqr("12345", { version: 3, ecLevel: "M", size: 200 })
 
-const matrix = encodeMicroQR("12345");
+const matrix = encodeMicroQR("12345")
 ```
 
 | Option    | Type      | Default | Description                    |
@@ -110,10 +110,10 @@ Used in: small electronic components, where a full QR code will not fit.
 ISO/IEC 23941 rectangular QR variant for narrow spaces.
 
 ```ts
-import { rmqr, encodeRMQR } from "etiket";
+import { rmqr, encodeRMQR } from "etiket"
 
-rmqr("HELLO");
-rmqr("HELLO", { ecLevel: "H" });
+rmqr("HELLO")
+rmqr("HELLO", { ecLevel: "H" })
 ```
 
 | Option    | Type   | Default | Description               |
@@ -130,12 +130,12 @@ package sorting. Modules are hexagons on a staggered grid, so MaxiCode gets a
 dedicated renderer.
 
 ```ts
-import { maxicode, encodeMaxiCode, maxicodePNG } from "etiket";
+import { maxicode, encodeMaxiCode, maxicodePNG } from "etiket"
 
-maxicode("HELLO");
-maxicode("HELLO", { mode: 2, postalCode: "123456789", countryCode: 840, serviceClass: 1 });
+maxicode("HELLO")
+maxicode("HELLO", { mode: 2, postalCode: "123456789", countryCode: 840, serviceClass: 1 })
 
-maxicodePNG("HELLO", { moduleSize: 10 });
+maxicodePNG("HELLO", { moduleSize: 10 })
 ```
 
 | Option         | Type     | Default | Description                                           |
@@ -155,9 +155,9 @@ Used in: parcel carriers (notably UPS).
 High-speed dot matrix symbology for laser-marked and inkjet-printed items.
 
 ```ts
-import { dotcode, encodeDotCode } from "etiket";
+import { dotcode, encodeDotCode } from "etiket"
 
-dotcode("HELLO");
+dotcode("HELLO")
 ```
 
 Used in: tobacco packaging, high-speed production lines.
@@ -168,10 +168,10 @@ Chinese national 2D standard (ISO/IEC 20830), 84 versions from 23×23 to
 189×189 modules, with four finder patterns.
 
 ```ts
-import { hanxin, encodeHanXin } from "etiket";
+import { hanxin, encodeHanXin } from "etiket"
 
-hanxin("HELLO");
-hanxin("HELLO", { ecLevel: 3, version: 5 });
+hanxin("HELLO")
+hanxin("HELLO", { ecLevel: 3, version: 5 })
 ```
 
 | Option    | Type   | Default | Description                                 |
@@ -188,14 +188,14 @@ are taller than a module is wide; `rowHeight` controls that ratio and defaults
 to a spec-appropriate value per format.
 
 ```ts
-import { codablockf, code16k, micropdf417 } from "etiket";
+import { codablockf, code16k, micropdf417 } from "etiket"
 
-codablockf("CODABLOCK F DATA", { columns: 8 });
-code16k("CODE 16K DATA");
-micropdf417("MICRO", { columns: 2 });
+codablockf("CODABLOCK F DATA", { columns: 8 })
+code16k("CODE 16K DATA")
+micropdf417("MICRO", { columns: 2 })
 
 // Square modules instead of tall rows
-code16k("DATA", { rowHeight: 1 });
+code16k("DATA", { rowHeight: 1 })
 ```
 
 | Format      | Option    | Description                    |
@@ -213,16 +213,16 @@ returns a matrix of palette indices plus the palette itself, so it renders
 through the colour matrix renderer.
 
 ```ts
-import { jabcode, encodeJABCode, renderColorMatrixSVG } from "etiket";
+import { jabcode, encodeJABCode, renderColorMatrixSVG } from "etiket"
 
-jabcode("HELLO");
-jabcode("HELLO", { colors: 8, ecPercent: 30 });
+jabcode("HELLO")
+jabcode("HELLO", { colors: 8, ecPercent: 30 })
 
 // Custom palette
-const result = encodeJABCode("HELLO", { colors: 4 });
+const result = encodeJABCode("HELLO", { colors: 4 })
 renderColorMatrixSVG(result.matrix, result.palette, {
   palette: ["#000000", "#e63946", "#457b9d", "#f1faee"],
-});
+})
 ```
 
 | Option      | Type     | Default | Description                 |

@@ -3,19 +3,19 @@
  * Based on Interleaved 2 of 5 with modulo 10 check digit (weights 4,9)
  */
 
-import { InvalidInputError } from "../errors";
-import { encodeITF } from "./itf";
+import { InvalidInputError } from "../errors"
+import { encodeITF } from "./itf"
 
 /**
  * Calculate Deutsche Post check digit (mod 10, weights 4 and 9 alternating)
  */
 export function dpCheckDigit(digits: string): number {
-  let sum = 0;
+  let sum = 0
   for (let i = 0; i < digits.length; i++) {
-    const weight = i % 2 === 0 ? 4 : 9;
-    sum += Number.parseInt(digits[i]!, 10) * weight;
+    const weight = i % 2 === 0 ? 4 : 9
+    sum += Number.parseInt(digits[i]!, 10) * weight
   }
-  return (10 - (sum % 10)) % 10;
+  return (10 - (sum % 10)) % 10
 }
 
 /**
@@ -26,28 +26,28 @@ export function dpCheckDigit(digits: string): number {
  * @returns Bar widths array (Interleaved 2 of 5 encoding)
  */
 export function encodeIdentcode(text: string): number[] {
-  const digits = text.replace(/\s/g, "");
+  const digits = text.replace(/\s/g, "")
   if (!/^\d+$/.test(digits)) {
-    throw new InvalidInputError("Identcode only accepts digits");
+    throw new InvalidInputError("Identcode only accepts digits")
   }
 
-  let data: string;
+  let data: string
   if (digits.length === 11) {
-    data = digits + dpCheckDigit(digits);
+    data = digits + dpCheckDigit(digits)
   } else if (digits.length === 12) {
-    const expected = dpCheckDigit(digits.slice(0, 11));
-    const provided = Number(digits[11]);
+    const expected = dpCheckDigit(digits.slice(0, 11))
+    const provided = Number(digits[11])
     if (provided !== expected) {
       throw new InvalidInputError(
         `Identcode check digit mismatch: expected ${expected}, got ${provided}`,
-      );
+      )
     }
-    data = digits;
+    data = digits
   } else {
-    throw new InvalidInputError("Identcode requires 11 or 12 digits");
+    throw new InvalidInputError("Identcode requires 11 or 12 digits")
   }
 
-  return encodeITF(data);
+  return encodeITF(data)
 }
 
 /**
@@ -58,26 +58,26 @@ export function encodeIdentcode(text: string): number[] {
  * @returns Bar widths array (Interleaved 2 of 5 encoding)
  */
 export function encodeLeitcode(text: string): number[] {
-  const digits = text.replace(/\s/g, "");
+  const digits = text.replace(/\s/g, "")
   if (!/^\d+$/.test(digits)) {
-    throw new InvalidInputError("Leitcode only accepts digits");
+    throw new InvalidInputError("Leitcode only accepts digits")
   }
 
-  let data: string;
+  let data: string
   if (digits.length === 13) {
-    data = digits + dpCheckDigit(digits);
+    data = digits + dpCheckDigit(digits)
   } else if (digits.length === 14) {
-    const expected = dpCheckDigit(digits.slice(0, 13));
-    const provided = Number(digits[13]);
+    const expected = dpCheckDigit(digits.slice(0, 13))
+    const provided = Number(digits[13])
     if (provided !== expected) {
       throw new InvalidInputError(
         `Leitcode check digit mismatch: expected ${expected}, got ${provided}`,
-      );
+      )
     }
-    data = digits;
+    data = digits
   } else {
-    throw new InvalidInputError("Leitcode requires 13 or 14 digits");
+    throw new InvalidInputError("Leitcode requires 13 or 14 digits")
   }
 
-  return encodeITF(data);
+  return encodeITF(data)
 }

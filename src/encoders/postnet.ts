@@ -7,7 +7,7 @@
  * PLANET: tall=0, short=1 (inverted)
  */
 
-import { InvalidInputError } from "../errors";
+import { InvalidInputError } from "../errors"
 
 // POSTNET digit encoding: each digit = 5 bars (tall=1, short=0)
 // Encoding uses 2-of-5 scheme where exactly 2 bars are tall
@@ -22,15 +22,15 @@ const POSTNET_PATTERNS: number[][] = [
   [1, 0, 0, 0, 1], // 7
   [1, 0, 0, 1, 0], // 8
   [1, 0, 1, 0, 0], // 9
-];
+]
 
 /** Calculate POSTNET/PLANET check digit (sum of digits mod 10, then 10 - remainder) */
 export function postnetCheckDigit(digits: string): number {
-  let sum = 0;
+  let sum = 0
   for (const ch of digits) {
-    sum += Number.parseInt(ch, 10);
+    sum += Number.parseInt(ch, 10)
   }
-  return (10 - (sum % 10)) % 10;
+  return (10 - (sum % 10)) % 10
 }
 
 /**
@@ -44,25 +44,25 @@ export function postnetCheckDigit(digits: string): number {
  * @returns Array of bar heights (1=tall, 0=short) including frame bars
  */
 export function encodePOSTNET(zip: string): number[] {
-  const digits = zip.replace(/[\s-]/g, "");
+  const digits = zip.replace(/[\s-]/g, "")
   if (!/^\d+$/.test(digits)) {
-    throw new InvalidInputError("POSTNET only accepts digits");
+    throw new InvalidInputError("POSTNET only accepts digits")
   }
   if (digits.length !== 5 && digits.length !== 9 && digits.length !== 11) {
-    throw new InvalidInputError("POSTNET requires 5, 9, or 11 digits");
+    throw new InvalidInputError("POSTNET requires 5, 9, or 11 digits")
   }
 
-  const check = postnetCheckDigit(digits);
-  const allDigits = digits + check;
+  const check = postnetCheckDigit(digits)
+  const allDigits = digits + check
 
-  const bars: number[] = [1]; // Start frame bar (tall)
+  const bars: number[] = [1] // Start frame bar (tall)
   for (const ch of allDigits) {
-    const digit = Number.parseInt(ch, 10);
-    bars.push(...POSTNET_PATTERNS[digit]!);
+    const digit = Number.parseInt(ch, 10)
+    bars.push(...POSTNET_PATTERNS[digit]!)
   }
-  bars.push(1); // End frame bar (tall)
+  bars.push(1) // End frame bar (tall)
 
-  return bars;
+  return bars
 }
 
 /**
@@ -73,25 +73,25 @@ export function encodePOSTNET(zip: string): number[] {
  * @returns Array of bar heights (1=tall, 0=short)
  */
 export function encodePLANET(code: string): number[] {
-  const digits = code.replace(/[\s-]/g, "");
+  const digits = code.replace(/[\s-]/g, "")
   if (!/^\d+$/.test(digits)) {
-    throw new InvalidInputError("PLANET only accepts digits");
+    throw new InvalidInputError("PLANET only accepts digits")
   }
   if (digits.length !== 11 && digits.length !== 13) {
-    throw new InvalidInputError("PLANET requires 11 or 13 digits");
+    throw new InvalidInputError("PLANET requires 11 or 13 digits")
   }
 
-  const check = postnetCheckDigit(digits);
-  const allDigits = digits + check;
+  const check = postnetCheckDigit(digits)
+  const allDigits = digits + check
 
-  const bars: number[] = [1]; // Start frame bar
+  const bars: number[] = [1] // Start frame bar
   for (const ch of allDigits) {
-    const digit = Number.parseInt(ch, 10);
+    const digit = Number.parseInt(ch, 10)
     // PLANET inverts: tall becomes short, short becomes tall
-    const pattern = POSTNET_PATTERNS[digit]!;
-    bars.push(...pattern.map((b) => (b === 1 ? 0 : 1)));
+    const pattern = POSTNET_PATTERNS[digit]!
+    bars.push(...pattern.map((b) => (b === 1 ? 0 : 1)))
   }
-  bars.push(1); // End frame bar
+  bars.push(1) // End frame bar
 
-  return bars;
+  return bars
 }

@@ -10,22 +10,22 @@
  * that doesn't fit in the primary linear barcode.
  */
 
-import { InvalidInputError } from "../errors";
-import { encodeMicroPDF417 } from "./micropdf417";
-import { encodePDF417 } from "./pdf417/index";
-import { parseAIString } from "./gs1-128";
+import { InvalidInputError } from "../errors"
+import { encodeMicroPDF417 } from "./micropdf417"
+import { encodePDF417 } from "./pdf417/index"
+import { parseAIString } from "./gs1-128"
 
-export type CompositeType = "CC-A" | "CC-B" | "CC-C";
+export type CompositeType = "CC-A" | "CC-B" | "CC-C"
 
 export interface GS1CompositeResult {
   /** The 2D composite component matrix */
-  composite: boolean[][];
+  composite: boolean[][]
   /** Composite type used */
-  type: CompositeType;
+  type: CompositeType
   /** Number of rows in composite */
-  rows: number;
+  rows: number
   /** Width in modules */
-  cols: number;
+  cols: number
 }
 
 /**
@@ -38,12 +38,12 @@ export interface GS1CompositeResult {
  */
 export function encodeGS1Composite(data: string, type: CompositeType = "CC-A"): GS1CompositeResult {
   if (data.length === 0) {
-    throw new InvalidInputError("GS1 Composite: data must not be empty");
+    throw new InvalidInputError("GS1 Composite: data must not be empty")
   }
 
   // Validate AI format if parenthesized
   if (data.includes("(")) {
-    parseAIString(data); // throws on invalid
+    parseAIString(data) // throws on invalid
   }
 
   // Encode based on composite type
@@ -51,26 +51,26 @@ export function encodeGS1Composite(data: string, type: CompositeType = "CC-A"): 
     case "CC-A":
     case "CC-B": {
       // MicroPDF417-based
-      const columns = type === "CC-A" ? 2 : 3;
-      const result = encodeMicroPDF417(data, { columns });
+      const columns = type === "CC-A" ? 2 : 3
+      const result = encodeMicroPDF417(data, { columns })
       return {
         composite: result.matrix,
         type,
         rows: result.rows,
         cols: result.cols,
-      };
+      }
     }
     case "CC-C": {
       // PDF417-based
-      const result = encodePDF417(data, { ecLevel: 2, columns: 4 });
+      const result = encodePDF417(data, { ecLevel: 2, columns: 4 })
       return {
         composite: result.matrix,
         type,
         rows: result.rows,
         cols: result.cols,
-      };
+      }
     }
     default:
-      throw new InvalidInputError(`Invalid composite type: ${type}`);
+      throw new InvalidInputError(`Invalid composite type: ${type}`)
   }
 }

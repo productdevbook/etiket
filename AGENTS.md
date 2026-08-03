@@ -144,7 +144,7 @@ pnpm docs:dev       # npx mdzilla ./docs
 - **Pure ESM** — no CJS
 - **Zero runtime dependencies** — CLI deps (citty, consola) are bundled
 - **TypeScript strict** — TypeScript 7 (`tsc`) for typecheck
-- **Formatter:** oxfmt (double quotes, semicolons)
+- **Formatter:** oxfmt (double quotes, no semicolons — `semi: false` in `.oxfmtrc.json`)
 - **Linter:** oxlint (unicorn, typescript, oxc plugins)
 - **Tests:** vitest in `test/` directory, flat naming
 - **Internal files:** prefix with `_` where applicable

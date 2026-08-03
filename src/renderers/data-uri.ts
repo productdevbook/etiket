@@ -16,9 +16,9 @@ export function svgToDataURI(svg: string): string {
     .replace(/{/g, "%7B")
     .replace(/}/g, "%7D")
     .replace(/</g, "%3C")
-    .replace(/>/g, "%3E");
+    .replace(/>/g, "%3E")
 
-  return `data:image/svg+xml,${encoded}`;
+  return `data:image/svg+xml,${encoded}`
 }
 
 /**
@@ -26,25 +26,25 @@ export function svgToDataURI(svg: string): string {
  * Replaces the deprecated unescape(encodeURIComponent(…)) pattern.
  */
 function utf8ToBinary(str: string): string {
-  const bytes = new TextEncoder().encode(str);
-  let binary = "";
+  const bytes = new TextEncoder().encode(str)
+  let binary = ""
   for (const byte of bytes) {
-    binary += String.fromCharCode(byte);
+    binary += String.fromCharCode(byte)
   }
-  return binary;
+  return binary
 }
 
 /**
  * Convert SVG string to base64 data URI
  */
 export function svgToBase64(svg: string): string {
-  const base64 = btoa(utf8ToBinary(svg));
-  return `data:image/svg+xml;base64,${base64}`;
+  const base64 = btoa(utf8ToBinary(svg))
+  return `data:image/svg+xml;base64,${base64}`
 }
 
 /**
  * Convert SVG string to a plain base64 string (no data URI prefix)
  */
 export function svgToBase64Raw(svg: string): string {
-  return btoa(utf8ToBinary(svg));
+  return btoa(utf8ToBinary(svg))
 }

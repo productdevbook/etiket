@@ -5,7 +5,7 @@
  * Start/stop characters: A, B, C, D (case-insensitive)
  */
 
-import { InvalidInputError } from "../errors";
+import { InvalidInputError } from "../errors"
 
 // Codabar character patterns: 7 elements each (BSBSBSB)
 // Narrow = 1, Wide = 3
@@ -31,16 +31,16 @@ const PATTERNS: Record<string, number[]> = {
   B: [1, 3, 1, 3, 1, 1, 3],
   C: [1, 1, 1, 3, 1, 3, 3],
   D: [1, 1, 1, 3, 3, 3, 1],
-};
+}
 
 // Valid data characters (between start/stop)
-const DATA_CHARS = new Set("0123456789-$:/.+");
+const DATA_CHARS = new Set("0123456789-$:/.+")
 
 // Valid start/stop characters
-const START_STOP_CHARS = new Set("ABCD");
+const START_STOP_CHARS = new Set("ABCD")
 
 // Narrow inter-character gap
-const GAP = 1;
+const GAP = 1
 
 /**
  * Encode a Codabar barcode
@@ -54,76 +54,76 @@ const GAP = 1;
  */
 export function encodeCodabar(text: string, options?: { start?: string; stop?: string }): number[] {
   if (text.length === 0) {
-    throw new InvalidInputError("Codabar input must not be empty");
+    throw new InvalidInputError("Codabar input must not be empty")
   }
 
-  const upper = text.toUpperCase();
+  const upper = text.toUpperCase()
 
-  let startChar: string;
-  let stopChar: string;
-  let data: string;
+  let startChar: string
+  let stopChar: string
+  let data: string
 
   // Check if text already includes start/stop characters
-  const firstChar = upper[0]!;
-  const lastChar = upper[upper.length - 1]!;
+  const firstChar = upper[0]!
+  const lastChar = upper[upper.length - 1]!
 
   if (upper.length >= 2 && START_STOP_CHARS.has(firstChar) && START_STOP_CHARS.has(lastChar)) {
     // Text includes start/stop characters
-    startChar = firstChar;
-    stopChar = lastChar;
-    data = upper.slice(1, -1);
+    startChar = firstChar
+    stopChar = lastChar
+    data = upper.slice(1, -1)
   } else {
     // Use provided or default start/stop
-    startChar = (options?.start ?? "A").toUpperCase();
-    stopChar = (options?.stop ?? "A").toUpperCase();
-    data = upper;
+    startChar = (options?.start ?? "A").toUpperCase()
+    stopChar = (options?.stop ?? "A").toUpperCase()
+    data = upper
   }
 
   // Validate start/stop characters
   if (!START_STOP_CHARS.has(startChar)) {
     throw new InvalidInputError(
       `Invalid Codabar start character: '${startChar}'. Must be A, B, C, or D`,
-    );
+    )
   }
   if (!START_STOP_CHARS.has(stopChar)) {
     throw new InvalidInputError(
       `Invalid Codabar stop character: '${stopChar}'. Must be A, B, C, or D`,
-    );
+    )
   }
 
   // Validate data characters
   for (let i = 0; i < data.length; i++) {
-    const ch = data[i]!;
+    const ch = data[i]!
     if (!DATA_CHARS.has(ch)) {
-      throw new InvalidInputError(`Invalid Codabar character: '${ch}' at position ${i}`);
+      throw new InvalidInputError(`Invalid Codabar character: '${ch}' at position ${i}`)
     }
   }
 
-  const bars: number[] = [];
+  const bars: number[] = []
 
   // Start character
-  const startPattern = PATTERNS[startChar]!;
+  const startPattern = PATTERNS[startChar]!
   for (const w of startPattern) {
-    bars.push(w);
+    bars.push(w)
   }
 
   // Inter-character gap after start
-  bars.push(GAP);
+  bars.push(GAP)
 
   // Data characters
   for (let i = 0; i < data.length; i++) {
-    const pattern = PATTERNS[data[i]!]!;
+    const pattern = PATTERNS[data[i]!]!
     for (const w of pattern) {
-      bars.push(w);
+      bars.push(w)
     }
-    bars.push(GAP); // inter-character gap
+    bars.push(GAP) // inter-character gap
   }
 
   // Stop character
-  const stopPattern = PATTERNS[stopChar]!;
+  const stopPattern = PATTERNS[stopChar]!
   for (const w of stopPattern) {
-    bars.push(w);
+    bars.push(w)
   }
 
-  return bars;
+  return bars
 }

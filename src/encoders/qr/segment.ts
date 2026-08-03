@@ -10,33 +10,33 @@
  * exceed this overhead, it's better to stay in the current mode.
  */
 
-import type { QRSegment } from "./types";
-import { getCharCountBits, ALPHANUMERIC_CHARS } from "./tables";
+import type { QRSegment } from "./types"
+import { getCharCountBits, ALPHANUMERIC_CHARS } from "./tables"
 
-type Mode = "numeric" | "alphanumeric" | "byte";
+type Mode = "numeric" | "alphanumeric" | "byte"
 
 /** Bits per character in each mode */
 function bitsPerChar(mode: Mode): number {
   switch (mode) {
     case "numeric":
-      return 10 / 3; // ~3.33 bits per digit
+      return 10 / 3 // ~3.33 bits per digit
     case "alphanumeric":
-      return 11 / 2; // 5.5 bits per char
+      return 11 / 2 // 5.5 bits per char
     case "byte":
-      return 8;
+      return 8
   }
 }
 
 /** Mode switch cost: 4 bits (mode indicator) + character count bits */
 function switchCost(version: number, targetMode: Mode): number {
-  return 4 + getCharCountBits(version, targetMode);
+  return 4 + getCharCountBits(version, targetMode)
 }
 
 /** Detect the most efficient mode for a single character */
 function charMode(char: string): Mode {
-  if (char >= "0" && char <= "9") return "numeric";
-  if (ALPHANUMERIC_CHARS.includes(char)) return "alphanumeric";
-  return "byte";
+  if (char >= "0" && char <= "9") return "numeric"
+  if (ALPHANUMERIC_CHARS.includes(char)) return "alphanumeric"
+  return "byte"
 }
 
 /**
@@ -49,49 +49,49 @@ function charMode(char: string): Mode {
  * 4. Otherwise, stay in the current (less efficient but cheaper) mode
  */
 export function optimizeSegments(text: string, version: number): QRSegment[] {
-  if (text.length === 0) return [];
+  if (text.length === 0) return []
 
-  const segments: QRSegment[] = [];
-  let currentMode: Mode = charMode(text[0]!);
-  let segStart = 0;
+  const segments: QRSegment[] = []
+  let currentMode: Mode = charMode(text[0]!)
+  let segStart = 0
 
-  let i = 1;
+  let i = 1
   while (i < text.length) {
-    const cm = charMode(text[i]!);
+    const cm = charMode(text[i]!)
 
     if (cm === currentMode) {
-      i++;
-      continue;
+      i++
+      continue
     }
 
     // Different mode detected — should we switch?
     // Count how many consecutive chars are in the new mode
-    let runLen = 1;
-    let j = i + 1;
+    let runLen = 1
+    let j = i + 1
     while (j < text.length && charMode(text[j]!) === cm) {
-      runLen++;
-      j++;
+      runLen++
+      j++
     }
 
     // Calculate: is switching cheaper than encoding in current mode?
-    const costInCurrent = runLen * bitsPerChar(currentMode);
-    const costInNew = switchCost(version, cm) + runLen * bitsPerChar(cm);
+    const costInCurrent = runLen * bitsPerChar(currentMode)
+    const costInNew = switchCost(version, cm) + runLen * bitsPerChar(cm)
 
     if (costInNew < costInCurrent) {
       // Switch: flush current segment, start new one
-      pushSegment(segments, text, segStart, i, currentMode);
-      currentMode = cm;
-      segStart = i;
+      pushSegment(segments, text, segStart, i, currentMode)
+      currentMode = cm
+      segStart = i
     }
     // Else: stay in current mode (absorb the chars)
 
-    i = j;
+    i = j
   }
 
   // Flush final segment
-  pushSegment(segments, text, segStart, text.length, currentMode);
+  pushSegment(segments, text, segStart, text.length, currentMode)
 
-  return segments;
+  return segments
 }
 
 function pushSegment(
@@ -101,11 +101,11 @@ function pushSegment(
   end: number,
   mode: Mode,
 ): void {
-  const segText = text.substring(start, end);
-  const data = new TextEncoder().encode(segText);
+  const segText = text.substring(start, end)
+  const data = new TextEncoder().encode(segText)
   segments.push({
     mode,
     data,
     charCount: mode === "byte" ? data.length : segText.length,
-  });
+  })
 }

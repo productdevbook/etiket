@@ -9,67 +9,67 @@
  * - Finder patterns at all 4 corners (unlike QR's 3)
  */
 
-import { InvalidInputError, CapacityError } from "../errors";
+import { InvalidInputError, CapacityError } from "../errors"
 
 // ---------------------------------------------------------------------------
 // Han Xin mode indicators (4 bits each)
 // ---------------------------------------------------------------------------
-const MODE_NUMERIC = 0b0001;
-const MODE_TEXT = 0b0010;
-const MODE_BINARY = 0b0011;
+const MODE_NUMERIC = 0b0001
+const MODE_TEXT = 0b0010
+const MODE_BINARY = 0b0011
 // const MODE_CHINESE = 0b0100; // GB 18030 — reserved for future use
 
 // ---------------------------------------------------------------------------
 // GF(256) arithmetic with Han Xin primitive polynomial 0x163
 // (x^8 + x^6 + x^5 + x + 1) — different from QR's 0x11D and DM's 0x12D
 // ---------------------------------------------------------------------------
-const HX_GF_EXP = new Uint8Array(512);
-const HX_GF_LOG = new Uint8Array(256);
+const HX_GF_EXP = new Uint8Array(512)
+const HX_GF_LOG = new Uint8Array(256)
 
-(function initHanXinGF() {
-  let x = 1;
+;(function initHanXinGF() {
+  let x = 1
   for (let i = 0; i < 255; i++) {
-    HX_GF_EXP[i] = x;
-    HX_GF_LOG[x] = i;
-    x = x << 1;
-    if (x >= 256) x ^= 0x163;
+    HX_GF_EXP[i] = x
+    HX_GF_LOG[x] = i
+    x = x << 1
+    if (x >= 256) x ^= 0x163
   }
   // Extend exp table for easier modular arithmetic
   for (let i = 255; i < 512; i++) {
-    HX_GF_EXP[i] = HX_GF_EXP[i - 255]!;
+    HX_GF_EXP[i] = HX_GF_EXP[i - 255]!
   }
-})();
+})()
 
 /** Multiply two GF(256) elements using Han Xin polynomial */
 function gfMultiply(a: number, b: number): number {
-  if (a === 0 || b === 0) return 0;
-  return HX_GF_EXP[(HX_GF_LOG[a]! + HX_GF_LOG[b]!) % 255]!;
+  if (a === 0 || b === 0) return 0
+  return HX_GF_EXP[(HX_GF_LOG[a]! + HX_GF_LOG[b]!) % 255]!
 }
 
 /** Generate Reed-Solomon EC codewords for Han Xin over GF(256)/0x163 */
 function hanxinGenerateEC(data: number[], ecCount: number): number[] {
   // Build generator polynomial: g(x) = (x - a^0)(x - a^1)...(x - a^(ecCount-1))
-  const gen: number[] = Array.from({ length: ecCount + 1 }, () => 0);
-  gen[0] = 1;
+  const gen: number[] = Array.from({ length: ecCount + 1 }, () => 0)
+  gen[0] = 1
 
   for (let i = 0; i < ecCount; i++) {
     for (let j = gen.length - 1; j >= 1; j--) {
-      gen[j] = gen[j - 1]! ^ gfMultiply(gen[j]!, HX_GF_EXP[i]!);
+      gen[j] = gen[j - 1]! ^ gfMultiply(gen[j]!, HX_GF_EXP[i]!)
     }
-    gen[0] = gfMultiply(gen[0]!, HX_GF_EXP[i]!);
+    gen[0] = gfMultiply(gen[0]!, HX_GF_EXP[i]!)
   }
 
   // Polynomial long division: data polynomial / generator polynomial
-  const result = Array.from({ length: ecCount }, () => 0);
+  const result = Array.from({ length: ecCount }, () => 0)
   for (const byte of data) {
-    const lead = byte ^ result[0]!;
+    const lead = byte ^ result[0]!
     for (let j = 0; j < ecCount - 1; j++) {
-      result[j] = result[j + 1]! ^ gfMultiply(lead, gen[j + 1]!);
+      result[j] = result[j + 1]! ^ gfMultiply(lead, gen[j + 1]!)
     }
-    result[ecCount - 1] = gfMultiply(lead, gen[ecCount]!);
+    result[ecCount - 1] = gfMultiply(lead, gen[ecCount]!)
   }
 
-  return result;
+  return result
 }
 
 // ---------------------------------------------------------------------------
@@ -79,7 +79,7 @@ function hanxinGenerateEC(data: number[], ecCount: number): number[] {
 /** Push `count` bits of `value` (MSB first) into a bit array */
 function pushBits(arr: number[], value: number, count: number): void {
   for (let i = count - 1; i >= 0; i--) {
-    arr.push((value >> i) & 1);
+    arr.push((value >> i) & 1)
   }
 }
 
@@ -89,7 +89,7 @@ function pushBits(arr: number[], value: number, count: number): void {
 
 // Han Xin version sizes: version v → (v*2 + 21) modules per side
 function hanxinSize(version: number): number {
-  return version * 2 + 21;
+  return version * 2 + 21
 }
 
 /**
@@ -104,30 +104,30 @@ function hanxinSize(version: number): number {
  * before applying EC overhead.
  */
 function hanxinTotalCodewords(version: number): number {
-  const size = hanxinSize(version);
-  const totalModules = size * size;
+  const size = hanxinSize(version)
+  const totalModules = size * size
 
   // 4 finder patterns — 7×7 each
-  const finderModules = 4 * 7 * 7;
+  const finderModules = 4 * 7 * 7
 
   // Separator bands around finders: 4 L-shaped bands, ~8 modules each
-  const separatorModules = 4 * (8 + 7);
+  const separatorModules = 4 * (8 + 7)
 
   // Format/version info regions around finders
-  const formatModules = Math.min(36 + version * 2, size * 4);
+  const formatModules = Math.min(36 + version * 2, size * 4)
 
-  const usableModules = totalModules - finderModules - separatorModules - formatModules;
+  const usableModules = totalModules - finderModules - separatorModules - formatModules
 
-  return Math.floor(usableModules / 8);
+  return Math.floor(usableModules / 8)
 }
 
 /**
  * Get data codeword capacity for a version at a given EC ratio.
  */
 function hanxinDataCapacity(version: number, ecRatio: number): number {
-  const total = hanxinTotalCodewords(version);
-  const ecBytes = Math.ceil(total * ecRatio);
-  return total - ecBytes;
+  const total = hanxinTotalCodewords(version)
+  const ecBytes = Math.ceil(total * ecRatio)
+  return total - ecBytes
 }
 
 // ---------------------------------------------------------------------------
@@ -137,25 +137,25 @@ function hanxinDataCapacity(version: number, ecRatio: number): number {
 /** Check if entire input is digits */
 function isNumeric(text: string): boolean {
   for (let i = 0; i < text.length; i++) {
-    const c = text.charCodeAt(i);
-    if (c < 0x30 || c > 0x39) return false;
+    const c = text.charCodeAt(i)
+    if (c < 0x30 || c > 0x39) return false
   }
-  return true;
+  return true
 }
 
 /** Check if entire input is in the Han Xin text mode character set */
 function isText(text: string): boolean {
   for (let i = 0; i < text.length; i++) {
-    const c = text.charCodeAt(i);
+    const c = text.charCodeAt(i)
     // Han Xin text mode covers ASCII 0x20-0x7E
-    if (c < 0x20 || c > 0x7e) return false;
+    if (c < 0x20 || c > 0x7e) return false
   }
-  return true;
+  return true
 }
 
 export interface HanXinOptions {
-  ecLevel?: 1 | 2 | 3 | 4; // L1(~8%), L2(~15%), L3(~23%), L4(~30%)
-  version?: number; // 1-84
+  ecLevel?: 1 | 2 | 3 | 4 // L1(~8%), L2(~15%), L3(~23%), L4(~30%)
+  version?: number // 1-84
 }
 
 /**
@@ -164,161 +164,161 @@ export interface HanXinOptions {
  */
 export function encodeHanXin(text: string, options: HanXinOptions = {}): boolean[][] {
   if (text.length === 0) {
-    throw new InvalidInputError("Han Xin Code input must not be empty");
+    throw new InvalidInputError("Han Xin Code input must not be empty")
   }
 
-  const ecLevel = options.ecLevel ?? 1;
-  const ecRatio = [0, 0.08, 0.15, 0.23, 0.3][ecLevel];
+  const ecLevel = options.ecLevel ?? 1
+  const ecRatio = [0, 0.08, 0.15, 0.23, 0.3][ecLevel]
   if (ecRatio === undefined) {
     // Without this guard an out-of-range level yields NaN capacities and
     // surfaces as a misleading "data too long" error.
-    throw new InvalidInputError(`Han Xin EC level must be 1, 2, 3 or 4 (got ${String(ecLevel)})`);
+    throw new InvalidInputError(`Han Xin EC level must be 1, 2, 3 or 4 (got ${String(ecLevel)})`)
   }
 
   // Build data bits with Han Xin mode indicators
-  const bits: number[] = [];
+  const bits: number[] = []
 
   if (isNumeric(text)) {
     // Numeric mode: groups of 3 digits → 10 bits
-    pushBits(bits, MODE_NUMERIC, 4);
-    pushBits(bits, text.length, 13);
+    pushBits(bits, MODE_NUMERIC, 4)
+    pushBits(bits, text.length, 13)
     for (let i = 0; i < text.length; i += 3) {
-      const group = text.substring(i, Math.min(i + 3, text.length));
-      const val = Number.parseInt(group, 10);
+      const group = text.substring(i, Math.min(i + 3, text.length))
+      const val = Number.parseInt(group, 10)
       if (group.length === 3) {
-        pushBits(bits, val, 10);
+        pushBits(bits, val, 10)
       } else if (group.length === 2) {
-        pushBits(bits, val, 7);
+        pushBits(bits, val, 7)
       } else {
-        pushBits(bits, val, 4);
+        pushBits(bits, val, 4)
       }
     }
   } else if (isText(text)) {
     // Text mode: 6 bits per character
-    pushBits(bits, MODE_TEXT, 4);
-    pushBits(bits, text.length, 13);
+    pushBits(bits, MODE_TEXT, 4)
+    pushBits(bits, text.length, 13)
     for (let i = 0; i < text.length; i++) {
       // Map ASCII 0x20-0x7E to 0-94
-      pushBits(bits, text.charCodeAt(i) - 0x20, 7);
+      pushBits(bits, text.charCodeAt(i) - 0x20, 7)
     }
   } else {
     // Binary mode: raw bytes
-    const data = new TextEncoder().encode(text);
-    pushBits(bits, MODE_BINARY, 4);
-    pushBits(bits, data.length, 13);
+    const data = new TextEncoder().encode(text)
+    pushBits(bits, MODE_BINARY, 4)
+    pushBits(bits, data.length, 13)
     for (const byte of data) {
-      pushBits(bits, byte, 8);
+      pushBits(bits, byte, 8)
     }
   }
 
   // Select version
-  const dataBitCount = bits.length;
-  let version = options.version ?? 0;
+  const dataBitCount = bits.length
+  let version = options.version ?? 0
 
   if (options.version === undefined) {
     for (let v = 1; v <= 84; v++) {
-      const dataCap = hanxinDataCapacity(v, ecRatio);
-      const neededBytes = Math.ceil(dataBitCount / 8);
+      const dataCap = hanxinDataCapacity(v, ecRatio)
+      const neededBytes = Math.ceil(dataBitCount / 8)
       if (neededBytes <= dataCap) {
-        version = v;
-        break;
+        version = v
+        break
       }
     }
     if (version === 0) {
-      throw new CapacityError("Data too long for any Han Xin Code version");
+      throw new CapacityError("Data too long for any Han Xin Code version")
     }
   } else if (!Number.isInteger(version) || version < 1 || version > 84) {
-    throw new InvalidInputError(`Han Xin version must be an integer 1-84 (got ${String(version)})`);
+    throw new InvalidInputError(`Han Xin version must be an integer 1-84 (got ${String(version)})`)
   }
 
-  const size = hanxinSize(version);
+  const size = hanxinSize(version)
 
   // Pad bits to fill data capacity
-  const totalCW = hanxinTotalCodewords(version);
-  const ecBytes = Math.ceil(totalCW * ecRatio);
-  const dataBytes = totalCW - ecBytes;
-  const totalDataBits = dataBytes * 8;
+  const totalCW = hanxinTotalCodewords(version)
+  const ecBytes = Math.ceil(totalCW * ecRatio)
+  const dataBytes = totalCW - ecBytes
+  const totalDataBits = dataBytes * 8
 
   // Terminator: up to 4 zero bits
-  const termLen = Math.min(4, totalDataBits - bits.length);
-  pushBits(bits, 0, termLen);
+  const termLen = Math.min(4, totalDataBits - bits.length)
+  pushBits(bits, 0, termLen)
 
   // Byte-align
-  while (bits.length % 8 !== 0) bits.push(0);
+  while (bits.length % 8 !== 0) bits.push(0)
 
   // Pad with 0x55 (Han Xin padding byte, alternating bits)
   while (bits.length < totalDataBits) {
-    pushBits(bits, 0x55, 8);
+    pushBits(bits, 0x55, 8)
   }
   // Trim to exact length
-  bits.length = totalDataBits;
+  bits.length = totalDataBits
 
   // Convert bits to bytes
-  const dataArr: number[] = [];
+  const dataArr: number[] = []
   for (let i = 0; i < bits.length; i += 8) {
-    let byte = 0;
+    let byte = 0
     for (let j = 0; j < 8 && i + j < bits.length; j++) {
-      byte = (byte << 1) | bits[i + j]!;
+      byte = (byte << 1) | bits[i + j]!
     }
-    dataArr.push(byte);
+    dataArr.push(byte)
   }
 
   // Generate EC with Han Xin RS over GF(256)/0x163
   // Split into blocks if ecBytes > 255 (RS block limit)
-  let allBytes: number[];
+  let allBytes: number[]
   if (ecBytes === 0) {
-    allBytes = dataArr;
+    allBytes = dataArr
   } else if (ecBytes <= 255) {
-    const ec = hanxinGenerateEC(dataArr, ecBytes);
-    allBytes = [...dataArr, ...ec];
+    const ec = hanxinGenerateEC(dataArr, ecBytes)
+    allBytes = [...dataArr, ...ec]
   } else {
     // Split into multiple RS blocks
-    const numBlocks = Math.ceil(ecBytes / 255);
-    const ecPerBlock = Math.ceil(ecBytes / numBlocks);
-    const baseDataPerBlock = Math.floor(dataArr.length / numBlocks);
-    const extraDataBlocks = dataArr.length % numBlocks;
+    const numBlocks = Math.ceil(ecBytes / 255)
+    const ecPerBlock = Math.ceil(ecBytes / numBlocks)
+    const baseDataPerBlock = Math.floor(dataArr.length / numBlocks)
+    const extraDataBlocks = dataArr.length % numBlocks
 
-    const interleavedData: number[] = [];
-    const interleavedEC: number[] = [];
-    const blocks: number[][] = [];
-    let pos = 0;
+    const interleavedData: number[] = []
+    const interleavedEC: number[] = []
+    const blocks: number[][] = []
+    let pos = 0
 
     for (let b = 0; b < numBlocks; b++) {
-      const blockSize = baseDataPerBlock + (b < extraDataBlocks ? 1 : 0);
-      const block = dataArr.slice(pos, pos + blockSize);
-      blocks.push(block);
-      pos += blockSize;
+      const blockSize = baseDataPerBlock + (b < extraDataBlocks ? 1 : 0)
+      const block = dataArr.slice(pos, pos + blockSize)
+      blocks.push(block)
+      pos += blockSize
     }
 
     // Generate EC per block
-    const ecBlocks: number[][] = [];
+    const ecBlocks: number[][] = []
     for (const block of blocks) {
-      ecBlocks.push(hanxinGenerateEC(block, Math.min(ecPerBlock, 255)));
+      ecBlocks.push(hanxinGenerateEC(block, Math.min(ecPerBlock, 255)))
     }
 
     // Interleave data
-    const maxDataLen = Math.max(...blocks.map((b) => b.length));
+    const maxDataLen = Math.max(...blocks.map((b) => b.length))
     for (let i = 0; i < maxDataLen; i++) {
       for (const block of blocks) {
-        if (i < block.length) interleavedData.push(block[i]!);
+        if (i < block.length) interleavedData.push(block[i]!)
       }
     }
 
     // Interleave EC
-    const maxECLen = Math.max(...ecBlocks.map((b) => b.length));
+    const maxECLen = Math.max(...ecBlocks.map((b) => b.length))
     for (let i = 0; i < maxECLen; i++) {
       for (const ec of ecBlocks) {
-        if (i < ec.length) interleavedEC.push(ec[i]!);
+        if (i < ec.length) interleavedEC.push(ec[i]!)
       }
     }
 
-    allBytes = [...interleavedData, ...interleavedEC];
+    allBytes = [...interleavedData, ...interleavedEC]
   }
 
   // Build matrix
   const matrix: (boolean | null)[][] = Array.from({ length: size }, () =>
     Array.from<boolean | null>({ length: size }).fill(null),
-  );
+  )
 
   // Place 4 finder patterns (all corners — Han Xin has 4, not 3 like QR)
   // Han Xin 4 rotationally-distinct chevron-shaped finder patterns (from Zint/bwip-js)
@@ -331,62 +331,62 @@ export function encodeHanXin(text: string, options: HanXinOptions = {}): boolean
   // prettier-ignore
   const FINDER_BR = [0x75,0x75,0x75,0x05,0x7d,0x01,0x7f]; // TR reversed
 
-  placeFinderHX(matrix, 0, 0, FINDER_TL, size);
-  placeFinderHX(matrix, 0, size - 7, FINDER_TR, size);
-  placeFinderHX(matrix, size - 7, 0, FINDER_BL, size);
-  placeFinderHX(matrix, size - 7, size - 7, FINDER_BR, size);
+  placeFinderHX(matrix, 0, 0, FINDER_TL, size)
+  placeFinderHX(matrix, 0, size - 7, FINDER_TR, size)
+  placeFinderHX(matrix, size - 7, 0, FINDER_BL, size)
+  placeFinderHX(matrix, size - 7, size - 7, FINDER_BR, size)
 
   // Separator: 8-module white border around each finder (row/col 7 and symmetric)
   for (let i = 0; i < 8; i++) {
     // Top-left separator
-    matrix[7]![i] = false;
-    matrix[i]![7] = false;
+    matrix[7]![i] = false
+    matrix[i]![7] = false
     // Top-right separator
-    matrix[7]![size - 1 - i] = false;
-    matrix[i]![size - 8] = false;
+    matrix[7]![size - 1 - i] = false
+    matrix[i]![size - 8] = false
     // Bottom-left separator
-    matrix[size - 8]![i] = false;
-    matrix[size - 1 - i]![7] = false;
+    matrix[size - 8]![i] = false
+    matrix[size - 1 - i]![7] = false
     // Bottom-right separator
-    matrix[size - 8]![size - 1 - i] = false;
-    matrix[size - 1 - i]![size - 8] = false;
+    matrix[size - 8]![size - 1 - i] = false
+    matrix[size - 1 - i]![size - 8] = false
   }
 
   // Function information region: 9-module reserved area (row/col 8 and symmetric)
   for (let i = 0; i < 9; i++) {
     // Top-left
-    if (matrix[8]![i] === null) matrix[8]![i] = false;
-    if (matrix[i]![8] === null) matrix[i]![8] = false;
+    if (matrix[8]![i] === null) matrix[8]![i] = false
+    if (matrix[i]![8] === null) matrix[i]![8] = false
     // Top-right
-    if (matrix[8]![size - 1 - i] === null) matrix[8]![size - 1 - i] = false;
-    if (matrix[i]![size - 9] === null) matrix[i]![size - 9] = false;
+    if (matrix[8]![size - 1 - i] === null) matrix[8]![size - 1 - i] = false
+    if (matrix[i]![size - 9] === null) matrix[i]![size - 9] = false
     // Bottom-left
-    if (matrix[size - 9]![i] === null) matrix[size - 9]![i] = false;
-    if (matrix[size - 1 - i]![8] === null) matrix[size - 1 - i]![8] = false;
+    if (matrix[size - 9]![i] === null) matrix[size - 9]![i] = false
+    if (matrix[size - 1 - i]![8] === null) matrix[size - 1 - i]![8] = false
     // Bottom-right
-    if (matrix[size - 9]![size - 1 - i] === null) matrix[size - 9]![size - 1 - i] = false;
-    if (matrix[size - 1 - i]![size - 9] === null) matrix[size - 1 - i]![size - 9] = false;
+    if (matrix[size - 9]![size - 1 - i] === null) matrix[size - 9]![size - 1 - i] = false
+    if (matrix[size - 1 - i]![size - 9] === null) matrix[size - 1 - i]![size - 9] = false
   }
 
   // Place data bits into available modules
-  const allBits: number[] = [];
+  const allBits: number[] = []
   for (const byte of allBytes) {
-    pushBits(allBits, byte, 8);
+    pushBits(allBits, byte, 8)
   }
 
-  let bitIdx = 0;
+  let bitIdx = 0
   for (let c = size - 2; c >= 1; c -= 2) {
     for (let r = 1; r < size - 1; r++) {
       for (const cc of [c, c - 1]) {
         if (cc >= 0 && cc < size && matrix[r]![cc] === null) {
-          matrix[r]![cc] = bitIdx < allBits.length ? allBits[bitIdx]! === 1 : false;
-          bitIdx++;
+          matrix[r]![cc] = bitIdx < allBits.length ? allBits[bitIdx]! === 1 : false
+          bitIdx++
         }
       }
     }
   }
 
-  return matrix.map((row) => row.map((cell) => cell === true));
+  return matrix.map((row) => row.map((cell) => cell === true))
 }
 
 function placeFinderHX(
@@ -398,10 +398,10 @@ function placeFinderHX(
 ): void {
   for (let r = 0; r < 7; r++) {
     for (let c = 0; c < 7; c++) {
-      const rr = row + r;
-      const cc = col + c;
-      if (rr < 0 || rr >= size || cc < 0 || cc >= size) continue;
-      matrix[rr]![cc] = ((pattern[r]! >> (6 - c)) & 1) === 1;
+      const rr = row + r
+      const cc = col + c
+      if (rr < 0 || rr >= size || cc < 0 || cc >= size) continue
+      matrix[rr]![cc] = ((pattern[r]! >> (6 - c)) & 1) === 1
     }
   }
 }

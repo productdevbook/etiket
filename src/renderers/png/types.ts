@@ -4,45 +4,45 @@
 
 export interface BarcodePNGOptions {
   /** Pixels per bar unit width (default: 2) */
-  scale?: number;
+  scale?: number
   /** Image height in pixels (default: 80) */
-  height?: number;
+  height?: number
   /** Quiet zone in pixels (default: 10) */
-  margin?: number;
+  margin?: number
   /** Foreground color as hex string (default: "#000000") */
-  color?: string;
+  color?: string
   /** Background color as hex string (default: "#ffffff") */
-  background?: string;
+  background?: string
 }
 
 export interface PostalPNGOptions {
   /** Bar width in pixels (default: 2) */
-  scale?: number;
+  scale?: number
   /** Centre-to-centre distance between bars in pixels (default: scale * 2) */
-  pitch?: number;
+  pitch?: number
   /** Full-bar height in pixels (default: 40) */
-  height?: number;
+  height?: number
   /** Quiet zone in pixels (default: 10) */
-  margin?: number;
+  margin?: number
   /** Centre tracker band height as a fraction of total height, 4-state (default: 1/3) */
-  trackerRatio?: number;
+  trackerRatio?: number
   /** Short bar height as a fraction of total height, POSTNET/PLANET (default: 0.4) */
-  shortRatio?: number;
+  shortRatio?: number
   /** Foreground color as hex string (default: "#000000") */
-  color?: string;
+  color?: string
   /** Background color as hex string (default: "#ffffff") */
-  background?: string;
+  background?: string
 }
 
 export interface MatrixPNGOptions {
   /** Pixels per module (default: 10) */
-  moduleSize?: number;
+  moduleSize?: number
   /** Quiet zone in modules (default: 4) */
-  margin?: number;
+  margin?: number
   /** Foreground color as hex string (default: "#000000") */
-  color?: string;
+  color?: string
   /** Background color as hex string (default: "#ffffff") */
-  background?: string;
+  background?: string
 }
 
 /**
@@ -50,16 +50,16 @@ export interface MatrixPNGOptions {
  * Supports "#RGB", "#RRGGBB", "RGB", "RRGGBB".
  */
 export function parseHexColor(hex: string): [number, number, number] {
-  let h = hex.startsWith("#") ? hex.slice(1) : hex;
+  let h = hex.startsWith("#") ? hex.slice(1) : hex
   if (h.length === 3) {
-    h = h[0]! + h[0]! + h[1]! + h[1]! + h[2]! + h[2]!;
+    h = h[0]! + h[0]! + h[1]! + h[1]! + h[2]! + h[2]!
   }
   if (h.length !== 6) {
-    throw new Error(`Invalid hex color: ${hex}`);
+    throw new Error(`Invalid hex color: ${hex}`)
   }
-  const n = Number.parseInt(h, 16);
+  const n = Number.parseInt(h, 16)
   if (Number.isNaN(n)) {
-    throw new Error(`Invalid hex color: ${hex}`);
+    throw new Error(`Invalid hex color: ${hex}`)
   }
-  return [(n >> 16) & 0xff, (n >> 8) & 0xff, n & 0xff];
+  return [(n >> 16) & 0xff, (n >> 8) & 0xff, n & 0xff]
 }

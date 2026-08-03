@@ -6,12 +6,12 @@
  * for donation identification, blood components, expiry dates, etc.
  */
 
-import { InvalidInputError } from "../errors";
+import { InvalidInputError } from "../errors"
 
 /**
  * ISO/IEC 7064 Mod 37-2 check character set: 0-9 (values 0-9), A-Z (values 10-35), * (value 36)
  */
-const MOD37_CHARSET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ*";
+const MOD37_CHARSET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ*"
 
 /**
  * Compute ISO/IEC 7064 Modulo 37-2 check character
@@ -26,18 +26,18 @@ const MOD37_CHARSET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ*";
  * @returns Single check character
  */
 export function iso7064Mod37_2(data: string): string {
-  let sum = 0;
+  let sum = 0
   for (let i = 0; i < data.length; i++) {
-    const idx = MOD37_CHARSET.indexOf(data[i]);
+    const idx = MOD37_CHARSET.indexOf(data[i])
     if (idx === -1) {
       throw new InvalidInputError(
         `Invalid character '${data[i]}' for ISO 7064 Mod 37-2 check character computation`,
-      );
+      )
     }
-    sum = ((sum + idx) * 2) % 37;
+    sum = ((sum + idx) * 2) % 37
   }
-  const check = (37 - sum) % 37;
-  return MOD37_CHARSET[check];
+  const check = (37 - sum) % 37
+  return MOD37_CHARSET[check]
 }
 
 /**
@@ -62,27 +62,27 @@ export function encodeISBT128DIN(
   donationNumber: string,
 ): string {
   if (!/^[A-Z]{2}$/.test(countryCode)) {
-    throw new InvalidInputError("ISBT 128 country code must be 2 uppercase letters");
+    throw new InvalidInputError("ISBT 128 country code must be 2 uppercase letters")
   }
   if (facilityNumber.length > 5) {
-    throw new InvalidInputError("ISBT 128 facility number must be max 5 characters");
+    throw new InvalidInputError("ISBT 128 facility number must be max 5 characters")
   }
   if (!/^\d{2}$/.test(year)) {
-    throw new InvalidInputError("ISBT 128 year must be exactly 2 digits");
+    throw new InvalidInputError("ISBT 128 year must be exactly 2 digits")
   }
   if (
     donationNumber.length < 1 ||
     donationNumber.length > 6 ||
     !/^[A-Z0-9]+$/.test(donationNumber)
   ) {
-    throw new InvalidInputError("ISBT 128 donation number must be 1-6 alphanumeric characters");
+    throw new InvalidInputError("ISBT 128 donation number must be 1-6 alphanumeric characters")
   }
 
-  const facility = facilityNumber.padStart(5, "0");
-  const donation = donationNumber.padStart(6, "0");
-  const din = `${countryCode}${facility}${year}${donation}`;
-  const check = iso7064Mod37_2(din);
-  return `=${din}${check}`;
+  const facility = facilityNumber.padStart(5, "0")
+  const donation = donationNumber.padStart(6, "0")
+  const din = `${countryCode}${facility}${year}${donation}`
+  const check = iso7064Mod37_2(din)
+  return `=${din}${check}`
 }
 
 /**
@@ -94,9 +94,9 @@ export function encodeISBT128DIN(
  */
 export function encodeISBT128Component(productCode: string): string {
   if (productCode.length !== 5) {
-    throw new InvalidInputError("ISBT 128 product code must be exactly 5 characters");
+    throw new InvalidInputError("ISBT 128 product code must be exactly 5 characters")
   }
-  return `=${productCode}`;
+  return `=${productCode}`
 }
 
 /**
@@ -108,9 +108,9 @@ export function encodeISBT128Component(productCode: string): string {
  */
 export function encodeISBT128Expiry(date: string): string {
   if (!/^\d{6}$/.test(date)) {
-    throw new InvalidInputError("ISBT 128 expiry date must be 6 digits (YYMMDD)");
+    throw new InvalidInputError("ISBT 128 expiry date must be 6 digits (YYMMDD)")
   }
-  return `&${date}`;
+  return `&${date}`
 }
 
 /**
@@ -122,7 +122,7 @@ export function encodeISBT128Expiry(date: string): string {
  */
 export function encodeISBT128BloodGroup(bloodGroup: string): string {
   if (bloodGroup.length < 1 || bloodGroup.length > 5) {
-    throw new InvalidInputError("ISBT 128 blood group code must be 1-5 characters");
+    throw new InvalidInputError("ISBT 128 blood group code must be 1-5 characters")
   }
-  return `%${bloodGroup}`;
+  return `%${bloodGroup}`
 }

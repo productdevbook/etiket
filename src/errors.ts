@@ -3,17 +3,17 @@
  */
 
 export class EtiketError extends Error {
-  override name = "EtiketError";
+  override name = "EtiketError"
 }
 
 export class InvalidInputError extends EtiketError {
-  override name = "InvalidInputError";
+  override name = "InvalidInputError"
 }
 
 export class CapacityError extends EtiketError {
-  override name = "CapacityError";
+  override name = "CapacityError"
 }
 
 export class CheckDigitError extends EtiketError {
-  override name = "CheckDigitError";
+  override name = "CheckDigitError"
 }

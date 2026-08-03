@@ -5,21 +5,21 @@ vertical extent, not its width. They therefore have their own encoder and
 renderer, separate from the width-modulated 1D barcodes.
 
 ```ts
-import { postal, encodePostal } from "etiket";
+import { postal, encodePostal } from "etiket"
 
 // Convenience function — returns SVG
-postal("12345-6789", { type: "postnet" });
-postal("SN34RD1A", { type: "rm4scc" });
+postal("12345-6789", { type: "postnet" })
+postal("SN34RD1A", { type: "rm4scc" })
 
 // Raw encoder — returns bar states
-const bars = encodePostal("SN34RD1A", { type: "rm4scc" });
+const bars = encodePostal("SN34RD1A", { type: "rm4scc" })
 // ['A', 'T', 'A', ... , 'F']
 ```
 
 A dedicated sub-path export is available for tree-shaking:
 
 ```ts
-import { postal, encodePostal } from "etiket/postal";
+import { postal, encodePostal } from "etiket/postal"
 ```
 
 ## Supported Formats
@@ -58,13 +58,13 @@ Some formats take a second field, supplied through options:
 
 ```ts
 // Australia Post — Format Control Code (default "11")
-postal("12345678", { type: "auspost", fcc: "59" });
+postal("12345678", { type: "auspost", fcc: "59" })
 
 // USPS Intelligent Mail — routing code (0, 5, 9 or 11 digits)
-postal("01234567094987654321", { type: "imb", routingCode: "01234567891" });
+postal("01234567094987654321", { type: "imb", routingCode: "01234567891" })
 
 // Japan Post — address following the postal code
-postal("1234567", { type: "jppost", routingCode: "1-2-3" });
+postal("1234567", { type: "jppost", routingCode: "1-2-3" })
 ```
 
 ## Rendering Options
@@ -82,7 +82,7 @@ postal("12345", {
   shortRatio: 0.4, // Short bar height, POSTNET/PLANET only
   showText: true,
   text: "12345",
-});
+})
 ```
 
 | Option         | Type     | Default        | Description                                                   |
@@ -101,10 +101,10 @@ they are on the other renderers.
 ## PNG Output
 
 ```ts
-import { postalPNG, postalPNGDataURI } from "etiket";
+import { postalPNG, postalPNGDataURI } from "etiket"
 
-const png = postalPNG("12345", { type: "postnet", scale: 2, height: 40 });
-const uri = postalPNGDataURI("SN34RD1A", { type: "rm4scc" });
+const png = postalPNG("12345", { type: "postnet", scale: 2, height: 40 })
+const uri = postalPNGDataURI("SN34RD1A", { type: "rm4scc" })
 ```
 
 ## `barcode()` Compatibility
@@ -114,7 +114,7 @@ renderer automatically, so existing calls keep working and now produce correct
 height-modulated output:
 
 ```ts
-barcode("12345", { type: "postnet" }); // identical to postal("12345")
+barcode("12345", { type: "postnet" }) // identical to postal("12345")
 ```
 
 `encodeBars()` — which returns bar _widths_ — throws for these types, since a
@@ -134,24 +134,24 @@ import {
   encodeAustraliaPost,
   encodeJapanPost,
   encodeIMb,
-} from "etiket";
+} from "etiket"
 
-encodePOSTNET("12345"); // number[] — 1 = tall, 0 = short
-encodeRM4SCC("SN34RD1A"); // FourState[]
-encodeAustraliaPost("11", "12345678"); // (fcc, dpid)
-encodeJapanPost("1234567", "1-2-3"); // (zipcode, address?)
-encodeIMb("01234567094987654321", "01234567891"); // (tracking, routing?)
+encodePOSTNET("12345") // number[] — 1 = tall, 0 = short
+encodeRM4SCC("SN34RD1A") // FourState[]
+encodeAustraliaPost("11", "12345678") // (fcc, dpid)
+encodeJapanPost("1234567", "1-2-3") // (zipcode, address?)
+encodeIMb("01234567094987654321", "01234567891") // (tracking, routing?)
 ```
 
 ## Low-Level Rendering
 
 ```ts
-import { renderPostalSVG, renderPostalPNG, renderPostalRaster } from "etiket";
+import { renderPostalSVG, renderPostalPNG, renderPostalRaster } from "etiket"
 
-const bars = encodePostal("12345", { type: "postnet" });
-renderPostalSVG(bars, { height: 40 });
-renderPostalPNG(bars, { scale: 2 });
-renderPostalRaster(bars); // { width, height, rows }
+const bars = encodePostal("12345", { type: "postnet" })
+renderPostalSVG(bars, { height: 40 })
+renderPostalPNG(bars, { scale: 2 })
+renderPostalRaster(bars) // { width, height, rows }
 ```
 
 The renderer detects the family from the input, so 4-state letters and 2-state

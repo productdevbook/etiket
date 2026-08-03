@@ -6,19 +6,19 @@
  * HIBC Secondary: +$$ ExpiryDate LotNumber CheckDigit
  */
 
-import { InvalidInputError } from "../errors";
+import { InvalidInputError } from "../errors"
 
-const HIBC_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-. $/+%";
+const HIBC_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-. $/+%"
 
 /** Calculate HIBC mod 43 check digit */
 function hibcCheckDigit(data: string): string {
-  let sum = 0;
+  let sum = 0
   for (const ch of data) {
-    const idx = HIBC_CHARS.indexOf(ch);
-    if (idx === -1) throw new InvalidInputError(`Invalid HIBC character: "${ch}"`);
-    sum += idx;
+    const idx = HIBC_CHARS.indexOf(ch)
+    if (idx === -1) throw new InvalidInputError(`Invalid HIBC character: "${ch}"`)
+    sum += idx
   }
-  return HIBC_CHARS[sum % 43]!;
+  return HIBC_CHARS[sum % 43]!
 }
 
 /**
@@ -31,23 +31,23 @@ function hibcCheckDigit(data: string): string {
  */
 export function encodeHIBCPrimary(lic: string, product: string, unitOfMeasure = 0): string {
   if (!/^[A-Z][A-Z0-9]{3}$/.test(lic)) {
-    throw new InvalidInputError("HIBC LIC must be 4 characters: letter + 3 alphanumeric");
+    throw new InvalidInputError("HIBC LIC must be 4 characters: letter + 3 alphanumeric")
   }
   if (product.length < 1 || product.length > 18) {
-    throw new InvalidInputError("HIBC product number must be 1-18 characters");
+    throw new InvalidInputError("HIBC product number must be 1-18 characters")
   }
   if (!/^[0-9A-Z\-. $/+%]+$/.test(product)) {
     throw new InvalidInputError(
       "HIBC product number contains invalid characters (must be uppercase alphanumeric or - . $ / + %)",
-    );
+    )
   }
   if (unitOfMeasure < 0 || unitOfMeasure > 9) {
-    throw new InvalidInputError("HIBC unit of measure must be 0-9");
+    throw new InvalidInputError("HIBC unit of measure must be 0-9")
   }
 
-  const data = `+${lic}${product}${unitOfMeasure}`;
-  const check = hibcCheckDigit(data);
-  return `${data}${check}`;
+  const data = `+${lic}${product}${unitOfMeasure}`
+  const check = hibcCheckDigit(data)
+  return `${data}${check}`
 }
 
 /**
@@ -59,37 +59,37 @@ export function encodeHIBCPrimary(lic: string, product: string, unitOfMeasure = 
  */
 export function encodeHIBCSecondary(expiry?: string, lot?: string): string {
   if (!expiry && !lot) {
-    throw new InvalidInputError("HIBC Secondary requires at least expiry or lot");
+    throw new InvalidInputError("HIBC Secondary requires at least expiry or lot")
   }
   if (lot && !/^[0-9A-Z\-. $/+%]+$/.test(lot)) {
     throw new InvalidInputError(
       "HIBC lot number contains invalid characters (must be uppercase alphanumeric or - . $ / + %)",
-    );
+    )
   }
-  let data = "+$$";
+  let data = "+$$"
 
   if (expiry) {
     // Date format indicator + date
     if (expiry.length === 4) {
       // YYMM
-      data += `2${expiry}`;
+      data += `2${expiry}`
     } else if (expiry.length === 6) {
       // YYMMDD
-      data += `3${expiry}`;
+      data += `3${expiry}`
     } else if (expiry.length === 8) {
       // YYYYMMDD
-      data += `4${expiry}`;
+      data += `4${expiry}`
     } else {
-      throw new InvalidInputError("HIBC expiry must be YYMM, YYMMDD, or YYYYMMDD");
+      throw new InvalidInputError("HIBC expiry must be YYMM, YYMMDD, or YYYYMMDD")
     }
   }
 
   if (lot) {
-    data += lot;
+    data += lot
   }
 
-  const check = hibcCheckDigit(data);
-  return `${data}${check}`;
+  const check = hibcCheckDigit(data)
+  return `${data}${check}`
 }
 
 /**
@@ -100,18 +100,18 @@ export function encodeHIBCConcatenated(
   product: string,
   options?: { unitOfMeasure?: number; expiry?: string; lot?: string },
 ): string {
-  const primary = encodeHIBCPrimary(lic, product, options?.unitOfMeasure);
+  const primary = encodeHIBCPrimary(lic, product, options?.unitOfMeasure)
   // Remove check digit from primary for concatenation
-  const primaryData = primary.slice(0, -1);
+  const primaryData = primary.slice(0, -1)
 
-  let secondary = "";
+  let secondary = ""
   if (options?.expiry || options?.lot) {
-    const sec = encodeHIBCSecondary(options.expiry, options.lot);
+    const sec = encodeHIBCSecondary(options.expiry, options.lot)
     // Remove "+$$" prefix and check digit for concatenation
-    secondary = "/" + sec.slice(3, -1);
+    secondary = "/" + sec.slice(3, -1)
   }
 
-  const combined = `${primaryData}${secondary}`;
-  const check = hibcCheckDigit(combined);
-  return `${combined}${check}`;
+  const combined = `${primaryData}${secondary}`
+  const check = hibcCheckDigit(combined)
+  return `${combined}${check}`
 }

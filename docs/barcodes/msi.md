@@ -5,17 +5,17 @@ Numeric barcode used in warehouse shelves and inventory management.
 ## Usage
 
 ```ts
-import { barcode } from "etiket";
+import { barcode } from "etiket"
 
 // Default: Mod 10 check digit
-barcode("12345", { type: "msi" });
+barcode("12345", { type: "msi" })
 
 // Different check digit algorithms
-barcode("12345", { type: "msi", msiCheckDigit: "mod10" });
-barcode("12345", { type: "msi", msiCheckDigit: "mod11" });
-barcode("12345", { type: "msi", msiCheckDigit: "mod1010" });
-barcode("12345", { type: "msi", msiCheckDigit: "mod1110" });
-barcode("12345", { type: "msi", msiCheckDigit: "none" });
+barcode("12345", { type: "msi", msiCheckDigit: "mod10" })
+barcode("12345", { type: "msi", msiCheckDigit: "mod11" })
+barcode("12345", { type: "msi", msiCheckDigit: "mod1010" })
+barcode("12345", { type: "msi", msiCheckDigit: "mod1110" })
+barcode("12345", { type: "msi", msiCheckDigit: "none" })
 ```
 
 ## Check Digit Types
@@ -31,7 +31,7 @@ barcode("12345", { type: "msi", msiCheckDigit: "none" });
 ## Raw Encoder
 
 ```ts
-import { encodeMSI } from "etiket";
+import { encodeMSI } from "etiket"
 
-const bars = encodeMSI("12345", { checkDigit: "mod1010" });
+const bars = encodeMSI("12345", { checkDigit: "mod1010" })
 ```

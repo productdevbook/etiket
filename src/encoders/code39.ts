@@ -3,15 +3,15 @@
  * Supports optional modulo-43 check digit
  */
 
-import { InvalidInputError } from "../errors";
+import { InvalidInputError } from "../errors"
 
 // Code 39 character set in index order:
 // 0-9 = indices 0-9, A-Z = indices 10-35,
 // - = 36, . = 37, (space) = 38, $ = 39, / = 40, + = 41, % = 42
-const CHARSET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-. $/+%";
+const CHARSET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-. $/+%"
 
 // Start/stop character (*)
-const START_STOP_INDEX = 43;
+const START_STOP_INDEX = 43
 
 // Patterns: 9 elements per character (B S B S B S B S B)
 // narrow = 1, wide = 3
@@ -60,15 +60,15 @@ const PATTERNS: readonly number[][] = [
   [1, 3, 1, 1, 1, 3, 1, 3, 1], // + (41)
   [1, 1, 1, 3, 1, 3, 1, 3, 1], // % (42)
   [1, 3, 1, 1, 3, 1, 3, 1, 1], // * (43, start/stop)
-];
+]
 
 // Narrow inter-character gap
-const GAP = 1;
+const GAP = 1
 
 // Character index lookup for fast validation
-const CHAR_INDEX = new Map<string, number>();
+const CHAR_INDEX = new Map<string, number>()
 for (let i = 0; i < CHARSET.length; i++) {
-  CHAR_INDEX.set(CHARSET[i]!, i);
+  CHAR_INDEX.set(CHARSET[i]!, i)
 }
 
 /**
@@ -214,15 +214,15 @@ const EXTENDED_MAP: string[] = [
   "%R", // 125 }
   "%S", // 126 ~
   "%T", // 127 DEL
-];
+]
 
 /**
  * Append a character's pattern to the bars array
  */
 function appendPattern(bars: number[], index: number): void {
-  const pattern = PATTERNS[index]!;
+  const pattern = PATTERNS[index]!
   for (const width of pattern) {
-    bars.push(width);
+    bars.push(width)
   }
 }
 
@@ -230,11 +230,11 @@ function appendPattern(bars: number[], index: number): void {
  * Calculate modulo-43 check digit for given character indices
  */
 function calculateCheckDigit(indices: number[]): number {
-  let sum = 0;
+  let sum = 0
   for (const index of indices) {
-    sum += index;
+    sum += index
   }
-  return sum % 43;
+  return sum % 43
 }
 
 /**
@@ -246,50 +246,50 @@ function calculateCheckDigit(indices: number[]): number {
  * @returns Array of bar widths (alternating bar/space)
  */
 export function encodeCode39(text: string, options?: { checkDigit?: boolean }): number[] {
-  const includeCheckDigit = options?.checkDigit ?? false;
+  const includeCheckDigit = options?.checkDigit ?? false
 
   if (text.length === 0) {
-    throw new InvalidInputError("Code 39 input must not be empty");
+    throw new InvalidInputError("Code 39 input must not be empty")
   }
 
   if (text.includes("*")) {
-    throw new InvalidInputError("Code 39 input must not contain the start/stop character (*)");
+    throw new InvalidInputError("Code 39 input must not contain the start/stop character (*)")
   }
 
   // Validate and collect character indices
-  const indices: number[] = [];
+  const indices: number[] = []
   for (let i = 0; i < text.length; i++) {
-    const ch = text[i]!;
-    const index = CHAR_INDEX.get(ch);
+    const ch = text[i]!
+    const index = CHAR_INDEX.get(ch)
     if (index === undefined) {
-      throw new InvalidInputError(`Invalid Code 39 character: '${ch}' at position ${i}`);
+      throw new InvalidInputError(`Invalid Code 39 character: '${ch}' at position ${i}`)
     }
-    indices.push(index);
+    indices.push(index)
   }
 
   // Optionally compute check digit
   if (includeCheckDigit) {
-    indices.push(calculateCheckDigit(indices));
+    indices.push(calculateCheckDigit(indices))
   }
 
-  const bars: number[] = [];
+  const bars: number[] = []
 
   // Start character (*)
-  appendPattern(bars, START_STOP_INDEX);
+  appendPattern(bars, START_STOP_INDEX)
 
   // Inter-character gap
-  bars.push(GAP);
+  bars.push(GAP)
 
   // Data characters
   for (let i = 0; i < indices.length; i++) {
-    appendPattern(bars, indices[i]!);
-    bars.push(GAP); // inter-character gap (also before stop)
+    appendPattern(bars, indices[i]!)
+    bars.push(GAP) // inter-character gap (also before stop)
   }
 
   // Stop character (*)
-  appendPattern(bars, START_STOP_INDEX);
+  appendPattern(bars, START_STOP_INDEX)
 
-  return bars;
+  return bars
 }
 
 /**
@@ -302,21 +302,21 @@ export function encodeCode39(text: string, options?: { checkDigit?: boolean }): 
  */
 export function encodeCode39Extended(text: string, options?: { checkDigit?: boolean }): number[] {
   if (text.length === 0) {
-    throw new InvalidInputError("Code 39 Extended input must not be empty");
+    throw new InvalidInputError("Code 39 Extended input must not be empty")
   }
 
   // Map each ASCII character to Code 39 character(s)
-  let mapped = "";
+  let mapped = ""
   for (let i = 0; i < text.length; i++) {
-    const code = text.charCodeAt(i);
+    const code = text.charCodeAt(i)
     if (code < 0 || code > 127) {
       throw new InvalidInputError(
         `Invalid Code 39 Extended character: '${text[i]}' (code ${code}) at position ${i} — only ASCII 0-127 supported`,
-      );
+      )
     }
-    mapped += EXTENDED_MAP[code]!;
+    mapped += EXTENDED_MAP[code]!
   }
 
   // Encode the mapped string as standard Code 39
-  return encodeCode39(mapped, options);
+  return encodeCode39(mapped, options)
 }

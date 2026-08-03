@@ -52,9 +52,9 @@ import {
   gs1datamatrixPNG,
   pdf417PNG,
   aztecPNG,
-} from "etiket";
+} from "etiket"
 
-import type { GradientOptions, LogoOptions } from "etiket";
+import type { GradientOptions, LogoOptions } from "etiket"
 
 // ── Constants ──
 
@@ -99,7 +99,7 @@ const BARCODE_DEFAULTS: Record<string, string> = {
   "isbt-component": "E0791",
   "isbt-expiry": "260101",
   "isbt-bloodgroup": "51",
-};
+}
 
 const FORMAT_HINTS: Record<string, string> = {
   "australia-post": "Format: FCC:DPID (e.g. 11:12345678)",
@@ -107,7 +107,7 @@ const FORMAT_HINTS: Record<string, string> = {
   "hibc-secondary": "Format: EXPIRY:LOT (e.g. 260101:LOT123)",
   "hibc-concatenated": "Format: LIC:PRODUCT:EXPIRY:LOT",
   "isbt-din": "Format: COUNTRY:FACILITY:YEAR:DONATION",
-};
+}
 
 const M2D_DEFAULTS: Record<string, string> = {
   datamatrix: "Hello World",
@@ -123,87 +123,87 @@ const M2D_DEFAULTS: Record<string, string> = {
   codablockf: "HELLO WORLD",
   code16k: "HELLO",
   "gs1-composite": "(17)260101(10)BATCH01",
-};
+}
 
 // ── Utilities ──
 
-const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
-const val = (id: string) => $<HTMLInputElement>(id).value;
-const numVal = (id: string) => Number(val(id));
+const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T
+const val = (id: string) => $<HTMLInputElement>(id).value
+const numVal = (id: string) => Number(val(id))
 const optNum = (id: string) => {
-  const v = val(id);
-  return v === "" ? undefined : Number(v);
-};
+  const v = val(id)
+  return v === "" ? undefined : Number(v)
+}
 
 function renderSafe(target: HTMLElement, fn: () => string) {
   try {
-    target.innerHTML = fn();
+    target.innerHTML = fn()
   } catch (err) {
-    target.innerHTML = `<div class="error">${(err as Error).message}</div>`;
+    target.innerHTML = `<div class="error">${(err as Error).message}</div>`
   }
 }
 
-let toastTimer: ReturnType<typeof setTimeout>;
+let toastTimer: ReturnType<typeof setTimeout>
 function toast(msg: string) {
-  const el = $("toast");
-  el.textContent = msg;
-  el.classList.add("show");
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove("show"), 2000);
+  const el = $("toast")
+  el.textContent = msg
+  el.classList.add("show")
+  clearTimeout(toastTimer)
+  toastTimer = setTimeout(() => el.classList.remove("show"), 2000)
 }
 
 function copySVG(svg: string) {
-  navigator.clipboard.writeText(svg).then(() => toast("Copied to clipboard"));
+  navigator.clipboard.writeText(svg).then(() => toast("Copied to clipboard"))
 }
 
 function downloadSVG(svg: string, name: string) {
-  const blob = new Blob([svg], { type: "image/svg+xml" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = `${name}.svg`;
-  a.click();
-  URL.revokeObjectURL(a.href);
-  toast("Downloaded");
+  const blob = new Blob([svg], { type: "image/svg+xml" })
+  const a = document.createElement("a")
+  a.href = URL.createObjectURL(blob)
+  a.download = `${name}.svg`
+  a.click()
+  URL.revokeObjectURL(a.href)
+  toast("Downloaded")
 }
 
 function downloadPNG(data: Uint8Array, name: string) {
-  const blob = new Blob([data], { type: "image/png" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = `${name}.png`;
-  a.click();
-  URL.revokeObjectURL(a.href);
-  toast("Downloaded PNG");
+  const blob = new Blob([data], { type: "image/png" })
+  const a = document.createElement("a")
+  a.href = URL.createObjectURL(blob)
+  a.download = `${name}.png`
+  a.click()
+  URL.revokeObjectURL(a.href)
+  toast("Downloaded PNG")
 }
 
 function svgToPNG(svgString: string): Promise<Uint8Array> {
   return new Promise((resolve, reject) => {
-    const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
-    const url = URL.createObjectURL(svgBlob);
-    const img = new Image();
+    const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" })
+    const url = URL.createObjectURL(svgBlob)
+    const img = new Image()
     img.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = img.naturalWidth * 2;
-      canvas.height = img.naturalHeight * 2;
-      const ctx = canvas.getContext("2d")!;
-      ctx.scale(2, 2);
-      ctx.drawImage(img, 0, 0);
-      URL.revokeObjectURL(url);
+      const canvas = document.createElement("canvas")
+      canvas.width = img.naturalWidth * 2
+      canvas.height = img.naturalHeight * 2
+      const ctx = canvas.getContext("2d")!
+      ctx.scale(2, 2)
+      ctx.drawImage(img, 0, 0)
+      URL.revokeObjectURL(url)
       canvas.toBlob((blob) => {
-        if (!blob) return reject(new Error("Failed to create PNG"));
-        blob.arrayBuffer().then((buf) => resolve(new Uint8Array(buf)));
-      }, "image/png");
-    };
+        if (!blob) return reject(new Error("Failed to create PNG"))
+        blob.arrayBuffer().then((buf) => resolve(new Uint8Array(buf)))
+      }, "image/png")
+    }
     img.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error("Failed to load SVG"));
-    };
-    img.src = url;
-  });
+      URL.revokeObjectURL(url)
+      reject(new Error("Failed to load SVG"))
+    }
+    img.src = url
+  })
 }
 
 function listen(ids: string[], fn: () => void) {
-  for (const id of ids) $(id).addEventListener("input", fn);
+  for (const id of ids) $(id).addEventListener("input", fn)
 }
 
 // Track active preview mode per panel
@@ -211,143 +211,143 @@ const previewMode: Record<string, "svg" | "png"> = {
   bc: "svg",
   qr: "svg",
   m2d: "svg",
-};
+}
 
 function setupPreviewToggles() {
   document.querySelectorAll<HTMLButtonElement>(".toggle-btn[data-preview]").forEach((btn) => {
     btn.addEventListener("click", () => {
-      const target = btn.dataset.target!;
-      const mode = btn.dataset.preview as "svg" | "png";
-      previewMode[target] = mode;
+      const target = btn.dataset.target!
+      const mode = btn.dataset.preview as "svg" | "png"
+      previewMode[target] = mode
 
       // Toggle active class
       btn
         .parentElement!.querySelectorAll(".toggle-btn")
-        .forEach((b) => b.classList.remove("active"));
-      btn.classList.add("active");
+        .forEach((b) => b.classList.remove("active"))
+      btn.classList.add("active")
 
       // Toggle output visibility
-      const svgOut = $(`${target}-output`);
-      const pngOut = $(`${target}-output-png`);
-      svgOut.hidden = mode === "png";
-      pngOut.hidden = mode === "svg";
+      const svgOut = $(`${target}-output`)
+      const pngOut = $(`${target}-output-png`)
+      svgOut.hidden = mode === "png"
+      pngOut.hidden = mode === "svg"
 
       // Trigger re-render for PNG if switching
       if (mode === "png") {
-        pngOut.dispatchEvent(new CustomEvent("render-png"));
+        pngOut.dispatchEvent(new CustomEvent("render-png"))
       }
-    });
-  });
+    })
+  })
 }
 
 function renderPNGPreview(target: string, pngData: Uint8Array) {
-  const el = $(`${target}-output-png`);
-  const blob = new Blob([pngData], { type: "image/png" });
-  const url = URL.createObjectURL(blob);
-  el.innerHTML = `<img src="${url}" alt="PNG preview" style="max-width:100%;image-rendering:pixelated" />`;
+  const el = $(`${target}-output-png`)
+  const blob = new Blob([pngData], { type: "image/png" })
+  const url = URL.createObjectURL(blob)
+  el.innerHTML = `<img src="${url}" alt="PNG preview" style="max-width:100%;image-rendering:pixelated" />`
 }
 
 function renderPNGPreviewFromSVG(target: string, svg: string) {
   svgToPNG(svg)
     .then((png) => {
-      const el = $(`${target}-output-png`);
-      const blob = new Blob([png], { type: "image/png" });
-      const url = URL.createObjectURL(blob);
-      el.innerHTML = `<img src="${url}" alt="PNG preview" style="max-width:100%" />`;
+      const el = $(`${target}-output-png`)
+      const blob = new Blob([png], { type: "image/png" })
+      const url = URL.createObjectURL(blob)
+      el.innerHTML = `<img src="${url}" alt="PNG preview" style="max-width:100%" />`
     })
     .catch(() => {
-      $(`${target}-output-png`).innerHTML = `<div class="error">PNG render failed</div>`;
-    });
+      $(`${target}-output-png`).innerHTML = `<div class="error">PNG render failed</div>`
+    })
 }
 
 function setupCopyDownload(prefix: string, getFn: () => string) {
   $(`${prefix}-copy`).addEventListener("click", () => {
     try {
-      copySVG(getFn());
+      copySVG(getFn())
     } catch {}
-  });
+  })
   $(`${prefix}-download`).addEventListener("click", () => {
     try {
-      downloadSVG(getFn(), prefix);
+      downloadSVG(getFn(), prefix)
     } catch {}
-  });
+  })
 }
 
 // ── Custom Renderers ──
 
 function renderFourStateSVG(states: string[], color: string): string {
-  const bw = 2;
-  const gap = 3;
-  const h = 24;
-  const m = 10;
-  const w = states.length * (bw + gap) - gap + m * 2;
+  const bw = 2
+  const gap = 3
+  const h = 24
+  const m = 10
+  const w = states.length * (bw + gap) - gap + m * 2
 
   const bars = states
     .map((s, i) => {
-      const x = m + i * (bw + gap);
-      let y: number;
-      let bh: number;
+      const x = m + i * (bw + gap)
+      let y: number
+      let bh: number
       switch (s) {
         case "F":
-          y = 0;
-          bh = h;
-          break;
+          y = 0
+          bh = h
+          break
         case "A":
-          y = 0;
-          bh = h * 0.6;
-          break;
+          y = 0
+          bh = h * 0.6
+          break
         case "D":
-          y = h * 0.4;
-          bh = h * 0.6;
-          break;
+          y = h * 0.4
+          bh = h * 0.6
+          break
         default:
-          y = h * 0.25;
-          bh = h * 0.5;
-          break; // T
+          y = h * 0.25
+          bh = h * 0.5
+          break // T
       }
-      return `<rect x="${x}" y="${y + m}" width="${bw}" height="${bh}" fill="${color}"/>`;
+      return `<rect x="${x}" y="${y + m}" width="${bw}" height="${bh}" fill="${color}"/>`
     })
-    .join("");
+    .join("")
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h + m * 2}" width="${w}" height="${h + m * 2}">${bars}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h + m * 2}" width="${w}" height="${h + m * 2}">${bars}</svg>`
 }
 
 function renderJABCodeSVG(
   result: { matrix: number[][]; rows: number; cols: number; palette: readonly string[] },
   size: number,
 ): string {
-  const cell = Math.max(2, Math.floor(size / Math.max(result.rows, result.cols)));
-  const w = result.cols * cell;
-  const h = result.rows * cell;
-  let rects = "";
+  const cell = Math.max(2, Math.floor(size / Math.max(result.rows, result.cols)))
+  const w = result.cols * cell
+  const h = result.rows * cell
+  let rects = ""
   for (let r = 0; r < result.rows; r++) {
     for (let c = 0; c < result.cols; c++) {
-      rects += `<rect x="${c * cell}" y="${r * cell}" width="${cell}" height="${cell}" fill="${result.palette[result.matrix[r][c]]}"/>`;
+      rects += `<rect x="${c * cell}" y="${r * cell}" width="${cell}" height="${cell}" fill="${result.palette[result.matrix[r][c]]}"/>`
     }
   }
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}">${rects}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}">${rects}</svg>`
 }
 
 // ── Tabs ──
 
 function setupTabs() {
-  const tabs = document.querySelectorAll<HTMLButtonElement>(".tab");
-  const panels = document.querySelectorAll<HTMLElement>(".panel");
+  const tabs = document.querySelectorAll<HTMLButtonElement>(".tab")
+  const panels = document.querySelectorAll<HTMLElement>(".panel")
   for (const tab of tabs) {
     tab.addEventListener("click", () => {
-      tabs.forEach((t) => t.classList.remove("active"));
-      panels.forEach((p) => p.classList.remove("active"));
-      tab.classList.add("active");
+      tabs.forEach((t) => t.classList.remove("active"))
+      panels.forEach((p) => p.classList.remove("active"))
+      tab.classList.add("active")
       document
         .querySelector<HTMLElement>(`[data-panel="${tab.dataset.tab}"]`)!
-        .classList.add("active");
-    });
+        .classList.add("active")
+    })
   }
 }
 
 // ── Barcode ──
 
-const FOURSTATE_TYPES = new Set(["rm4scc", "kix", "australia-post", "japan-post", "imb"]);
+const FOURSTATE_TYPES = new Set(["rm4scc", "kix", "australia-post", "japan-post", "imb"])
 const HEALTHCARE_TYPES = new Set([
   "hibc-primary",
   "hibc-secondary",
@@ -356,77 +356,77 @@ const HEALTHCARE_TYPES = new Set([
   "isbt-component",
   "isbt-expiry",
   "isbt-bloodgroup",
-]);
+])
 
 function generateBarcode(data: string, type: string, opts: any): string {
   // 4-State postal codes
   if (FOURSTATE_TYPES.has(type)) {
-    let states: string[];
+    let states: string[]
     switch (type) {
       case "rm4scc":
-        states = encodeRM4SCC(data) as string[];
-        break;
+        states = encodeRM4SCC(data) as string[]
+        break
       case "kix":
-        states = encodeKIX(data) as string[];
-        break;
+        states = encodeKIX(data) as string[]
+        break
       case "australia-post": {
-        const [fcc, dpid] = data.split(":");
-        states = encodeAustraliaPost(fcc, dpid) as string[];
-        break;
+        const [fcc, dpid] = data.split(":")
+        states = encodeAustraliaPost(fcc, dpid) as string[]
+        break
       }
       case "japan-post":
-        states = encodeJapanPost(data) as string[];
-        break;
+        states = encodeJapanPost(data) as string[]
+        break
       case "imb":
-        states = encodeIMb(data) as string[];
-        break;
+        states = encodeIMb(data) as string[]
+        break
       default:
-        states = [];
+        states = []
     }
-    return renderFourStateSVG(states, opts.color ?? "#000");
+    return renderFourStateSVG(states, opts.color ?? "#000")
   }
 
   // Healthcare — encode to string, render as Code128
   if (HEALTHCARE_TYPES.has(type)) {
-    let encoded: string;
+    let encoded: string
     switch (type) {
       case "hibc-primary": {
-        const [lic, product, uom] = data.split(":");
-        encoded = encodeHIBCPrimary(lic, product, uom ? Number(uom) : undefined);
-        break;
+        const [lic, product, uom] = data.split(":")
+        encoded = encodeHIBCPrimary(lic, product, uom ? Number(uom) : undefined)
+        break
       }
       case "hibc-secondary": {
-        const [expiry, lot] = data.split(":");
-        encoded = encodeHIBCSecondary(expiry || undefined, lot || undefined);
-        break;
+        const [expiry, lot] = data.split(":")
+        encoded = encodeHIBCSecondary(expiry || undefined, lot || undefined)
+        break
       }
       case "hibc-concatenated": {
-        const [lic, product, expiry, lot] = data.split(":");
-        encoded = encodeHIBCConcatenated(lic, product, { expiry, lot });
-        break;
+        const [lic, product, expiry, lot] = data.split(":")
+        encoded = encodeHIBCConcatenated(lic, product, { expiry, lot })
+        break
       }
       case "isbt-din": {
-        const [cc, facility, year, donation] = data.split(":");
-        encoded = encodeISBT128DIN(cc, facility, year, donation);
-        break;
+        const [cc, facility, year, donation] = data.split(":")
+        encoded = encodeISBT128DIN(cc, facility, year, donation)
+        break
       }
       case "isbt-component":
-        encoded = encodeISBT128Component(data);
-        break;
+        encoded = encodeISBT128Component(data)
+        break
       case "isbt-expiry":
-        encoded = encodeISBT128Expiry(data);
-        break;
+        encoded = encodeISBT128Expiry(data)
+        break
       case "isbt-bloodgroup":
-        encoded = encodeISBT128BloodGroup(data);
-        break;
+        encoded = encodeISBT128BloodGroup(data)
+        break
       default:
-        encoded = data;
+        encoded = data
     }
-    return barcode(encoded, { ...opts, type: "code128" });
+    return barcode(encoded, { ...opts, type: "code128" })
   }
 
   // Standard barcode types
-  return barcode(data, { ...opts, type });
+  return barcode(data, { ...opts, type })
 }
 
 function getBarcodeOpts() {
@@ -440,14 +440,14 @@ function getBarcodeOpts() {
     margin: numVal("bc-margin"),
     marginTop: optNum("bc-mt"),
     marginBottom: optNum("bc-mb"),
-  };
+  }
 }
 
 function renderBarcodePNGPreview() {
   try {
-    const type = val("bc-type");
-    const data = val("bc-data");
-    const opts = getBarcodeOpts();
+    const type = val("bc-type")
+    const data = val("bc-data")
+    const opts = getBarcodeOpts()
     if (!FOURSTATE_TYPES.has(type) && !HEALTHCARE_TYPES.has(type)) {
       const png = barcodePNG(data, {
         type: type as any,
@@ -456,13 +456,13 @@ function renderBarcodePNGPreview() {
         margin: opts.margin,
         color: opts.color,
         background: opts.background,
-      });
-      renderPNGPreview("bc", png);
+      })
+      renderPNGPreview("bc", png)
     } else {
-      renderPNGPreviewFromSVG("bc", generateBarcode(data, type, opts));
+      renderPNGPreviewFromSVG("bc", generateBarcode(data, type, opts))
     }
   } catch (err) {
-    $("bc-output-png").innerHTML = `<div class="error">${(err as Error).message}</div>`;
+    $("bc-output-png").innerHTML = `<div class="error">${(err as Error).message}</div>`
   }
 }
 
@@ -470,19 +470,19 @@ function setupBarcode() {
   const render = () => {
     renderSafe($("bc-output"), () =>
       generateBarcode(val("bc-data"), val("bc-type"), getBarcodeOpts()),
-    );
-    if (previewMode.bc === "png") renderBarcodePNGPreview();
-  };
+    )
+    if (previewMode.bc === "png") renderBarcodePNGPreview()
+  }
 
-  $("bc-output-png").addEventListener("render-png", renderBarcodePNGPreview);
+  $("bc-output-png").addEventListener("render-png", renderBarcodePNGPreview)
 
   $("bc-type").addEventListener("change", () => {
-    const type = val("bc-type");
-    const def = BARCODE_DEFAULTS[type];
-    if (def) $<HTMLInputElement>("bc-data").value = def;
-    $("bc-hint").textContent = FORMAT_HINTS[type] ?? "";
-    render();
-  });
+    const type = val("bc-type")
+    const def = BARCODE_DEFAULTS[type]
+    if (def) $<HTMLInputElement>("bc-data").value = def
+    $("bc-hint").textContent = FORMAT_HINTS[type] ?? ""
+    render()
+  })
 
   listen(
     [
@@ -498,14 +498,14 @@ function setupBarcode() {
       "bc-mb",
     ],
     render,
-  );
-  setupCopyDownload("bc", () => generateBarcode(val("bc-data"), val("bc-type"), getBarcodeOpts()));
+  )
+  setupCopyDownload("bc", () => generateBarcode(val("bc-data"), val("bc-type"), getBarcodeOpts()))
 
   $("bc-download-png").addEventListener("click", () => {
     try {
-      const type = val("bc-type");
-      const data = val("bc-data");
-      const opts = getBarcodeOpts();
+      const type = val("bc-type")
+      const data = val("bc-data")
+      const opts = getBarcodeOpts()
       // Standard barcode types that support direct PNG
       if (!FOURSTATE_TYPES.has(type) && !HEALTHCARE_TYPES.has(type)) {
         const png = barcodePNG(data, {
@@ -515,23 +515,23 @@ function setupBarcode() {
           margin: opts.margin,
           color: opts.color,
           background: opts.background,
-        });
-        downloadPNG(png, `barcode-${type}`);
+        })
+        downloadPNG(png, `barcode-${type}`)
       } else {
         // Fallback: render SVG to canvas for non-standard types
-        const svg = generateBarcode(data, type, opts);
-        svgToPNG(svg).then((png) => downloadPNG(png, `barcode-${type}`));
+        const svg = generateBarcode(data, type, opts)
+        svgToPNG(svg).then((png) => downloadPNG(png, `barcode-${type}`))
       }
     } catch {}
-  });
+  })
 
-  render();
+  render()
 }
 
 // ── QR Code ──
 
 function getQRColor(): string | GradientOptions {
-  const mode = val("qr-colormode");
+  const mode = val("qr-colormode")
   if (mode === "linear")
     return {
       type: "linear",
@@ -540,7 +540,7 @@ function getQRColor(): string | GradientOptions {
         { offset: 0, color: val("qr-grad-start") },
         { offset: 1, color: val("qr-grad-end") },
       ],
-    };
+    }
   if (mode === "radial")
     return {
       type: "radial",
@@ -548,13 +548,13 @@ function getQRColor(): string | GradientOptions {
         { offset: 0, color: val("qr-radial-start") },
         { offset: 1, color: val("qr-radial-end") },
       ],
-    };
-  return val("qr-color");
+    }
+  return val("qr-color")
 }
 
 function getQRBg(): string | GradientOptions | "transparent" {
-  const mode = val("qr-bgmode");
-  if (mode === "transparent") return "transparent";
+  const mode = val("qr-bgmode")
+  if (mode === "transparent") return "transparent"
   if (mode === "linear")
     return {
       type: "linear",
@@ -563,7 +563,7 @@ function getQRBg(): string | GradientOptions | "transparent" {
         { offset: 0, color: val("qr-bg-grad-start") },
         { offset: 1, color: val("qr-bg-grad-end") },
       ],
-    };
+    }
   if (mode === "radial")
     return {
       type: "radial",
@@ -571,51 +571,51 @@ function getQRBg(): string | GradientOptions | "transparent" {
         { offset: 0, color: val("qr-bg-radial-start") },
         { offset: 1, color: val("qr-bg-radial-end") },
       ],
-    };
-  return val("qr-bg");
+    }
+  return val("qr-bg")
 }
 
 function getQRCorners() {
-  const outer = val("qr-corner-outer");
-  const inner = val("qr-corner-inner");
-  if (!outer && !inner) return undefined;
-  const c: Record<string, any> = {};
-  if (outer) c.outerShape = outer;
-  if (inner) c.innerShape = inner;
-  const oc = val("qr-corner-color");
-  const ic = val("qr-corner-inner-color");
-  if (oc !== "#000000") c.outerColor = oc;
-  if (ic !== "#000000") c.innerColor = ic;
-  return { topLeft: c, topRight: { ...c }, bottomLeft: { ...c } };
+  const outer = val("qr-corner-outer")
+  const inner = val("qr-corner-inner")
+  if (!outer && !inner) return undefined
+  const c: Record<string, any> = {}
+  if (outer) c.outerShape = outer
+  if (inner) c.innerShape = inner
+  const oc = val("qr-corner-color")
+  const ic = val("qr-corner-inner-color")
+  if (oc !== "#000000") c.outerColor = oc
+  if (ic !== "#000000") c.innerColor = ic
+  return { topLeft: c, topRight: { ...c }, bottomLeft: { ...c } }
 }
 
 function getQRLogo(): LogoOptions | undefined {
-  const t = val("qr-logo-type");
-  if (t === "none") return undefined;
-  const logo: LogoOptions = { size: Number(val("qr-logo-size")), margin: numVal("qr-logo-margin") };
+  const t = val("qr-logo-type")
+  if (t === "none") return undefined
+  const logo: LogoOptions = { size: Number(val("qr-logo-size")), margin: numVal("qr-logo-margin") }
   if (t === "path") {
-    const p = val("qr-logo-path");
-    if (!p) return undefined;
-    logo.path = p;
+    const p = val("qr-logo-path")
+    if (!p) return undefined
+    logo.path = p
   } else if (t === "url") {
-    const u = val("qr-logo-url");
-    if (!u) return undefined;
-    logo.imageUrl = u;
+    const u = val("qr-logo-url")
+    if (!u) return undefined
+    logo.imageUrl = u
   }
-  return logo;
+  return logo
 }
 
 function generateQR(): string {
-  const isMicro = val("qr-micro") === "micro";
-  const data = val("qr-data");
+  const isMicro = val("qr-micro") === "micro"
+  const data = val("qr-data")
 
   if (isMicro) {
-    const matrix = encodeMicroQR(data, { ecLevel: val("qr-ec") as any });
+    const matrix = encodeMicroQR(data, { ecLevel: val("qr-ec") as any })
     return renderMatrixSVG(matrix, {
       size: numVal("qr-size"),
       color: val("qr-color"),
       margin: numVal("qr-margin"),
-    });
+    })
   }
 
   return qrcode(data, {
@@ -629,15 +629,15 @@ function generateQR(): string {
     background: getQRBg(),
     corners: getQRCorners(),
     logo: getQRLogo(),
-  });
+  })
 }
 
 function renderQRPNGPreview() {
   try {
-    const data = val("qr-data");
-    const isMicro = val("qr-micro") === "micro";
+    const data = val("qr-data")
+    const isMicro = val("qr-micro") === "micro"
     if (isMicro) {
-      renderPNGPreviewFromSVG("qr", generateQR());
+      renderPNGPreviewFromSVG("qr", generateQR())
     } else {
       const png = qrcodePNG(data, {
         ecLevel: val("qr-ec") as any,
@@ -648,21 +648,21 @@ function renderQRPNGPreview() {
           typeof getQRBg() === "string" && getQRBg() !== "transparent"
             ? (getQRBg() as string)
             : "#ffffff",
-      });
-      renderPNGPreview("qr", png);
+      })
+      renderPNGPreview("qr", png)
     }
   } catch (err) {
-    $("qr-output-png").innerHTML = `<div class="error">${(err as Error).message}</div>`;
+    $("qr-output-png").innerHTML = `<div class="error">${(err as Error).message}</div>`
   }
 }
 
 function setupQR() {
   const render = () => {
-    renderSafe($("qr-output"), generateQR);
-    if (previewMode.qr === "png") renderQRPNGPreview();
-  };
+    renderSafe($("qr-output"), generateQR)
+    if (previewMode.qr === "png") renderQRPNGPreview()
+  }
 
-  $("qr-output-png").addEventListener("render-png", renderQRPNGPreview);
+  $("qr-output-png").addEventListener("render-png", renderQRPNGPreview)
 
   // Color mode toggles
   for (const [selectId, group] of [
@@ -670,28 +670,28 @@ function setupQR() {
     ["qr-bgmode", "qr-bg"],
   ] as const) {
     $(selectId).addEventListener("change", () => {
-      const mode = val(selectId);
+      const mode = val(selectId)
       document.querySelectorAll<HTMLElement>(`[data-colorgroup="${group}"]`).forEach((el) => {
-        el.hidden = el.dataset.mode !== mode;
-      });
-      render();
-    });
+        el.hidden = el.dataset.mode !== mode
+      })
+      render()
+    })
   }
 
   // Logo type toggle
   $("qr-logo-type").addEventListener("change", () => {
-    $("qr-logo-path-wrap").hidden = val("qr-logo-type") !== "path";
-    $("qr-logo-url-wrap").hidden = val("qr-logo-type") !== "url";
-    render();
-  });
+    $("qr-logo-path-wrap").hidden = val("qr-logo-type") !== "path"
+    $("qr-logo-url-wrap").hidden = val("qr-logo-type") !== "url"
+    render()
+  })
 
   // Range displays
   $("qr-dotsize").addEventListener("input", () => {
-    $("qr-dotsize-val").textContent = Number(val("qr-dotsize")).toFixed(1);
-  });
+    $("qr-dotsize-val").textContent = Number(val("qr-dotsize")).toFixed(1)
+  })
   $("qr-logo-size").addEventListener("input", () => {
-    $("qr-logo-size-val").textContent = Number(val("qr-logo-size")).toFixed(2);
-  });
+    $("qr-logo-size-val").textContent = Number(val("qr-logo-size")).toFixed(2)
+  })
 
   listen(
     [
@@ -725,17 +725,17 @@ function setupQR() {
       "qr-logo-margin",
     ],
     render,
-  );
+  )
 
-  setupCopyDownload("qr", generateQR);
+  setupCopyDownload("qr", generateQR)
 
   $("qr-download-png").addEventListener("click", () => {
     try {
-      const data = val("qr-data");
-      const isMicro = val("qr-micro") === "micro";
+      const data = val("qr-data")
+      const isMicro = val("qr-micro") === "micro"
       if (isMicro) {
         // Micro QR — fallback via SVG canvas
-        svgToPNG(generateQR()).then((png) => downloadPNG(png, "qr-micro"));
+        svgToPNG(generateQR()).then((png) => downloadPNG(png, "qr-micro"))
       } else {
         const png = qrcodePNG(data, {
           ecLevel: val("qr-ec") as any,
@@ -746,13 +746,13 @@ function setupQR() {
             typeof getQRBg() === "string" && getQRBg() !== "transparent"
               ? (getQRBg() as string)
               : "#ffffff",
-        });
-        downloadPNG(png, "qrcode");
+        })
+        downloadPNG(png, "qrcode")
       }
     } catch {}
-  });
+  })
 
-  render();
+  render()
 }
 
 // ── 2D Codes ──
@@ -767,23 +767,23 @@ const M2D_OPTION_PANELS: Record<string, string> = {
   jabcode: "m2d-jab-opts",
   "gs1-composite": "m2d-composite-opts",
   codablockf: "m2d-codablockf-opts",
-};
+}
 
 function generate2D(): string {
-  const format = val("m2d-format");
-  const data = val("m2d-data");
+  const format = val("m2d-format")
+  const data = val("m2d-data")
   const svgOpts = {
     size: numVal("m2d-size"),
     color: val("m2d-color"),
     background: val("m2d-bg"),
     margin: numVal("m2d-margin"),
-  };
+  }
 
   switch (format) {
     case "datamatrix":
-      return datamatrix(data, svgOpts);
+      return datamatrix(data, svgOpts)
     case "gs1datamatrix":
-      return gs1datamatrix(data, svgOpts);
+      return gs1datamatrix(data, svgOpts)
     case "pdf417":
       return pdf417(data, {
         ...svgOpts,
@@ -791,126 +791,126 @@ function generate2D(): string {
         ecLevel: numVal("m2d-pdf-ec"),
         columns: optNum("m2d-pdf-cols"),
         compact: val("m2d-pdf-compact") === "true",
-      });
+      })
     case "aztec":
       return aztec(data, {
         ...svgOpts,
         ecPercent: numVal("m2d-az-ec"),
         layers: optNum("m2d-az-layers"),
         compact: val("m2d-az-compact") === "true",
-      });
+      })
     case "micropdf417": {
-      const cols = optNum("m2d-mpdf-cols");
-      const r = encodeMicroPDF417(data, cols ? { columns: cols as any } : undefined);
-      return renderMatrixSVG(r.matrix, svgOpts);
+      const cols = optNum("m2d-mpdf-cols")
+      const r = encodeMicroPDF417(data, cols ? { columns: cols as any } : undefined)
+      return renderMatrixSVG(r.matrix, svgOpts)
     }
     case "rmqr":
-      return renderMatrixSVG(encodeRMQR(data, { ecLevel: val("m2d-rmqr-ec") as any }), svgOpts);
+      return renderMatrixSVG(encodeRMQR(data, { ecLevel: val("m2d-rmqr-ec") as any }), svgOpts)
     case "maxicode":
       return renderMatrixSVG(
         encodeMaxiCode(data, { mode: numVal("m2d-maxi-mode") as any }),
         svgOpts,
-      );
+      )
     case "dotcode":
-      return renderMatrixSVG(encodeDotCode(data), svgOpts);
+      return renderMatrixSVG(encodeDotCode(data), svgOpts)
     case "hanxin":
       return renderMatrixSVG(
         encodeHanXin(data, { ecLevel: numVal("m2d-hanxin-ec") as any }),
         svgOpts,
-      );
+      )
     case "jabcode":
       return renderJABCodeSVG(
         encodeJABCode(data, { colors: numVal("m2d-jab-colors") as any }),
         svgOpts.size,
-      );
+      )
     case "codablockf": {
-      const cols = optNum("m2d-cbf-cols");
-      const r = encodeCodablockF(data, cols ? { columns: cols } : undefined);
-      return renderMatrixSVG(r.matrix, svgOpts);
+      const cols = optNum("m2d-cbf-cols")
+      const r = encodeCodablockF(data, cols ? { columns: cols } : undefined)
+      return renderMatrixSVG(r.matrix, svgOpts)
     }
     case "code16k":
-      return renderMatrixSVG(encodeCode16K(data).matrix, svgOpts);
+      return renderMatrixSVG(encodeCode16K(data).matrix, svgOpts)
     case "gs1-composite":
       return renderMatrixSVG(
         encodeGS1Composite(data, val("m2d-comp-type") as any).composite,
         svgOpts,
-      );
+      )
     default:
-      return datamatrix(data, svgOpts);
+      return datamatrix(data, svgOpts)
   }
 }
 
 function render2DPNGPreview() {
   try {
-    const format = val("m2d-format");
-    const data = val("m2d-data");
+    const format = val("m2d-format")
+    const data = val("m2d-data")
     const pngOpts = {
       moduleSize: Math.max(2, Math.round(numVal("m2d-size") / 30)),
       margin: numVal("m2d-margin"),
       color: val("m2d-color"),
       background: val("m2d-bg"),
-    };
+    }
 
-    let png: Uint8Array | null = null;
+    let png: Uint8Array | null = null
     switch (format) {
       case "datamatrix":
-        png = datamatrixPNG(data, pngOpts);
-        break;
+        png = datamatrixPNG(data, pngOpts)
+        break
       case "gs1datamatrix":
-        png = gs1datamatrixPNG(data, pngOpts);
-        break;
+        png = gs1datamatrixPNG(data, pngOpts)
+        break
       case "pdf417":
         png = pdf417PNG(data, {
           ...pngOpts,
           ecLevel: numVal("m2d-pdf-ec"),
           columns: optNum("m2d-pdf-cols"),
           compact: val("m2d-pdf-compact") === "true",
-        });
-        break;
+        })
+        break
       case "aztec":
         png = aztecPNG(data, {
           ...pngOpts,
           ecPercent: numVal("m2d-az-ec"),
           layers: optNum("m2d-az-layers"),
           compact: val("m2d-az-compact") === "true",
-        });
-        break;
+        })
+        break
       default:
-        renderPNGPreviewFromSVG("m2d", generate2D());
-        return;
+        renderPNGPreviewFromSVG("m2d", generate2D())
+        return
     }
-    if (png) renderPNGPreview("m2d", png);
+    if (png) renderPNGPreview("m2d", png)
   } catch (err) {
-    $("m2d-output-png").innerHTML = `<div class="error">${(err as Error).message}</div>`;
+    $("m2d-output-png").innerHTML = `<div class="error">${(err as Error).message}</div>`
   }
 }
 
 function setup2D() {
   const render = () => {
-    renderSafe($("m2d-output"), generate2D);
-    if (previewMode.m2d === "png") render2DPNGPreview();
-  };
+    renderSafe($("m2d-output"), generate2D)
+    if (previewMode.m2d === "png") render2DPNGPreview()
+  }
 
-  $("m2d-output-png").addEventListener("render-png", render2DPNGPreview);
+  $("m2d-output-png").addEventListener("render-png", render2DPNGPreview)
 
   $("m2d-format").addEventListener("change", () => {
-    const format = val("m2d-format");
+    const format = val("m2d-format")
     // Hide all option panels
     for (const panelId of Object.values(M2D_OPTION_PANELS)) {
-      $<HTMLDetailsElement>(panelId).hidden = true;
+      $<HTMLDetailsElement>(panelId).hidden = true
     }
     // Show relevant panel
-    const panelId = M2D_OPTION_PANELS[format];
+    const panelId = M2D_OPTION_PANELS[format]
     if (panelId) {
-      const panel = $<HTMLDetailsElement>(panelId);
-      panel.hidden = false;
-      panel.open = true;
+      const panel = $<HTMLDetailsElement>(panelId)
+      panel.hidden = false
+      panel.open = true
     }
     // Update default data
-    const def = M2D_DEFAULTS[format];
-    if (def) $<HTMLInputElement>("m2d-data").value = def;
-    render();
-  });
+    const def = M2D_DEFAULTS[format]
+    if (def) $<HTMLInputElement>("m2d-data").value = def
+    render()
+  })
 
   listen(
     [
@@ -935,70 +935,70 @@ function setup2D() {
       "m2d-cbf-cols",
     ],
     render,
-  );
+  )
 
-  setupCopyDownload("m2d", generate2D);
+  setupCopyDownload("m2d", generate2D)
 
   $("m2d-download-png").addEventListener("click", () => {
     try {
-      const format = val("m2d-format");
-      const data = val("m2d-data");
+      const format = val("m2d-format")
+      const data = val("m2d-data")
       const pngOpts = {
         moduleSize: Math.max(2, Math.round(numVal("m2d-size") / 30)),
         margin: numVal("m2d-margin"),
         color: val("m2d-color"),
         background: val("m2d-bg"),
-      };
+      }
 
-      let png: Uint8Array | null = null;
+      let png: Uint8Array | null = null
       switch (format) {
         case "datamatrix":
-          png = datamatrixPNG(data, pngOpts);
-          break;
+          png = datamatrixPNG(data, pngOpts)
+          break
         case "gs1datamatrix":
-          png = gs1datamatrixPNG(data, pngOpts);
-          break;
+          png = gs1datamatrixPNG(data, pngOpts)
+          break
         case "pdf417":
           png = pdf417PNG(data, {
             ...pngOpts,
             ecLevel: numVal("m2d-pdf-ec"),
             columns: optNum("m2d-pdf-cols"),
             compact: val("m2d-pdf-compact") === "true",
-          });
-          break;
+          })
+          break
         case "aztec":
           png = aztecPNG(data, {
             ...pngOpts,
             ecPercent: numVal("m2d-az-ec"),
             layers: optNum("m2d-az-layers"),
             compact: val("m2d-az-compact") === "true",
-          });
-          break;
+          })
+          break
         default:
           // Fallback for formats without direct PNG support
-          svgToPNG(generate2D()).then((p) => downloadPNG(p, `2d-${format}`));
-          return;
+          svgToPNG(generate2D()).then((p) => downloadPNG(p, `2d-${format}`))
+          return
       }
-      if (png) downloadPNG(png, `2d-${format}`);
+      if (png) downloadPNG(png, `2d-${format}`)
     } catch {}
-  });
+  })
 
-  render();
+  render()
 }
 
 // ── Helpers ──
 
-const helperSVGs = new Map<string, string>();
+const helperSVGs = new Map<string, string>()
 
 function renderHelper(id: string, fn: () => string) {
-  const target = $(`${id}-out`);
+  const target = $(`${id}-out`)
   try {
-    const svg = fn();
-    helperSVGs.set(id, svg);
-    target.innerHTML = svg;
+    const svg = fn()
+    helperSVGs.set(id, svg)
+    target.innerHTML = svg
   } catch (err) {
-    helperSVGs.delete(id);
-    target.innerHTML = `<div class="error">${(err as Error).message}</div>`;
+    helperSVGs.delete(id)
+    target.innerHTML = `<div class="error">${(err as Error).message}</div>`
   }
 }
 
@@ -1006,30 +1006,30 @@ function setupHelpers() {
   const rWifi = () =>
     renderHelper("h-wifi", () =>
       wifi(val("h-wifi-ssid"), val("h-wifi-pass"), { encryption: val("h-wifi-enc") as any }),
-    );
-  listen(["h-wifi-ssid", "h-wifi-pass", "h-wifi-enc"], rWifi);
-  rWifi();
+    )
+  listen(["h-wifi-ssid", "h-wifi-pass", "h-wifi-enc"], rWifi)
+  rWifi()
 
-  const rUrl = () => renderHelper("h-url", () => url(val("h-url")));
-  listen(["h-url"], rUrl);
-  rUrl();
+  const rUrl = () => renderHelper("h-url", () => url(val("h-url")))
+  listen(["h-url"], rUrl)
+  rUrl()
 
-  const rEmail = () => renderHelper("h-email", () => email(val("h-email")));
-  listen(["h-email"], rEmail);
-  rEmail();
+  const rEmail = () => renderHelper("h-email", () => email(val("h-email")))
+  listen(["h-email"], rEmail)
+  rEmail()
 
   const rSms = () =>
-    renderHelper("h-sms", () => sms(val("h-sms-num"), val("h-sms-body") || undefined));
-  listen(["h-sms-num", "h-sms-body"], rSms);
-  rSms();
+    renderHelper("h-sms", () => sms(val("h-sms-num"), val("h-sms-body") || undefined))
+  listen(["h-sms-num", "h-sms-body"], rSms)
+  rSms()
 
-  const rPhone = () => renderHelper("h-phone", () => phone(val("h-phone")));
-  listen(["h-phone"], rPhone);
-  rPhone();
+  const rPhone = () => renderHelper("h-phone", () => phone(val("h-phone")))
+  listen(["h-phone"], rPhone)
+  rPhone()
 
-  const rGeo = () => renderHelper("h-geo", () => geo(numVal("h-geo-lat"), numVal("h-geo-lng")));
-  listen(["h-geo-lat", "h-geo-lng"], rGeo);
-  rGeo();
+  const rGeo = () => renderHelper("h-geo", () => geo(numVal("h-geo-lat"), numVal("h-geo-lng")))
+  listen(["h-geo-lat", "h-geo-lng"], rGeo)
+  rGeo()
 
   const rVcard = () =>
     renderHelper("h-vcard", () =>
@@ -1042,12 +1042,12 @@ function setupHelpers() {
         title: val("h-vc-title") || undefined,
         url: val("h-vc-url") || undefined,
       }),
-    );
+    )
   listen(
     ["h-vc-fn", "h-vc-ln", "h-vc-phone", "h-vc-email", "h-vc-org", "h-vc-title", "h-vc-url"],
     rVcard,
-  );
-  rVcard();
+  )
+  rVcard()
 
   const rMecard = () =>
     renderHelper("h-mecard", () =>
@@ -1056,9 +1056,9 @@ function setupHelpers() {
         phone: val("h-mc-phone") || undefined,
         email: val("h-mc-email") || undefined,
       }),
-    );
-  listen(["h-mc-name", "h-mc-phone", "h-mc-email"], rMecard);
-  rMecard();
+    )
+  listen(["h-mc-name", "h-mc-phone", "h-mc-email"], rMecard)
+  rMecard()
 
   const rEvent = () =>
     renderHelper("h-event", () =>
@@ -1068,9 +1068,9 @@ function setupHelpers() {
         end: val("h-ev-end") || undefined,
         location: val("h-ev-loc") || undefined,
       }),
-    );
-  listen(["h-ev-title", "h-ev-start", "h-ev-end", "h-ev-loc"], rEvent);
-  rEvent();
+    )
+  listen(["h-ev-title", "h-ev-start", "h-ev-end", "h-ev-loc"], rEvent)
+  rEvent()
 
   const rSwiss = () =>
     renderHelper("h-swiss", () =>
@@ -1085,7 +1085,7 @@ function setupHelpers() {
         amount: numVal("h-sq-amount"),
         currency: val("h-sq-currency") as any,
       }),
-    );
+    )
   listen(
     [
       "h-sq-iban",
@@ -1097,8 +1097,8 @@ function setupHelpers() {
       "h-sq-currency",
     ],
     rSwiss,
-  );
-  rSwiss();
+  )
+  rSwiss()
 
   const rGS1 = () =>
     renderHelper("h-gs1", () =>
@@ -1107,38 +1107,38 @@ function setupHelpers() {
         batch: val("h-gs1-batch") || undefined,
         serial: val("h-gs1-serial") || undefined,
       }),
-    );
-  listen(["h-gs1-gtin", "h-gs1-batch", "h-gs1-serial"], rGS1);
-  rGS1();
+    )
+  listen(["h-gs1-gtin", "h-gs1-batch", "h-gs1-serial"], rGS1)
+  rGS1()
 
   // Delegation for copy/download
   document.querySelectorAll<HTMLButtonElement>("[data-helper-copy]").forEach((btn) => {
     btn.addEventListener("click", () => {
-      const svg = helperSVGs.get(btn.dataset.helperCopy!);
-      if (svg) copySVG(svg);
-    });
-  });
+      const svg = helperSVGs.get(btn.dataset.helperCopy!)
+      if (svg) copySVG(svg)
+    })
+  })
   document.querySelectorAll<HTMLButtonElement>("[data-helper-dl]").forEach((btn) => {
     btn.addEventListener("click", () => {
-      const svg = helperSVGs.get(btn.dataset.helperDl!);
-      if (svg) downloadSVG(svg, btn.dataset.helperDl!);
-    });
-  });
+      const svg = helperSVGs.get(btn.dataset.helperDl!)
+      if (svg) downloadSVG(svg, btn.dataset.helperDl!)
+    })
+  })
   document.querySelectorAll<HTMLButtonElement>("[data-helper-png]").forEach((btn) => {
     btn.addEventListener("click", () => {
-      const svg = helperSVGs.get(btn.dataset.helperPng!);
-      if (svg) svgToPNG(svg).then((png) => downloadPNG(png, btn.dataset.helperPng!));
-    });
-  });
+      const svg = helperSVGs.get(btn.dataset.helperPng!)
+      if (svg) svgToPNG(svg).then((png) => downloadPNG(png, btn.dataset.helperPng!))
+    })
+  })
 }
 
 // ── Init ──
 
 export function setupApp() {
-  setupTabs();
-  setupPreviewToggles();
-  setupBarcode();
-  setupQR();
-  setup2D();
-  setupHelpers();
+  setupTabs()
+  setupPreviewToggles()
+  setupBarcode()
+  setupQR()
+  setup2D()
+  setupHelpers()
 }

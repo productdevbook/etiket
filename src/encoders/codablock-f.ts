@@ -6,13 +6,13 @@
  * Each row: Start C + row indicator + data codewords + check + Stop
  */
 
-import { InvalidInputError, CapacityError } from "../errors";
+import { InvalidInputError, CapacityError } from "../errors"
 
 // Code 128 constants
-const START_C = 105;
-const CODE_A = 101;
-const CODE_B = 100;
-const CODE_C = 99;
+const START_C = 105
+const CODE_A = 101
+const CODE_B = 100
+const CODE_C = 99
 
 // Full Code 128 encoding patterns (bar/space widths), indices 0-105
 // Each pattern is 6 elements: bar, space, bar, space, bar, space
@@ -123,25 +123,25 @@ const PATTERNS: number[][] = [
   [2, 1, 1, 4, 1, 2], // 103 (START_A)
   [2, 1, 1, 2, 1, 4], // 104 (START_B)
   [2, 1, 1, 2, 3, 2], // 105 (START_C)
-];
+]
 
-const STOP_PATTERN = [2, 3, 3, 1, 1, 1, 2];
+const STOP_PATTERN = [2, 3, 3, 1, 1, 1, 2]
 
 export interface CodablockFResult {
-  matrix: boolean[][];
-  rows: number;
-  cols: number;
+  matrix: boolean[][]
+  rows: number
+  cols: number
 }
 
 /** Count consecutive digit characters from a given position */
 function countDigitsFrom(text: string, pos: number): number {
-  let count = 0;
+  let count = 0
   while (pos + count < text.length) {
-    const c = text.charCodeAt(pos + count);
-    if (c < 48 || c > 57) break;
-    count++;
+    const c = text.charCodeAt(pos + count)
+    if (c < 48 || c > 57) break
+    count++
   }
-  return count;
+  return count
 }
 
 /**
@@ -149,9 +149,9 @@ function countDigitsFrom(text: string, pos: number): number {
  * Returns "A" for control chars (0-31), "B" for printable ASCII (32-126), or null if unsupported.
  */
 function charsetFor(charCode: number): "A" | "B" | null {
-  if (charCode >= 0 && charCode < 32) return "A";
-  if (charCode >= 32 && charCode <= 126) return "B";
-  return null;
+  if (charCode >= 0 && charCode < 32) return "A"
+  if (charCode >= 32 && charCode <= 126) return "B"
+  return null
 }
 
 /**
@@ -159,87 +159,87 @@ function charsetFor(charCode: number): "A" | "B" | null {
  * Supports Code A (control chars), Code B (printable ASCII), and Code C (digit pairs).
  */
 function encodeValues(text: string): number[] {
-  const values: number[] = [];
-  let pos = 0;
+  const values: number[] = []
+  let pos = 0
 
   // Determine initial charset
-  const initialDigits = countDigitsFrom(text, 0);
-  let currentCharset: "A" | "B" | "C";
+  const initialDigits = countDigitsFrom(text, 0)
+  let currentCharset: "A" | "B" | "C"
   if (initialDigits >= 4 || (initialDigits >= 2 && initialDigits === text.length)) {
-    currentCharset = "C";
+    currentCharset = "C"
   } else if (text.length > 0 && text.charCodeAt(0) < 32) {
-    currentCharset = "A";
+    currentCharset = "A"
   } else {
-    currentCharset = "B";
+    currentCharset = "B"
   }
 
   while (pos < text.length) {
     if (currentCharset === "C") {
-      const digits = countDigitsFrom(text, pos);
+      const digits = countDigitsFrom(text, pos)
       if (digits >= 2) {
         // Encode digit pairs
-        const pairCount = Math.floor(digits / 2);
+        const pairCount = Math.floor(digits / 2)
         for (let i = 0; i < pairCount; i++) {
-          const d1 = text.charCodeAt(pos) - 48;
-          const d2 = text.charCodeAt(pos + 1) - 48;
-          values.push(d1 * 10 + d2);
-          pos += 2;
+          const d1 = text.charCodeAt(pos) - 48
+          const d2 = text.charCodeAt(pos + 1) - 48
+          values.push(d1 * 10 + d2)
+          pos += 2
         }
       } else {
         // Switch out of Code C
-        const charCode = pos < text.length ? text.charCodeAt(pos) : -1;
-        const cs = charCode >= 0 ? charsetFor(charCode) : "B";
+        const charCode = pos < text.length ? text.charCodeAt(pos) : -1
+        const cs = charCode >= 0 ? charsetFor(charCode) : "B"
         if (cs === "A") {
-          values.push(CODE_A);
-          currentCharset = "A";
+          values.push(CODE_A)
+          currentCharset = "A"
         } else {
-          values.push(CODE_B);
-          currentCharset = "B";
+          values.push(CODE_B)
+          currentCharset = "B"
         }
       }
     } else {
       // Code A or Code B
-      const numRun = countDigitsFrom(text, pos);
+      const numRun = countDigitsFrom(text, pos)
       if (numRun >= 4 || (numRun >= 2 && pos + numRun >= text.length)) {
-        values.push(CODE_C);
-        currentCharset = "C";
-        continue;
+        values.push(CODE_C)
+        currentCharset = "C"
+        continue
       }
 
-      const charCode = text.charCodeAt(pos);
-      const needed = charsetFor(charCode);
+      const charCode = text.charCodeAt(pos)
+      const needed = charsetFor(charCode)
       if (needed === null) {
         throw new InvalidInputError(
           `Codablock F: unsupported character "${text[pos]}" (code ${charCode})`,
-        );
+        )
       }
 
       if (needed !== currentCharset) {
         if (needed === "A") {
-          values.push(CODE_A);
-          currentCharset = "A";
+          values.push(CODE_A)
+          currentCharset = "A"
         } else {
-          values.push(CODE_B);
-          currentCharset = "B";
+          values.push(CODE_B)
+          currentCharset = "B"
         }
       }
 
       if (currentCharset === "A") {
         // Code A: control chars 0-31 → values 64-95, printable 32-95 → values 0-63
         if (charCode < 32) {
-          values.push(charCode + 64);
+          values.push(charCode + 64)
         } else {
-          values.push(charCode - 32);
+          values.push(charCode - 32)
         }
       } else {
         // Code B: printable 32-126 → values 0-94
-        values.push(charCode - 32);
+        values.push(charCode - 32)
       }
-      pos++;
+      pos++
     }
   }
 
-  return values;
+  return values
 }
 
 /**
@@ -250,85 +250,85 @@ function encodeValues(text: string): number[] {
  */
 export function encodeCodablockF(text: string, options?: { columns?: number }): CodablockFResult {
   if (text.length === 0) {
-    throw new InvalidInputError("Codablock F input must not be empty");
+    throw new InvalidInputError("Codablock F input must not be empty")
   }
 
   // Encode text into Code 128 codeword values
-  const values = encodeValues(text);
+  const values = encodeValues(text)
 
   // Determine columns per row
-  const cols = options?.columns ?? Math.min(10, Math.max(4, Math.ceil(values.length / 5)));
-  const maxDataPerRow = cols;
+  const cols = options?.columns ?? Math.min(10, Math.max(4, Math.ceil(values.length / 5)))
+  const maxDataPerRow = cols
 
   // Split into rows
-  const rowData: number[][] = [];
+  const rowData: number[][] = []
   for (let i = 0; i < values.length; i += maxDataPerRow) {
-    rowData.push(values.slice(i, i + maxDataPerRow));
+    rowData.push(values.slice(i, i + maxDataPerRow))
   }
 
   if (rowData.length > 44) {
-    throw new CapacityError("Codablock F: data exceeds maximum 44 rows");
+    throw new CapacityError("Codablock F: data exceeds maximum 44 rows")
   }
 
   // Build each row as bar pattern
-  const matrix: boolean[][] = [];
+  const matrix: boolean[][] = []
 
   for (let r = 0; r < rowData.length; r++) {
-    const row = rowData[r]!;
-    const codes: number[] = [START_C]; // Start Code C
+    const row = rowData[r]!
+    const codes: number[] = [START_C] // Start Code C
 
     // Row indicator: row number encoded as Code C value
-    codes.push(r);
+    codes.push(r)
 
     // Switch to Code B for data
-    codes.push(CODE_B);
+    codes.push(CODE_B)
 
     // Data codewords
     for (const v of row) {
-      codes.push(v);
+      codes.push(v)
     }
 
     // Pad remaining columns
     while (codes.length - 3 < maxDataPerRow) {
-      codes.push(0); // space padding
+      codes.push(0) // space padding
     }
 
     // Checksum
-    let checksum = codes[0]!;
+    let checksum = codes[0]!
     for (let i = 1; i < codes.length; i++) {
-      checksum += codes[i]! * i;
+      checksum += codes[i]! * i
     }
-    codes.push(checksum % 103);
+    codes.push(checksum % 103)
 
     // Convert to bar pattern
-    const modules: boolean[] = [];
+    const modules: boolean[] = []
 
     for (const code of codes) {
-      const pattern = PATTERNS[code]!;
-      let isBar = true;
+      const pattern = PATTERNS[code]!
+      let isBar = true
       for (const w of pattern) {
         for (let i = 0; i < w; i++) {
-          modules.push(isBar);
+          modules.push(isBar)
         }
-        isBar = !isBar;
+        isBar = !isBar
       }
     }
 
     // Stop pattern
-    let isBar = true;
+    let isBar = true
     for (const w of STOP_PATTERN) {
       for (let i = 0; i < w; i++) {
-        modules.push(isBar);
+        modules.push(isBar)
       }
-      isBar = !isBar;
+      isBar = !isBar
     }
 
-    matrix.push(modules);
+    matrix.push(modules)
   }
 
   return {
     matrix,
     rows: matrix.length,
     cols: matrix[0]?.length ?? 0,
-  };
+  }
 }

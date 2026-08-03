@@ -3,9 +3,9 @@
 etiket supports 26 types of 1D barcodes. All are generated with the `barcode()` function.
 
 ```ts
-import { barcode } from "etiket";
+import { barcode } from "etiket"
 
-const svg = barcode("data", { type: "code128" });
+const svg = barcode("data", { type: "code128" })
 ```
 
 ## Supported Formats
@@ -64,5 +64,5 @@ barcode("data", {
   fontFamily: "monospace",
   margin: 10, // Margin around barcode
   textAlign: "center", // 'center' | 'left' | 'right'
-});
+})
 ```

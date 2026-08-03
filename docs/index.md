@@ -15,10 +15,10 @@ Zero-dependency barcode & QR code generator — SVG & PNG output. 40+ formats, s
 ## Quick Example
 
 ```ts
-import { barcode, qrcode, postal, qrcodePNG } from "etiket";
+import { barcode, qrcode, postal, qrcodePNG } from "etiket"
 
 // Code 128 barcode
-const svg = barcode("Hello World");
+const svg = barcode("Hello World")
 
 // Styled QR code
 const qr = qrcode("https://example.com", {
@@ -26,13 +26,13 @@ const qr = qrcode("https://example.com", {
   ecLevel: "H",
   dotType: "dots",
   color: "#1a1a2e",
-});
+})
 
 // Royal Mail 4-state postal barcode
-const rm = postal("SN34RD1A", { type: "rm4scc" });
+const rm = postal("SN34RD1A", { type: "rm4scc" })
 
 // PNG bytes, no canvas required
-const png = qrcodePNG("https://example.com", { moduleSize: 8 });
+const png = qrcodePNG("https://example.com", { moduleSize: 8 })
 ```
 
 ## Format Families

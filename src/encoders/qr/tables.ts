@@ -3,7 +3,7 @@
  * Based on ISO/IEC 18004:2015
  */
 
-import type { ErrorCorrectionLevel } from "./types";
+import type { ErrorCorrectionLevel } from "./types"
 
 /**
  * Character count indicator bit lengths by version group and mode
@@ -14,33 +14,33 @@ export const CHAR_COUNT_BITS: Record<string, [number, number, number]> = {
   alphanumeric: [9, 11, 13],
   byte: [8, 16, 16],
   kanji: [8, 10, 12],
-};
+}
 
 /** Get character count bits for a version and mode */
 export function getCharCountBits(version: number, mode: string): number {
-  const bits = CHAR_COUNT_BITS[mode];
-  if (!bits) return 8;
-  if (version <= 9) return bits[0];
-  if (version <= 26) return bits[1];
-  return bits[2];
+  const bits = CHAR_COUNT_BITS[mode]
+  if (!bits) return 8
+  if (version <= 9) return bits[0]
+  if (version <= 26) return bits[1]
+  return bits[2]
 }
 
 /**
  * Alphanumeric character values
  */
-export const ALPHANUMERIC_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:";
+export const ALPHANUMERIC_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:"
 
 /**
  * Error correction block information for each version and EC level
  * Format: [totalCodewords, ecCodewordsPerBlock, group1Blocks, group1DataCW, group2Blocks, group2DataCW]
  */
 interface ECBlockInfo {
-  totalDataCodewords: number;
-  ecCodewordsPerBlock: number;
-  group1Blocks: number;
-  group1DataCW: number;
-  group2Blocks: number;
-  group2DataCW: number;
+  totalDataCodewords: number
+  ecCodewordsPerBlock: number
+  group1Blocks: number
+  group1DataCW: number
+  group2Blocks: number
+  group2DataCW: number
 }
 
 // prettier-ignore
@@ -220,7 +220,7 @@ const EC_TABLE: Record<ErrorCorrectionLevel, ECBlockInfo[]> = {
 }
 
 export function getECInfo(version: number, ecLevel: ErrorCorrectionLevel): ECBlockInfo {
-  return EC_TABLE[ecLevel][version]!;
+  return EC_TABLE[ecLevel][version]!
 }
 
 /**

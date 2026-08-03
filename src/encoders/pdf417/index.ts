@@ -6,39 +6,39 @@
  * Reed-Solomon error correction over GF(929).
  */
 
-import { InvalidInputError, CapacityError } from "../../errors";
-import { encodeData } from "./encoder";
-import { generateECCodewords, getECCount, recommendedECLevel } from "./ec";
-import { getCodewordPattern, getRowCluster, START_PATTERN, STOP_PATTERN } from "./tables";
+import { InvalidInputError, CapacityError } from "../../errors"
+import { encodeData } from "./encoder"
+import { generateECCodewords, getECCount, recommendedECLevel } from "./ec"
+import { getCodewordPattern, getRowCluster, START_PATTERN, STOP_PATTERN } from "./tables"
 
 export interface PDF417Options {
   /** Error correction level 0-8, default auto-selected based on data size */
-  ecLevel?: number;
+  ecLevel?: number
   /** Number of data columns (1-30), auto-calculated if omitted */
-  columns?: number;
+  columns?: number
   /** Compact PDF417 (omits right row indicator) */
-  compact?: boolean;
+  compact?: boolean
 }
 
 export interface PDF417Result {
   /** 2D boolean matrix (true = black bar, false = white space) */
-  matrix: boolean[][];
+  matrix: boolean[][]
   /** Number of rows in the symbol */
-  rows: number;
+  rows: number
   /** Number of module columns in the symbol */
-  cols: number;
+  cols: number
 }
 
 /** Maximum data codewords in a PDF417 symbol */
-const MAX_DATA_CODEWORDS = 925; // 929 - 1 (length) - 3 (reserved)
+const MAX_DATA_CODEWORDS = 925 // 929 - 1 (length) - 3 (reserved)
 /** Minimum rows */
-const MIN_ROWS = 3;
+const MIN_ROWS = 3
 /** Maximum rows */
-const MAX_ROWS = 90;
+const MAX_ROWS = 90
 /** Minimum data columns */
-const MIN_COLS = 1;
+const MIN_COLS = 1
 /** Maximum data columns */
-const MAX_COLS = 30;
+const MAX_COLS = 30
 
 /**
  * Encode text as a PDF417 barcode.
@@ -56,66 +56,66 @@ const MAX_COLS = 30;
  */
 export function encodePDF417(text: string, options: PDF417Options = {}): PDF417Result {
   if (text.length === 0) {
-    throw new InvalidInputError("PDF417 input must not be empty");
+    throw new InvalidInputError("PDF417 input must not be empty")
   }
 
-  const compact = options.compact ?? false;
+  const compact = options.compact ?? false
 
   // Step 1: Encode text into data codewords
-  const dataCodewords = encodeData(text);
+  const dataCodewords = encodeData(text)
 
   if (dataCodewords.length > MAX_DATA_CODEWORDS) {
     throw new CapacityError(
       `PDF417 data too large: ${dataCodewords.length} codewords exceeds maximum of ${MAX_DATA_CODEWORDS}`,
-    );
+    )
   }
 
   // Step 2: Determine EC level
-  const ecLevel = options.ecLevel ?? recommendedECLevel(dataCodewords.length);
+  const ecLevel = options.ecLevel ?? recommendedECLevel(dataCodewords.length)
   if (ecLevel < 0 || ecLevel > 8) {
-    throw new InvalidInputError("PDF417 EC level must be 0-8");
+    throw new InvalidInputError("PDF417 EC level must be 0-8")
   }
-  const ecCount = getECCount(ecLevel);
+  const ecCount = getECCount(ecLevel)
 
   // Step 3: Calculate symbol dimensions
   // Total codewords = 1 (length descriptor) + data + EC
-  const totalDataWithLength = 1 + dataCodewords.length;
+  const totalDataWithLength = 1 + dataCodewords.length
   // const totalCodewords = totalDataWithLength + ecCount;
 
-  const { rows, cols } = calculateDimensions(totalDataWithLength, ecCount, options.columns);
+  const { rows, cols } = calculateDimensions(totalDataWithLength, ecCount, options.columns)
 
   // Step 4: Pad data to fill the grid
   // Total data codeword slots = rows * cols - ecCount
-  const dataSlots = rows * cols;
-  const paddedData: number[] = [];
+  const dataSlots = rows * cols
+  const paddedData: number[] = []
 
   // Symbol length descriptor (total codewords including this one, excluding EC)
-  paddedData.push(totalDataWithLength);
+  paddedData.push(totalDataWithLength)
 
   // Data codewords
   for (const cw of dataCodewords) {
-    paddedData.push(cw);
+    paddedData.push(cw)
   }
 
   // Padding codewords (900 = text compaction latch, used as padding)
   while (paddedData.length < dataSlots - ecCount) {
-    paddedData.push(900);
+    paddedData.push(900)
   }
 
   // Step 5: Generate EC codewords
-  const ecCodewords = generateECCodewords(paddedData, ecLevel);
+  const ecCodewords = generateECCodewords(paddedData, ecLevel)
 
   // Step 6: Combine data + EC into codeword array
-  const allCodewords = [...paddedData, ...ecCodewords];
+  const allCodewords = [...paddedData, ...ecCodewords]
 
   // Step 7: Build the module matrix
-  const matrix = buildMatrix(allCodewords, rows, cols, ecLevel, compact);
+  const matrix = buildMatrix(allCodewords, rows, cols, ecLevel, compact)
 
   return {
     matrix,
     rows: matrix.length,
     cols: matrix[0]!.length,
-  };
+  }
 }
 
 /**
@@ -126,24 +126,24 @@ function calculateDimensions(
   ecCount: number,
   requestedCols?: number,
 ): { rows: number; cols: number } {
-  const totalCodewords = dataWithLength + ecCount;
+  const totalCodewords = dataWithLength + ecCount
 
   if (requestedCols !== undefined) {
     if (requestedCols < MIN_COLS || requestedCols > MAX_COLS) {
       throw new InvalidInputError(
         `PDF417 columns must be ${MIN_COLS}-${MAX_COLS}, got ${requestedCols}`,
-      );
+      )
     }
-    const rows = Math.ceil(totalCodewords / requestedCols);
+    const rows = Math.ceil(totalCodewords / requestedCols)
     if (rows < MIN_ROWS) {
-      return { rows: MIN_ROWS, cols: requestedCols };
+      return { rows: MIN_ROWS, cols: requestedCols }
     }
     if (rows > MAX_ROWS) {
       throw new CapacityError(
         `PDF417 data too large: requires ${rows} rows with ${requestedCols} columns (max ${MAX_ROWS})`,
-      );
+      )
     }
-    return { rows, cols: requestedCols };
+    return { rows, cols: requestedCols }
   }
 
   // Auto-determine columns: try to find a good aspect ratio
@@ -153,35 +153,35 @@ function calculateDimensions(
   // Try columns from 1 to 30, pick one that gives rows in valid range
   // with a reasonable aspect ratio
 
-  let bestCols = MIN_COLS;
-  let bestRows = MAX_ROWS;
-  let bestScore = Infinity;
+  let bestCols = MIN_COLS
+  let bestRows = MAX_ROWS
+  let bestScore = Infinity
 
   for (let c = MIN_COLS; c <= MAX_COLS; c++) {
-    const r = Math.ceil(totalCodewords / c);
-    if (r < MIN_ROWS || r > MAX_ROWS) continue;
+    const r = Math.ceil(totalCodewords / c)
+    if (r < MIN_ROWS || r > MAX_ROWS) continue
 
     // Actual total including padding
     // Score based on wasted space and aspect ratio
-    const totalSlots = r * c;
-    const waste = totalSlots - totalCodewords;
-    const moduleWidth = 69 + c * 17;
-    const aspectRatio = moduleWidth / r;
+    const totalSlots = r * c
+    const waste = totalSlots - totalCodewords
+    const moduleWidth = 69 + c * 17
+    const aspectRatio = moduleWidth / r
     // Target aspect ratio ~3-4 for readability
-    const aspectPenalty = Math.abs(aspectRatio - 3.5) * 10;
-    const score = waste + aspectPenalty;
+    const aspectPenalty = Math.abs(aspectRatio - 3.5) * 10
+    const score = waste + aspectPenalty
 
     if (score < bestScore) {
-      bestScore = score;
-      bestCols = c;
-      bestRows = r;
+      bestScore = score
+      bestCols = c
+      bestRows = r
     }
   }
 
   // Ensure minimum rows
-  if (bestRows < MIN_ROWS) bestRows = MIN_ROWS;
+  if (bestRows < MIN_ROWS) bestRows = MIN_ROWS
 
-  return { rows: bestRows, cols: bestCols };
+  return { rows: bestRows, cols: bestCols }
 }
 
 /**
@@ -203,48 +203,48 @@ function buildMatrix(
 ): boolean[][] {
   const modulesPerRow = compact
     ? 17 + 17 + cols * 17 + 1 // start + left indicator + data + 1-module stop
-    : 17 + 17 + cols * 17 + 17 + 18; // start + left indicator + data + right indicator + stop
+    : 17 + 17 + cols * 17 + 17 + 18 // start + left indicator + data + right indicator + stop
 
-  const matrix: boolean[][] = [];
+  const matrix: boolean[][] = []
 
   for (let row = 0; row < rows; row++) {
-    const cluster = getRowCluster(row);
-    const rowModules: boolean[] = Array.from({ length: modulesPerRow }, () => false);
-    let modulePos = 0;
+    const cluster = getRowCluster(row)
+    const rowModules: boolean[] = Array.from({ length: modulesPerRow }, () => false)
+    let modulePos = 0
 
     // Start pattern
-    modulePos = writePattern(rowModules, modulePos, START_PATTERN as number[]);
+    modulePos = writePattern(rowModules, modulePos, START_PATTERN as number[])
 
     // Left row indicator
-    const leftIndicator = computeLeftIndicator(row, rows, cols, ecLevel);
-    const leftPattern = getCodewordPattern(leftIndicator, cluster);
-    modulePos = writePattern(rowModules, modulePos, leftPattern);
+    const leftIndicator = computeLeftIndicator(row, rows, cols, ecLevel)
+    const leftPattern = getCodewordPattern(leftIndicator, cluster)
+    modulePos = writePattern(rowModules, modulePos, leftPattern)
 
     // Data codewords for this row
     for (let col = 0; col < cols; col++) {
-      const cwIndex = row * cols + col;
-      const cw = cwIndex < allCodewords.length ? allCodewords[cwIndex]! : 900; // padding
-      const pattern = getCodewordPattern(cw, cluster);
-      modulePos = writePattern(rowModules, modulePos, pattern);
+      const cwIndex = row * cols + col
+      const cw = cwIndex < allCodewords.length ? allCodewords[cwIndex]! : 900 // padding
+      const pattern = getCodewordPattern(cw, cluster)
+      modulePos = writePattern(rowModules, modulePos, pattern)
     }
 
     if (compact) {
       // Compact mode: 1-module stop bar
-      rowModules[modulePos] = true;
+      rowModules[modulePos] = true
     } else {
       // Right row indicator
-      const rightIndicator = computeRightIndicator(row, rows, cols, ecLevel);
-      const rightPattern = getCodewordPattern(rightIndicator, cluster);
-      modulePos = writePattern(rowModules, modulePos, rightPattern);
+      const rightIndicator = computeRightIndicator(row, rows, cols, ecLevel)
+      const rightPattern = getCodewordPattern(rightIndicator, cluster)
+      modulePos = writePattern(rowModules, modulePos, rightPattern)
 
       // Stop pattern
-      writePattern(rowModules, modulePos, STOP_PATTERN as number[]);
+      writePattern(rowModules, modulePos, STOP_PATTERN as number[])
     }
 
-    matrix.push(rowModules);
+    matrix.push(rowModules)
   }
 
-  return matrix;
+  return matrix
 }
 
 /**
@@ -253,18 +253,18 @@ function buildMatrix(
  * Returns the new module position.
  */
 function writePattern(modules: boolean[], startPos: number, pattern: number[]): number {
-  let pos = startPos;
+  let pos = startPos
   for (let i = 0; i < pattern.length; i++) {
-    const width = pattern[i]!;
-    const isBar = i % 2 === 0; // even index = bar, odd index = space
+    const width = pattern[i]!
+    const isBar = i % 2 === 0 // even index = bar, odd index = space
     for (let w = 0; w < width; w++) {
       if (pos < modules.length) {
-        modules[pos] = isBar;
+        modules[pos] = isBar
       }
-      pos++;
+      pos++
     }
   }
-  return pos;
+  return pos
 }
 
 /**
@@ -276,18 +276,18 @@ function writePattern(modules: boolean[], startPos: number, pattern: number[]): 
  * - Cluster 6 (row % 3 == 2): (row/3) * 30 + (cols-1)
  */
 function computeLeftIndicator(row: number, rows: number, cols: number, ecLevel: number): number {
-  const clusterIndex = row % 3;
-  const rowGroup = Math.floor(row / 3);
+  const clusterIndex = row % 3
+  const rowGroup = Math.floor(row / 3)
 
   switch (clusterIndex) {
     case 0:
-      return rowGroup * 30 + Math.floor((rows - 1) / 3);
+      return rowGroup * 30 + Math.floor((rows - 1) / 3)
     case 1:
-      return rowGroup * 30 + ecLevel * 3 + ((rows - 1) % 3);
+      return rowGroup * 30 + ecLevel * 3 + ((rows - 1) % 3)
     case 2:
-      return rowGroup * 30 + (cols - 1);
+      return rowGroup * 30 + (cols - 1)
     default:
-      return 0;
+      return 0
   }
 }
 
@@ -300,19 +300,19 @@ function computeLeftIndicator(row: number, rows: number, cols: number, ecLevel: 
  * - Cluster 6 (row % 3 == 2): (row/3) * 30 + ecLevel * 3 + (rows-1) % 3
  */
 function computeRightIndicator(row: number, rows: number, cols: number, ecLevel: number): number {
-  const clusterIndex = row % 3;
-  const rowGroup = Math.floor(row / 3);
+  const clusterIndex = row % 3
+  const rowGroup = Math.floor(row / 3)
 
   switch (clusterIndex) {
     case 0:
-      return rowGroup * 30 + (cols - 1);
+      return rowGroup * 30 + (cols - 1)
     case 1:
-      return rowGroup * 30 + Math.floor((rows - 1) / 3);
+      return rowGroup * 30 + Math.floor((rows - 1) / 3)
     case 2:
-      return rowGroup * 30 + ecLevel * 3 + ((rows - 1) % 3);
+      return rowGroup * 30 + ecLevel * 3 + ((rows - 1) % 3)
     default:
-      return 0;
+      return 0
   }
 }
 
-export type { PDF417Options as PDF417EncoderOptions };
+export type { PDF417Options as PDF417EncoderOptions }

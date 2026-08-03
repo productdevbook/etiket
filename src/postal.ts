@@ -12,18 +12,13 @@
  * ```
  */
 
-export { postal, postalDataURI, postalBase64, encodePostal } from "./_postal";
-export type { PostalType, PostalEncodingOptions, PostalOptions } from "./_postal";
+export { postal, postalDataURI, postalBase64, encodePostal } from "./_postal"
+export type { PostalType, PostalEncodingOptions, PostalOptions } from "./_postal"
 
-export { encodePOSTNET, encodePLANET } from "./encoders/postnet";
-export {
-  encodeRM4SCC,
-  encodeKIX,
-  encodeAustraliaPost,
-  encodeJapanPost,
-} from "./encoders/fourstate";
-export type { FourState } from "./encoders/fourstate";
-export { encodeIMb } from "./encoders/imb";
+export { encodePOSTNET, encodePLANET } from "./encoders/postnet"
+export { encodeRM4SCC, encodeKIX, encodeAustraliaPost, encodeJapanPost } from "./encoders/fourstate"
+export type { FourState } from "./encoders/fourstate"
+export { encodeIMb } from "./encoders/imb"
 
-export { renderPostalSVG } from "./renderers/svg/postal";
-export type { PostalSVGOptions, PostalBar } from "./renderers/svg/postal";
+export { renderPostalSVG } from "./renderers/svg/postal"
+export type { PostalSVGOptions, PostalBar } from "./renderers/svg/postal"

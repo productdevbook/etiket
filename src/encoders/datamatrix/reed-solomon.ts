@@ -4,28 +4,28 @@
  */
 
 // Galois Field GF(256) lookup tables for polynomial 0x12D
-const GF_EXP = new Uint8Array(512);
-const GF_LOG = new Uint8Array(256);
+const GF_EXP = new Uint8Array(512)
+const GF_LOG = new Uint8Array(256)
 
 // Initialize GF(256) tables with primitive polynomial 0x12D
-(function initGF() {
-  let x = 1;
+;(function initGF() {
+  let x = 1
   for (let i = 0; i < 255; i++) {
-    GF_EXP[i] = x;
-    GF_LOG[x] = i;
-    x = x << 1;
-    if (x >= 256) x ^= 0x12d;
+    GF_EXP[i] = x
+    GF_LOG[x] = i
+    x = x << 1
+    if (x >= 256) x ^= 0x12d
   }
   // Extend exp table for easier modular arithmetic
   for (let i = 255; i < 512; i++) {
-    GF_EXP[i] = GF_EXP[i - 255]!;
+    GF_EXP[i] = GF_EXP[i - 255]!
   }
-})();
+})()
 
 /** Multiply two GF(256) elements */
 function gfMultiply(a: number, b: number): number {
-  if (a === 0 || b === 0) return 0;
-  return GF_EXP[(GF_LOG[a]! + GF_LOG[b]!) % 255]!;
+  if (a === 0 || b === 0) return 0
+  return GF_EXP[(GF_LOG[a]! + GF_LOG[b]!) % 255]!
 }
 
 /**
@@ -38,29 +38,29 @@ function gfMultiply(a: number, b: number): number {
 export function generateECCodewords(data: number[], ecCount: number): number[] {
   // Build generator polynomial per ISO 16022:
   // g(x) = (x - a^1)(x - a^2)...(x - a^ecCount)
-  const gen: number[] = Array.from({ length: ecCount + 1 }, () => 0);
-  gen[0] = 1;
+  const gen: number[] = Array.from({ length: ecCount + 1 }, () => 0)
+  gen[0] = 1
 
   for (let i = 1; i <= ecCount; i++) {
     for (let j = gen.length - 1; j >= 1; j--) {
-      gen[j] = gen[j - 1]! ^ gfMultiply(gen[j]!, GF_EXP[i]!);
+      gen[j] = gen[j - 1]! ^ gfMultiply(gen[j]!, GF_EXP[i]!)
     }
-    gen[0] = gfMultiply(gen[0]!, GF_EXP[i]!);
+    gen[0] = gfMultiply(gen[0]!, GF_EXP[i]!)
   }
 
   // Polynomial long division: data polynomial / generator polynomial
   // gen[0] = constant term, gen[ecCount] = leading coefficient (1)
   // Division needs coefficients in descending degree order
-  const result = Array.from({ length: ecCount }, () => 0);
+  const result = Array.from({ length: ecCount }, () => 0)
   for (const byte of data) {
-    const lead = byte ^ result[0]!;
+    const lead = byte ^ result[0]!
     for (let j = 0; j < ecCount - 1; j++) {
-      result[j] = result[j + 1]! ^ gfMultiply(lead, gen[ecCount - 1 - j]!);
+      result[j] = result[j + 1]! ^ gfMultiply(lead, gen[ecCount - 1 - j]!)
     }
-    result[ecCount - 1] = gfMultiply(lead, gen[0]!);
+    result[ecCount - 1] = gfMultiply(lead, gen[0]!)
   }
 
-  return result;
+  return result
 }
 
 /**
@@ -77,36 +77,36 @@ export function generateInterleavedEC(
   ecCodewordsTotal: number,
   interleavedBlocks: number,
 ): number[] {
-  const ecPerBlock = ecCodewordsTotal / interleavedBlocks;
-  const dataLength = dataCodewords.length;
-  const baseBlockSize = Math.floor(dataLength / interleavedBlocks);
-  const largerBlocks = dataLength % interleavedBlocks;
+  const ecPerBlock = ecCodewordsTotal / interleavedBlocks
+  const dataLength = dataCodewords.length
+  const baseBlockSize = Math.floor(dataLength / interleavedBlocks)
+  const largerBlocks = dataLength % interleavedBlocks
 
   // Split data into interleaved blocks
-  const blocks: number[][] = [];
-  let pos = 0;
+  const blocks: number[][] = []
+  let pos = 0
 
   for (let b = 0; b < interleavedBlocks; b++) {
     // First (interleavedBlocks - largerBlocks) blocks get baseBlockSize codewords,
     // remaining largerBlocks blocks get baseBlockSize + 1
-    const blockSize = b < interleavedBlocks - largerBlocks ? baseBlockSize : baseBlockSize + 1;
-    blocks.push(dataCodewords.slice(pos, pos + blockSize));
-    pos += blockSize;
+    const blockSize = b < interleavedBlocks - largerBlocks ? baseBlockSize : baseBlockSize + 1
+    blocks.push(dataCodewords.slice(pos, pos + blockSize))
+    pos += blockSize
   }
 
   // Generate EC for each block
-  const ecBlocks: number[][] = [];
+  const ecBlocks: number[][] = []
   for (const block of blocks) {
-    ecBlocks.push(generateECCodewords(block, ecPerBlock));
+    ecBlocks.push(generateECCodewords(block, ecPerBlock))
   }
 
   // Interleave EC codewords
-  const result: number[] = [];
+  const result: number[] = []
   for (let i = 0; i < ecPerBlock; i++) {
     for (let b = 0; b < interleavedBlocks; b++) {
-      result.push(ecBlocks[b]![i]!);
+      result.push(ecBlocks[b]![i]!)
     }
   }
 
-  return result;
+  return result
 }

@@ -17,58 +17,58 @@
  *   GF(4096): x^12 + x^6 + x^4 + x + 1        (0x1069)
  */
 
-import { GF_POLY } from "./tables";
+import { GF_POLY } from "./tables"
 
 // ---------------------------------------------------------------------------
 // Galois Field arithmetic
 // ---------------------------------------------------------------------------
 
 interface GFTables {
-  exp: number[];
-  log: number[];
-  size: number; // 2^wordSize
-  max: number; // size - 1
+  exp: number[]
+  log: number[]
+  size: number // 2^wordSize
+  max: number // size - 1
 }
 
 /** Cache of initialized GF tables keyed by word size */
-const gfCache = new Map<number, GFTables>();
+const gfCache = new Map<number, GFTables>()
 
 /** Initialize or retrieve GF lookup tables for a given word size */
 function getGF(wordSize: number): GFTables {
-  const cached = gfCache.get(wordSize);
-  if (cached) return cached;
+  const cached = gfCache.get(wordSize)
+  if (cached) return cached
 
-  const poly = GF_POLY[wordSize];
+  const poly = GF_POLY[wordSize]
   if (poly === undefined) {
-    throw new Error(`No primitive polynomial defined for GF(2^${wordSize})`);
+    throw new Error(`No primitive polynomial defined for GF(2^${wordSize})`)
   }
 
-  const size = 1 << wordSize;
-  const max = size - 1;
-  const exp = Array.from<number>({ length: size * 2 });
-  const log = Array.from<number>({ length: size }).fill(0);
+  const size = 1 << wordSize
+  const max = size - 1
+  const exp = Array.from<number>({ length: size * 2 })
+  const log = Array.from<number>({ length: size }).fill(0)
 
-  let x = 1;
+  let x = 1
   for (let i = 0; i < max; i++) {
-    exp[i] = x;
-    log[x] = i;
-    x = x << 1;
-    if (x >= size) x ^= poly;
+    exp[i] = x
+    log[x] = i
+    x = x << 1
+    if (x >= size) x ^= poly
   }
   // Extend exp table for easier modular arithmetic
   for (let i = max; i < size * 2; i++) {
-    exp[i] = exp[i - max]!;
+    exp[i] = exp[i - max]!
   }
 
-  const tables: GFTables = { exp, log, size, max };
-  gfCache.set(wordSize, tables);
-  return tables;
+  const tables: GFTables = { exp, log, size, max }
+  gfCache.set(wordSize, tables)
+  return tables
 }
 
 /** Multiply two GF elements */
 function gfMul(gf: GFTables, a: number, b: number): number {
-  if (a === 0 || b === 0) return 0;
-  return gf.exp[(gf.log[a]! + gf.log[b]!) % gf.max]!;
+  if (a === 0 || b === 0) return 0
+  return gf.exp[(gf.log[a]! + gf.log[b]!) % gf.max]!
 }
 
 // ---------------------------------------------------------------------------
@@ -84,37 +84,37 @@ function gfMul(gf: GFTables, a: number, b: number): number {
  * @returns Array of `ecCount` error correction codewords
  */
 export function rsEncode(data: number[], ecCount: number, wordSize: number): number[] {
-  const gf = getGF(wordSize);
+  const gf = getGF(wordSize)
 
   // Build generator polynomial: g(x) = (x - a^1)(x - a^2)...(x - a^ecCount)
   // Aztec RS uses roots starting at a^1, not a^0.
   // Coefficients stored in descending degree: gen[0]*x^n + gen[1]*x^(n-1) + ... + gen[n]
-  let gen = [1];
+  let gen = [1]
   for (let i = 1; i <= ecCount; i++) {
-    const root = gf.exp[i]!;
-    const newGen = Array.from<number>({ length: gen.length + 1 }).fill(0);
+    const root = gf.exp[i]!
+    const newGen = Array.from<number>({ length: gen.length + 1 }).fill(0)
     for (let j = 0; j < gen.length; j++) {
-      newGen[j] ^= gen[j]!;
-      newGen[j + 1] ^= gfMul(gf, gen[j]!, root);
+      newGen[j] ^= gen[j]!
+      newGen[j + 1] ^= gfMul(gf, gen[j]!, root)
     }
-    gen = newGen;
+    gen = newGen
   }
 
   // Polynomial long division: (data * x^ecCount) mod gen
   // Create dividend = data codewords followed by ecCount zeros
-  const dividend = [...data, ...Array.from<number>({ length: ecCount }).fill(0)];
+  const dividend = [...data, ...Array.from<number>({ length: ecCount }).fill(0)]
 
   for (let i = 0; i < data.length; i++) {
     if (dividend[i] !== 0) {
-      const coeff = dividend[i]!;
+      const coeff = dividend[i]!
       for (let j = 0; j < gen.length; j++) {
-        dividend[i + j] ^= gfMul(gf, coeff, gen[j]!);
+        dividend[i + j] ^= gfMul(gf, coeff, gen[j]!)
       }
     }
   }
 
   // The remainder is the last ecCount entries of the dividend
-  return dividend.slice(data.length);
+  return dividend.slice(data.length)
 }
 
 /**
@@ -135,43 +135,43 @@ export function generateCheckWords(
   totalBits: number,
   wordSize: number,
 ): number[] {
-  const messageSizeInWords = Math.floor(stuffedBits.length / wordSize);
-  const totalWords = Math.floor(totalBits / wordSize);
+  const messageSizeInWords = Math.floor(stuffedBits.length / wordSize)
+  const totalWords = Math.floor(totalBits / wordSize)
 
   // Convert stuffed bits to codewords (first messageSizeInWords positions filled)
-  const messageWords = Array.from<number>({ length: totalWords }).fill(0);
+  const messageWords = Array.from<number>({ length: totalWords }).fill(0)
   for (let i = 0; i < messageSizeInWords; i++) {
-    let value = 0;
+    let value = 0
     for (let j = 0; j < wordSize; j++) {
-      value |= (stuffedBits[i * wordSize + j]! ? 1 : 0) << (wordSize - j - 1);
+      value |= (stuffedBits[i * wordSize + j]! ? 1 : 0) << (wordSize - j - 1)
     }
-    messageWords[i] = value;
+    messageWords[i] = value
   }
 
   // RS-encode: fills positions messageSizeInWords..totalWords-1 with EC
-  const ecCount = totalWords - messageSizeInWords;
-  const ec = rsEncode(messageWords.slice(0, messageSizeInWords), ecCount, wordSize);
+  const ecCount = totalWords - messageSizeInWords
+  const ec = rsEncode(messageWords.slice(0, messageSizeInWords), ecCount, wordSize)
   for (let i = 0; i < ecCount; i++) {
-    messageWords[messageSizeInWords + i] = ec[i]!;
+    messageWords[messageSizeInWords + i] = ec[i]!
   }
 
   // Convert to bits with startPad
-  const startPad = totalBits % wordSize;
-  const result: number[] = [];
+  const startPad = totalBits % wordSize
+  const result: number[] = []
 
   // Add padding zeros at the start
   for (let i = 0; i < startPad; i++) {
-    result.push(0);
+    result.push(0)
   }
 
   // Add all codewords as bits
   for (const cw of messageWords) {
     for (let b = wordSize - 1; b >= 0; b--) {
-      result.push((cw >> b) & 1);
+      result.push((cw >> b) & 1)
     }
   }
 
-  return result;
+  return result
 }
 
 /**
@@ -185,20 +185,20 @@ export function generateCheckWords(
  * @returns 28-bit array (MSB first)
  */
 export function encodeCompactModeMessage(layers: number, dataCodewords: number): number[] {
-  const val = ((layers - 1) << 6) | (dataCodewords - 1);
-  const cw0 = (val >> 4) & 0x0f;
-  const cw1 = val & 0x0f;
+  const val = ((layers - 1) << 6) | (dataCodewords - 1)
+  const cw0 = (val >> 4) & 0x0f
+  const cw1 = val & 0x0f
 
-  const ec = rsEncode([cw0, cw1], 5, 4);
+  const ec = rsEncode([cw0, cw1], 5, 4)
 
   // Convert all 7 codewords to a 28-bit array
-  const bits: number[] = [];
+  const bits: number[] = []
   for (const cw of [cw0, cw1, ...ec]) {
     for (let b = 3; b >= 0; b--) {
-      bits.push((cw >> b) & 1);
+      bits.push((cw >> b) & 1)
     }
   }
-  return bits;
+  return bits
 }
 
 /**
@@ -215,20 +215,20 @@ export function encodeCompactModeMessage(layers: number, dataCodewords: number):
  */
 export function encodeFullModeMessage(layers: number, dataCodewords: number): number[] {
   // Pack 16 bits: 5 bits (layers-1) + 11 bits (dataCW-1)
-  const val = ((layers - 1) << 11) | (dataCodewords - 1);
-  const cw0 = (val >> 12) & 0x0f;
-  const cw1 = (val >> 8) & 0x0f;
-  const cw2 = (val >> 4) & 0x0f;
-  const cw3 = val & 0x0f;
+  const val = ((layers - 1) << 11) | (dataCodewords - 1)
+  const cw0 = (val >> 12) & 0x0f
+  const cw1 = (val >> 8) & 0x0f
+  const cw2 = (val >> 4) & 0x0f
+  const cw3 = val & 0x0f
 
-  const ec = rsEncode([cw0, cw1, cw2, cw3], 6, 4);
+  const ec = rsEncode([cw0, cw1, cw2, cw3], 6, 4)
 
   // Convert all 10 codewords to a 40-bit array
-  const bits: number[] = [];
+  const bits: number[] = []
   for (const cw of [cw0, cw1, cw2, cw3, ...ec]) {
     for (let b = 3; b >= 0; b--) {
-      bits.push((cw >> b) & 1);
+      bits.push((cw >> b) & 1)
     }
   }
-  return bits;
+  return bits
 }

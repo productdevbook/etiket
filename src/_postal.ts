@@ -6,33 +6,28 @@
  * Intelligent Mail (4-state).
  */
 
-import { encodePOSTNET, encodePLANET } from "./encoders/postnet";
-import {
-  encodeRM4SCC,
-  encodeKIX,
-  encodeAustraliaPost,
-  encodeJapanPost,
-} from "./encoders/fourstate";
-import { encodeIMb } from "./encoders/imb";
-import { renderPostalSVG } from "./renderers/svg/postal";
-import { svgToDataURI, svgToBase64 } from "./renderers/data-uri";
-import type { PostalBar, PostalSVGOptions } from "./renderers/svg/postal";
-import { InvalidInputError } from "./errors";
+import { encodePOSTNET, encodePLANET } from "./encoders/postnet"
+import { encodeRM4SCC, encodeKIX, encodeAustraliaPost, encodeJapanPost } from "./encoders/fourstate"
+import { encodeIMb } from "./encoders/imb"
+import { renderPostalSVG } from "./renderers/svg/postal"
+import { svgToDataURI, svgToBase64 } from "./renderers/data-uri"
+import type { PostalBar, PostalSVGOptions } from "./renderers/svg/postal"
+import { InvalidInputError } from "./errors"
 
 /** Height-modulated postal symbologies. */
-export type PostalType = "postnet" | "planet" | "rm4scc" | "kix" | "auspost" | "jppost" | "imb";
+export type PostalType = "postnet" | "planet" | "rm4scc" | "kix" | "auspost" | "jppost" | "imb"
 
 export interface PostalEncodingOptions {
   /** Postal symbology. Default "postnet". */
-  type?: PostalType;
+  type?: PostalType
   /** Australia Post Format Control Code ("11", "59" or "62"). Default "11". */
-  fcc?: string;
+  fcc?: string
   /**
    * Second data field, where the symbology has one:
    * - `imb` — the routing code (0, 5, 9 or 11 digits)
    * - `jppost` — the address portion following the postal code
    */
-  routingCode?: string;
+  routingCode?: string
 }
 
 export interface PostalOptions extends PostalEncodingOptions, PostalSVGOptions {}
@@ -44,25 +39,25 @@ export interface PostalOptions extends PostalEncodingOptions, PostalSVGOptions {
  * heights (`1` tall / `0` short) for POSTNET and PLANET.
  */
 export function encodePostal(text: string, options: PostalEncodingOptions = {}): PostalBar[] {
-  const { type = "postnet", fcc = "11", routingCode = "" } = options;
+  const { type = "postnet", fcc = "11", routingCode = "" } = options
 
   switch (type) {
     case "postnet":
-      return encodePOSTNET(text);
+      return encodePOSTNET(text)
     case "planet":
-      return encodePLANET(text);
+      return encodePLANET(text)
     case "rm4scc":
-      return encodeRM4SCC(text);
+      return encodeRM4SCC(text)
     case "kix":
-      return encodeKIX(text);
+      return encodeKIX(text)
     case "auspost":
-      return encodeAustraliaPost(fcc, text);
+      return encodeAustraliaPost(fcc, text)
     case "jppost":
-      return encodeJapanPost(text, routingCode || undefined);
+      return encodeJapanPost(text, routingCode || undefined)
     case "imb":
-      return encodeIMb(text, routingCode);
+      return encodeIMb(text, routingCode)
     default:
-      throw new InvalidInputError(`Unsupported postal type: ${String(type)}`);
+      throw new InvalidInputError(`Unsupported postal type: ${String(type)}`)
   }
 }
 
@@ -77,17 +72,17 @@ export function encodePostal(text: string, options: PostalEncodingOptions = {}):
  * ```
  */
 export function postal(text: string, options: PostalOptions = {}): string {
-  const { type: _type, fcc: _fcc, routingCode: _routing, ...svgOptions } = options;
-  const bars = encodePostal(text, options);
-  return renderPostalSVG(bars, svgOptions);
+  const { type: _type, fcc: _fcc, routingCode: _routing, ...svgOptions } = options
+  const bars = encodePostal(text, options)
+  return renderPostalSVG(bars, svgOptions)
 }
 
 /** Generate a postal barcode as a data URI */
 export function postalDataURI(text: string, options?: PostalOptions): string {
-  return svgToDataURI(postal(text, options));
+  return svgToDataURI(postal(text, options))
 }
 
 /** Generate a postal barcode as a base64 string */
 export function postalBase64(text: string, options?: PostalOptions): string {
-  return svgToBase64(postal(text, options));
+  return svgToBase64(postal(text, options))
 }

@@ -3,13 +3,13 @@
  * between the validator's verdict and what the encoders actually accept.
  */
 
-import { describe, expect, it } from "vitest";
-import { validateBarcode, isValidInput, validateBarcodeInput } from "../src/validators/barcode";
-import { calculateEANCheckDigit, verifyEANCheckDigit } from "../src/validators/barcode";
-import { encodeBars } from "../src/_barcode";
-import { encodePostal } from "../src/_postal";
-import { encodeIdentcode, encodeLeitcode } from "../src/encoders/deutsche-post";
-import { encodePOSTNET, encodePLANET } from "../src/encoders/postnet";
+import { describe, expect, it } from "vitest"
+import { validateBarcode, isValidInput, validateBarcodeInput } from "../src/validators/barcode"
+import { calculateEANCheckDigit, verifyEANCheckDigit } from "../src/validators/barcode"
+import { encodeBars } from "../src/_barcode"
+import { encodePostal } from "../src/_postal"
+import { encodeIdentcode, encodeLeitcode } from "../src/encoders/deutsche-post"
+import { encodePOSTNET, encodePLANET } from "../src/encoders/postnet"
 
 describe("validateBarcode — accepts valid input", () => {
   const valid: Array<[string, string]> = [
@@ -59,17 +59,17 @@ describe("validateBarcode — accepts valid input", () => {
     ["code16k", "HELLO"],
     ["micropdf417", "HELLO"],
     ["gs1-datamatrix", "(01)12345678901231"],
-  ];
+  ]
 
   for (const [type, text] of valid) {
     it(`${type}: "${text}"`, () => {
-      const result = validateBarcode(text, type);
-      expect(result.valid, `${type} ${text}: ${result.error ?? ""}`).toBe(true);
-      expect(result.error).toBeUndefined();
-      expect(isValidInput(text, type)).toBe(true);
-    });
+      const result = validateBarcode(text, type)
+      expect(result.valid, `${type} ${text}: ${result.error ?? ""}`).toBe(true)
+      expect(result.error).toBeUndefined()
+      expect(isValidInput(text, type)).toBe(true)
+    })
   }
-});
+})
 
 describe("validateBarcode — rejects invalid input", () => {
   const invalid: Array<[string, string, RegExp]> = [
@@ -124,23 +124,23 @@ describe("validateBarcode — rejects invalid input", () => {
     ["codablock-f", "", /must not be empty/],
     ["code16k", "", /must not be empty/],
     ["micropdf417", "", /must not be empty/],
-  ];
+  ]
 
   for (const [type, text, pattern] of invalid) {
     it(`${type}: "${text}"`, () => {
-      const result = validateBarcode(text, type);
-      expect(result.valid, `${type} "${text}" should be invalid`).toBe(false);
-      expect(result.error).toMatch(pattern);
-      expect(isValidInput(text, type)).toBe(false);
-    });
+      const result = validateBarcode(text, type)
+      expect(result.valid, `${type} "${text}" should be invalid`).toBe(false)
+      expect(result.error).toMatch(pattern)
+      expect(isValidInput(text, type)).toBe(false)
+    })
   }
-});
+})
 
 describe("validateBarcode — unknown types", () => {
   it("permits unknown types rather than blocking them", () => {
-    expect(validateBarcode("anything", "some-future-type")).toEqual({ valid: true });
-  });
-});
+    expect(validateBarcode("anything", "some-future-type")).toEqual({ valid: true })
+  })
+})
 
 describe("validator agrees with the encoders", () => {
   const cases: Array<[string, string]> = [
@@ -159,14 +159,14 @@ describe("validator agrees with the encoders", () => {
     ["identcode", "56310243031"],
     ["leitcode", "2131000006418"],
     ["plessey", "1234"],
-  ];
+  ]
 
   it("input the validator accepts, the encoder encodes", () => {
     for (const [type, text] of cases) {
-      expect(validateBarcode(text, type).valid, type).toBe(true);
-      expect(() => encodeBars(text, { type: type as "code128" }), type).not.toThrow();
+      expect(validateBarcode(text, type).valid, type).toBe(true)
+      expect(() => encodeBars(text, { type: type as "code128" }), type).not.toThrow()
     }
-  });
+  })
 
   it("postal input the validator accepts, the postal encoder encodes", () => {
     const postalCases: Array<[string, string]> = [
@@ -177,12 +177,12 @@ describe("validator agrees with the encoders", () => {
       ["auspost", "12345678"],
       ["jppost", "1234567"],
       ["imb", "01234567094987654321"],
-    ];
+    ]
     for (const [type, text] of postalCases) {
-      expect(validateBarcode(text, type).valid, type).toBe(true);
-      expect(() => encodePostal(text, { type: type as "postnet" }), type).not.toThrow();
+      expect(validateBarcode(text, type).valid, type).toBe(true)
+      expect(() => encodePostal(text, { type: type as "postnet" }), type).not.toThrow()
     }
-  });
+  })
 
   it("input the validator rejects, the encoder also rejects", () => {
     const rejected: Array<[string, string]> = [
@@ -193,90 +193,90 @@ describe("validator agrees with the encoders", () => {
       ["code11", "12A4"],
       ["ean2", "123"],
       ["ean5", "1234"],
-    ];
+    ]
     for (const [type, text] of rejected) {
-      expect(validateBarcode(text, type).valid, type).toBe(false);
-      expect(() => encodeBars(text, { type: type as "code128" }), type).toThrow();
+      expect(validateBarcode(text, type).valid, type).toBe(false)
+      expect(() => encodeBars(text, { type: type as "code128" }), type).toThrow()
     }
-  });
-});
+  })
+})
 
 describe("validateBarcodeInput — check digits", () => {
   it("computes the EAN-13 check digit", () => {
-    expect(validateBarcodeInput("400638133393", "ean13")).toEqual({ valid: true, checkDigit: 1 });
-  });
+    expect(validateBarcodeInput("400638133393", "ean13")).toEqual({ valid: true, checkDigit: 1 })
+  })
 
   it("computes the EAN-8 check digit", () => {
-    const result = validateBarcodeInput("9638507", "ean8");
-    expect(result.valid).toBe(true);
-    expect(result.checkDigit).toBe(4);
-  });
+    const result = validateBarcodeInput("9638507", "ean8")
+    expect(result.valid).toBe(true)
+    expect(result.checkDigit).toBe(4)
+  })
 
   it("computes the UPC-A check digit", () => {
-    expect(validateBarcodeInput("03600029145", "upca").checkDigit).toBe(2);
-  });
+    expect(validateBarcodeInput("03600029145", "upca").checkDigit).toBe(2)
+  })
 
   it("computes the ITF-14 check digit", () => {
-    expect(validateBarcodeInput("1540014128876", "itf14").checkDigit).toBe(3);
-  });
+    expect(validateBarcodeInput("1540014128876", "itf14").checkDigit).toBe(3)
+  })
 
   it("computes the UPC-E check digit", () => {
-    const result = validateBarcodeInput("012345", "upce");
-    expect(result.valid).toBe(true);
-    expect(typeof result.checkDigit).toBe("number");
-  });
+    const result = validateBarcodeInput("012345", "upce")
+    expect(result.valid).toBe(true)
+    expect(typeof result.checkDigit).toBe("number")
+  })
 
   it("computes Identcode/Leitcode check digits matching the encoder", () => {
-    const ident = validateBarcodeInput("56310243031", "identcode");
-    expect(ident.valid).toBe(true);
+    const ident = validateBarcodeInput("56310243031", "identcode")
+    expect(ident.valid).toBe(true)
     // The encoder accepts data + the validator's check digit as a complete code
-    expect(() => encodeIdentcode("56310243031" + String(ident.checkDigit))).not.toThrow();
+    expect(() => encodeIdentcode("56310243031" + String(ident.checkDigit))).not.toThrow()
 
-    const leit = validateBarcodeInput("2131000006418", "leitcode");
-    expect(leit.valid).toBe(true);
-    expect(() => encodeLeitcode("2131000006418" + String(leit.checkDigit))).not.toThrow();
-  });
+    const leit = validateBarcodeInput("2131000006418", "leitcode")
+    expect(leit.valid).toBe(true)
+    expect(() => encodeLeitcode("2131000006418" + String(leit.checkDigit))).not.toThrow()
+  })
 
   it("computes POSTNET/PLANET check digits", () => {
     // 1+2+3+4+5 = 15 → (10 - 15 % 10) % 10 = 5
-    expect(validateBarcodeInput("12345", "postnet").checkDigit).toBe(5);
+    expect(validateBarcodeInput("12345", "postnet").checkDigit).toBe(5)
     // 1+2+…+9+0+1 = 46 → (10 - 46 % 10) % 10 = 4
-    expect(validateBarcodeInput("12345678901", "planet").checkDigit).toBe(4);
+    expect(validateBarcodeInput("12345678901", "planet").checkDigit).toBe(4)
     // The encoders append the same digit
-    expect(encodePOSTNET("12345").length).toBe(1 + 6 * 5 + 1);
-    expect(encodePLANET("12345678901").length).toBe(1 + 12 * 5 + 1);
-  });
+    expect(encodePOSTNET("12345").length).toBe(1 + 6 * 5 + 1)
+    expect(encodePLANET("12345678901").length).toBe(1 + 12 * 5 + 1)
+  })
 
   it("returns no check digit for types that do not define one", () => {
-    expect(validateBarcodeInput("HELLO", "code128")).toEqual({ valid: true });
-    expect(validateBarcodeInput("HELLO", "code39")).toEqual({ valid: true });
-  });
+    expect(validateBarcodeInput("HELLO", "code128")).toEqual({ valid: true })
+    expect(validateBarcodeInput("HELLO", "code39")).toEqual({ valid: true })
+  })
 
   it("propagates validation failures without computing a check digit", () => {
-    const result = validateBarcodeInput("123", "ean13");
-    expect(result.valid).toBe(false);
-    expect(result.checkDigit).toBeUndefined();
-  });
-});
+    const result = validateBarcodeInput("123", "ean13")
+    expect(result.valid).toBe(false)
+    expect(result.checkDigit).toBeUndefined()
+  })
+})
 
 describe("EAN check digit helpers", () => {
   it("calculates known check digits", () => {
-    expect(calculateEANCheckDigit([4, 0, 0, 6, 3, 8, 1, 3, 3, 3, 9, 3])).toBe(1);
-    expect(calculateEANCheckDigit([9, 6, 3, 8, 5, 0, 7])).toBe(4);
-  });
+    expect(calculateEANCheckDigit([4, 0, 0, 6, 3, 8, 1, 3, 3, 3, 9, 3])).toBe(1)
+    expect(calculateEANCheckDigit([9, 6, 3, 8, 5, 0, 7])).toBe(4)
+  })
 
   it("verifies complete codes", () => {
-    expect(verifyEANCheckDigit("4006381333931")).toBe(true);
-    expect(verifyEANCheckDigit("4006381333930")).toBe(false);
-    expect(verifyEANCheckDigit("96385074")).toBe(true);
-  });
+    expect(verifyEANCheckDigit("4006381333931")).toBe(true)
+    expect(verifyEANCheckDigit("4006381333930")).toBe(false)
+    expect(verifyEANCheckDigit("96385074")).toBe(true)
+  })
 
   it("rejects input too short to carry a check digit", () => {
-    expect(verifyEANCheckDigit("")).toBe(false);
-    expect(verifyEANCheckDigit("5")).toBe(false);
-  });
+    expect(verifyEANCheckDigit("")).toBe(false)
+    expect(verifyEANCheckDigit("5")).toBe(false)
+  })
 
   it("ignores non-digit separators", () => {
-    expect(verifyEANCheckDigit("4-006381333931")).toBe(true);
-  });
-});
+    expect(verifyEANCheckDigit("4-006381333931")).toBe(true)
+  })
+})

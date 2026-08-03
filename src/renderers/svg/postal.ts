@@ -14,50 +14,50 @@
  * information is what carries the data — hence this dedicated renderer.
  */
 
-import type { FourState } from "../../encoders/fourstate";
-import type { MeasurementUnit, SVGAccessibilityOptions } from "./types";
-import { escapeAttr, escapeXml } from "./utils";
+import type { FourState } from "../../encoders/fourstate"
+import type { MeasurementUnit, SVGAccessibilityOptions } from "./types"
+import { escapeAttr, escapeXml } from "./utils"
 
 export interface PostalSVGOptions extends SVGAccessibilityOptions {
   /** Total symbol height in units (full-bar height). Default 40. */
-  height?: number;
+  height?: number
   /** Width of a single bar in units. Default 2. */
-  barWidth?: number;
+  barWidth?: number
   /** Centre-to-centre distance between bars in units. Default barWidth * 2. */
-  pitch?: number;
+  pitch?: number
   /** Bar color. Default "#000". */
-  color?: string;
+  color?: string
   /** Background color, or "transparent" to omit the background rect. Default "#fff". */
-  background?: string;
+  background?: string
   /** Measurement unit for width/height attributes. Default "px". */
-  unit?: MeasurementUnit;
+  unit?: MeasurementUnit
   /** Margin on all sides in units. Default 10. */
-  margin?: number;
-  marginTop?: number;
-  marginBottom?: number;
-  marginLeft?: number;
-  marginRight?: number;
+  margin?: number
+  marginTop?: number
+  marginBottom?: number
+  marginLeft?: number
+  marginRight?: number
   /**
    * Height of the centre tracker band as a fraction of total height, for
    * 4-state symbols. Default 1/3 (equal ascender / tracker / descender).
    */
-  trackerRatio?: number;
+  trackerRatio?: number
   /**
    * Height of a short bar as a fraction of total height, for 2-state
    * POSTNET/PLANET symbols. Default 0.4 (USPS spec: 0.050in of 0.125in).
    */
-  shortRatio?: number;
+  shortRatio?: number
   /** Render human-readable text below the symbol. Default false. */
-  showText?: boolean;
-  text?: string;
-  fontSize?: number;
-  fontFamily?: string;
+  showText?: boolean
+  text?: string
+  fontSize?: number
+  fontFamily?: string
 }
 
 /** Vertical extents of a bar, as fractions from the top of the symbol. */
 interface BarExtent {
-  top: number;
-  bottom: number;
+  top: number
+  bottom: number
 }
 
 /**
@@ -65,34 +65,34 @@ interface BarExtent {
  * height flag — non-zero for tall, `0` for short — as produced by
  * `encodePOSTNET` / `encodePLANET`.
  */
-export type PostalBar = FourState | number;
+export type PostalBar = FourState | number
 
-const FOUR_STATE = new Set<string>(["T", "A", "D", "F"]);
+const FOUR_STATE = new Set<string>(["T", "A", "D", "F"])
 
 /** True when the bar array uses 4-state letters rather than 2-state heights. */
 function isFourState(bars: readonly PostalBar[]): bars is FourState[] {
-  return bars.some((b) => typeof b === "string" && FOUR_STATE.has(b));
+  return bars.some((b) => typeof b === "string" && FOUR_STATE.has(b))
 }
 
 function fourStateExtent(bar: FourState, trackerRatio: number): BarExtent {
   // Equal-thirds layout by default: the tracker occupies the centre band and
   // ascenders/descenders extend into the remaining space above/below it.
-  const side = (1 - trackerRatio) / 2;
+  const side = (1 - trackerRatio) / 2
   switch (bar) {
     case "T":
-      return { top: side, bottom: side + trackerRatio };
+      return { top: side, bottom: side + trackerRatio }
     case "A":
-      return { top: 0, bottom: side + trackerRatio };
+      return { top: 0, bottom: side + trackerRatio }
     case "D":
-      return { top: side, bottom: 1 };
+      return { top: side, bottom: 1 }
     case "F":
-      return { top: 0, bottom: 1 };
+      return { top: 0, bottom: 1 }
   }
 }
 
 function twoStateExtent(bar: PostalBar, shortRatio: number): BarExtent {
   // Tall and short bars share a baseline; short bars rise `shortRatio` from it.
-  return bar ? { top: 0, bottom: 1 } : { top: 1 - shortRatio, bottom: 1 };
+  return bar ? { top: 0, bottom: 1 } : { top: 1 - shortRatio, bottom: 1 }
 }
 
 /**
@@ -123,63 +123,63 @@ export function renderPostalSVG(
     role = "img",
     title,
     desc,
-  } = options;
+  } = options
 
-  const pitch = options.pitch ?? barWidth * 2;
-  const u = unit === "px" ? "" : unit;
+  const pitch = options.pitch ?? barWidth * 2
+  const u = unit === "px" ? "" : unit
 
-  const mTop = options.marginTop ?? margin;
-  const mBottom = options.marginBottom ?? margin;
-  const mLeft = options.marginLeft ?? margin;
-  const mRight = options.marginRight ?? margin;
+  const mTop = options.marginTop ?? margin
+  const mBottom = options.marginBottom ?? margin
+  const mLeft = options.marginLeft ?? margin
+  const mRight = options.marginRight ?? margin
 
-  const fourState = isFourState(bars);
+  const fourState = isFourState(bars)
   // Bars are laid out on `pitch` centres; the final bar only needs its own width.
-  const symbolWidth = bars.length > 0 ? (bars.length - 1) * pitch + barWidth : 0;
-  const textHeight = showText && text ? fontSize + 8 : 0;
+  const symbolWidth = bars.length > 0 ? (bars.length - 1) * pitch + barWidth : 0
+  const textHeight = showText && text ? fontSize + 8 : 0
 
-  const svgWidth = symbolWidth + mLeft + mRight;
-  const svgHeight = height + mTop + mBottom + textHeight;
+  const svgWidth = symbolWidth + mLeft + mRight
+  const svgHeight = height + mTop + mBottom + textHeight
 
-  let svgOpen = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${svgWidth} ${svgHeight}" width="${svgWidth}${u}" height="${svgHeight}${u}" role="${escapeAttr(role)}"`;
-  if (ariaLabel) svgOpen += ` aria-label="${escapeAttr(ariaLabel)}"`;
-  svgOpen += ">";
+  let svgOpen = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${svgWidth} ${svgHeight}" width="${svgWidth}${u}" height="${svgHeight}${u}" role="${escapeAttr(role)}"`
+  if (ariaLabel) svgOpen += ` aria-label="${escapeAttr(ariaLabel)}"`
+  svgOpen += ">"
 
-  const parts: string[] = [svgOpen];
-  if (title) parts.push(`<title>${escapeXml(title)}</title>`);
-  if (desc) parts.push(`<desc>${escapeXml(desc)}</desc>`);
+  const parts: string[] = [svgOpen]
+  if (title) parts.push(`<title>${escapeXml(title)}</title>`)
+  if (desc) parts.push(`<desc>${escapeXml(desc)}</desc>`)
   if (background !== "transparent") {
-    parts.push(`<rect width="100%" height="100%" fill="${escapeAttr(background)}"/>`);
+    parts.push(`<rect width="100%" height="100%" fill="${escapeAttr(background)}"/>`)
   }
 
-  const pathParts: string[] = [];
+  const pathParts: string[] = []
   for (let i = 0; i < bars.length; i++) {
-    const bar = bars[i]!;
+    const bar = bars[i]!
     const extent = fourState
       ? fourStateExtent(bar as FourState, trackerRatio)
-      : twoStateExtent(bar, shortRatio);
-    const x = mLeft + i * pitch;
-    const y = mTop + extent.top * height;
-    const h = (extent.bottom - extent.top) * height;
-    pathParts.push(`M${round(x)},${round(y)}h${round(barWidth)}v${round(h)}h-${round(barWidth)}z`);
+      : twoStateExtent(bar, shortRatio)
+    const x = mLeft + i * pitch
+    const y = mTop + extent.top * height
+    const h = (extent.bottom - extent.top) * height
+    pathParts.push(`M${round(x)},${round(y)}h${round(barWidth)}v${round(h)}h-${round(barWidth)}z`)
   }
 
   if (pathParts.length > 0) {
-    parts.push(`<path d="${pathParts.join("")}" fill="${escapeAttr(color)}"/>`);
+    parts.push(`<path d="${pathParts.join("")}" fill="${escapeAttr(color)}"/>`)
   }
 
   if (showText && text) {
-    const textY = mTop + height + fontSize + 4;
+    const textY = mTop + height + fontSize + 4
     parts.push(
       `<text x="${round(svgWidth / 2)}" y="${round(textY)}" text-anchor="middle" font-family="${escapeAttr(fontFamily)}" font-size="${fontSize}" fill="${escapeAttr(color)}">${escapeXml(text)}</text>`,
-    );
+    )
   }
 
-  parts.push("</svg>");
-  return parts.join("");
+  parts.push("</svg>")
+  return parts.join("")
 }
 
 /** Trim floating point noise from coordinates. */
 function round(n: number): number {
-  return Math.round(n * 1000) / 1000;
+  return Math.round(n * 1000) / 1000
 }

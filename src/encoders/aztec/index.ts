@@ -13,14 +13,10 @@
  * Implementation follows the ZXing reference encoder for correctness.
  */
 
-import { CapacityError, InvalidInputError } from "../../errors";
-import { getWordSize, getModuleCount, getTotalBitCapacity, getBaseMatrixSize } from "./tables";
-import { encodeHighLevel, stuffBits } from "./encoder";
-import {
-  generateCheckWords,
-  encodeCompactModeMessage,
-  encodeFullModeMessage,
-} from "./reed-solomon";
+import { CapacityError, InvalidInputError } from "../../errors"
+import { getWordSize, getModuleCount, getTotalBitCapacity, getBaseMatrixSize } from "./tables"
+import { encodeHighLevel, stuffBits } from "./encoder"
+import { generateCheckWords, encodeCompactModeMessage, encodeFullModeMessage } from "./reed-solomon"
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -28,11 +24,11 @@ import {
 
 export interface AztecOptions {
   /** Error correction percentage (default 23, meaning 23%) */
-  ecPercent?: number;
+  ecPercent?: number
   /** Force a specific number of layers (1-4 compact, 1-32 full) */
-  layers?: number;
+  layers?: number
   /** Force compact mode (true) or full-range mode (false) */
-  compact?: boolean;
+  compact?: boolean
 }
 
 /**
@@ -44,17 +40,17 @@ export interface AztecOptions {
  */
 export function encodeAztec(text: string, options: AztecOptions = {}): boolean[][] {
   if (text.length === 0) {
-    throw new InvalidInputError("Aztec Code: input text must not be empty");
+    throw new InvalidInputError("Aztec Code: input text must not be empty")
   }
 
-  const ecPercent = options.ecPercent ?? 23;
+  const ecPercent = options.ecPercent ?? 23
 
   // Step 1: Encode text into a bit stream
-  const dataBits = encodeHighLevel(text);
+  const dataBits = encodeHighLevel(text)
 
   // Step 2: Compute minimum EC bits
-  const eccBits = Math.floor((dataBits.length * ecPercent) / 100) + 11;
-  const totalSizeBits = dataBits.length + eccBits;
+  const eccBits = Math.floor((dataBits.length * ecPercent) / 100) + 11
+  const totalSizeBits = dataBits.length + eccBits
 
   // Step 3: Select symbol size
   const { layers, compact, wordSize, totalBitsInLayer, stuffedBits } = selectSize(
@@ -62,43 +58,43 @@ export function encodeAztec(text: string, options: AztecOptions = {}): boolean[]
     totalSizeBits,
     eccBits,
     options,
-  );
+  )
 
   // Step 4: Generate check words (data + EC as a single bit stream)
-  const messageBits = generateCheckWords(stuffedBits, totalBitsInLayer, wordSize);
+  const messageBits = generateCheckWords(stuffedBits, totalBitsInLayer, wordSize)
 
   // Step 5: Compute messageSizeInWords for the mode message
-  const messageSizeInWords = Math.floor(stuffedBits.length / wordSize);
+  const messageSizeInWords = Math.floor(stuffedBits.length / wordSize)
 
   // Step 6: Build the mode message
   const modeMessage = compact
     ? encodeCompactModeMessage(layers, messageSizeInWords)
-    : encodeFullModeMessage(layers, messageSizeInWords);
+    : encodeFullModeMessage(layers, messageSizeInWords)
 
   // Step 7: Build the alignment map and matrix
-  const baseMatrixSize = getBaseMatrixSize(layers, compact);
-  const matrixSize = getModuleCount(layers, compact);
+  const baseMatrixSize = getBaseMatrixSize(layers, compact)
+  const matrixSize = getModuleCount(layers, compact)
 
-  const alignmentMap = buildAlignmentMap(baseMatrixSize, matrixSize, compact);
+  const alignmentMap = buildAlignmentMap(baseMatrixSize, matrixSize, compact)
 
   // Step 8: Create the matrix and place data
-  const matrix = createBoolMatrix(matrixSize);
+  const matrix = createBoolMatrix(matrixSize)
 
   // Place data layers (done first; function patterns are drawn on top)
-  placeDataLayers(matrix, messageBits, layers, compact, baseMatrixSize, alignmentMap);
+  placeDataLayers(matrix, messageBits, layers, compact, baseMatrixSize, alignmentMap)
 
   // Draw mode message around the core
-  drawModeMessage(matrix, modeMessage, compact, matrixSize);
+  drawModeMessage(matrix, modeMessage, compact, matrixSize)
 
   // Draw bullseye and orientation marks (drawn last, on top of everything)
-  drawBullsEye(matrix, Math.floor(matrixSize / 2), compact ? 5 : 7);
+  drawBullsEye(matrix, Math.floor(matrixSize / 2), compact ? 5 : 7)
 
   // Draw reference grid for full-range symbols
   if (!compact) {
-    drawReferenceGrid(matrix, baseMatrixSize, matrixSize);
+    drawReferenceGrid(matrix, baseMatrixSize, matrixSize)
   }
 
-  return matrix;
+  return matrix
 }
 
 // ---------------------------------------------------------------------------
@@ -106,11 +102,11 @@ export function encodeAztec(text: string, options: AztecOptions = {}): boolean[]
 // ---------------------------------------------------------------------------
 
 interface SizeResult {
-  layers: number;
-  compact: boolean;
-  wordSize: number;
-  totalBitsInLayer: number;
-  stuffedBits: number[];
+  layers: number
+  compact: boolean
+  wordSize: number
+  totalBitsInLayer: number
+  stuffedBits: number[]
 }
 
 /**
@@ -123,62 +119,58 @@ function selectSize(
   eccBits: number,
   options: AztecOptions,
 ): SizeResult {
-  const MAX_NB_BITS = 32;
+  const MAX_NB_BITS = 32
 
   if (options.layers !== undefined) {
-    const compact = options.compact ?? options.layers <= 4;
-    const layers = options.layers;
-    const totalBitsInLayer = getTotalBitCapacity(layers, compact);
-    const wordSize = getWordSize(layers);
-    const usableBitsInLayers = totalBitsInLayer - (totalBitsInLayer % wordSize);
-    const stuffedBits = stuffBits(dataBits, wordSize);
+    const compact = options.compact ?? options.layers <= 4
+    const layers = options.layers
+    const totalBitsInLayer = getTotalBitCapacity(layers, compact)
+    const wordSize = getWordSize(layers)
+    const usableBitsInLayers = totalBitsInLayer - (totalBitsInLayer % wordSize)
+    const stuffedBits = stuffBits(dataBits, wordSize)
     if (stuffedBits.length + eccBits > usableBitsInLayers) {
       throw new CapacityError(
         `Aztec Code: data exceeds capacity of ${compact ? "compact" : "full"} ${layers}-layer symbol`,
-      );
+      )
     }
     if (compact && stuffedBits.length > wordSize * 64) {
-      throw new CapacityError(
-        `Aztec Code: data exceeds capacity of compact ${layers}-layer symbol`,
-      );
+      throw new CapacityError(`Aztec Code: data exceeds capacity of compact ${layers}-layer symbol`)
     }
-    return { layers, compact, wordSize, totalBitsInLayer, stuffedBits };
+    return { layers, compact, wordSize, totalBitsInLayer, stuffedBits }
   }
 
-  let wordSize = 0;
-  let stuffedBits: number[] | null = null;
+  let wordSize = 0
+  let stuffedBits: number[] | null = null
 
   for (let i = 0; ; i++) {
     if (i > MAX_NB_BITS) {
-      throw new CapacityError(
-        `Aztec Code: data (${dataBits.length} bits) exceeds maximum capacity`,
-      );
+      throw new CapacityError(`Aztec Code: data (${dataBits.length} bits) exceeds maximum capacity`)
     }
 
-    const compact = i <= 3;
-    const layers = compact ? i + 1 : i;
-    const totalBitsInLayer = getTotalBitCapacity(layers, compact);
+    const compact = i <= 3
+    const layers = compact ? i + 1 : i
+    const totalBitsInLayer = getTotalBitCapacity(layers, compact)
 
     if (totalSizeBits > totalBitsInLayer) {
-      continue;
+      continue
     }
 
-    const newWordSize = getWordSize(layers);
+    const newWordSize = getWordSize(layers)
     if (stuffedBits === null || wordSize !== newWordSize) {
-      wordSize = newWordSize;
-      stuffedBits = stuffBits(dataBits, wordSize);
+      wordSize = newWordSize
+      stuffedBits = stuffBits(dataBits, wordSize)
     }
 
-    const usableBitsInLayers = totalBitsInLayer - (totalBitsInLayer % wordSize);
+    const usableBitsInLayers = totalBitsInLayer - (totalBitsInLayer % wordSize)
 
     if (compact && stuffedBits.length > wordSize * 64) {
-      continue;
+      continue
     }
 
     if (stuffedBits.length + eccBits <= usableBitsInLayers) {
       // Check if compact is explicitly excluded
-      if (compact && options.compact === false) continue;
-      if (!compact && options.compact === true) continue;
+      if (compact && options.compact === false) continue
+      if (!compact && options.compact === true) continue
 
       return {
         layers,
@@ -186,7 +178,7 @@ function selectSize(
         wordSize,
         totalBitsInLayer,
         stuffedBits,
-      };
+      }
     }
   }
 }
@@ -197,7 +189,7 @@ function selectSize(
 
 /** Create a boolean matrix initialized to all false */
 function createBoolMatrix(size: number): boolean[][] {
-  return Array.from({ length: size }, () => Array.from<boolean>({ length: size }).fill(false));
+  return Array.from({ length: size }, () => Array.from<boolean>({ length: size }).fill(false))
 }
 
 // ---------------------------------------------------------------------------
@@ -213,24 +205,24 @@ function createBoolMatrix(size: number): boolean[][] {
  * from the center, which shifts coordinate positions.
  */
 function buildAlignmentMap(baseMatrixSize: number, matrixSize: number, compact: boolean): number[] {
-  const alignmentMap = Array.from<number>({ length: baseMatrixSize });
+  const alignmentMap = Array.from<number>({ length: baseMatrixSize })
 
   if (compact) {
     for (let i = 0; i < baseMatrixSize; i++) {
-      alignmentMap[i] = i;
+      alignmentMap[i] = i
     }
   } else {
-    const origCenter = Math.floor(baseMatrixSize / 2);
-    const center = Math.floor(matrixSize / 2);
+    const origCenter = Math.floor(baseMatrixSize / 2)
+    const center = Math.floor(matrixSize / 2)
 
     for (let i = 0; i < origCenter; i++) {
-      const newOffset = i + Math.floor(i / 15);
-      alignmentMap[origCenter - i - 1] = center - newOffset - 1;
-      alignmentMap[origCenter + i] = center + newOffset + 1;
+      const newOffset = i + Math.floor(i / 15)
+      alignmentMap[origCenter - i - 1] = center - newOffset - 1
+      alignmentMap[origCenter + i] = center + newOffset + 1
     }
   }
 
-  return alignmentMap;
+  return alignmentMap
 }
 
 // ---------------------------------------------------------------------------
@@ -256,41 +248,41 @@ function placeDataLayers(
   baseMatrixSize: number,
   alignmentMap: number[],
 ): void {
-  let rowOffset = 0;
+  let rowOffset = 0
 
   for (let i = 0; i < layers; i++) {
-    const rowSize = (layers - i) * 4 + (compact ? 9 : 12);
+    const rowSize = (layers - i) * 4 + (compact ? 9 : 12)
 
     for (let j = 0; j < rowSize; j++) {
-      const columnOffset = j * 2;
+      const columnOffset = j * 2
 
       for (let k = 0; k < 2; k++) {
         // ZXing: set(x, y) where x=col, y=row -> matrix[y][x] = matrix[row][col]
         // Top side: set(alignmentMap[i*2+k], alignmentMap[i*2+j])
         if (messageBits[rowOffset + columnOffset + k]) {
-          matrix[alignmentMap[i * 2 + j]!]![alignmentMap[i * 2 + k]!] = true;
+          matrix[alignmentMap[i * 2 + j]!]![alignmentMap[i * 2 + k]!] = true
         }
 
         // Right side: set(alignmentMap[i*2+j], alignmentMap[base-1-i*2-k])
         if (messageBits[rowOffset + rowSize * 2 + columnOffset + k]) {
-          matrix[alignmentMap[baseMatrixSize - 1 - i * 2 - k]!]![alignmentMap[i * 2 + j]!] = true;
+          matrix[alignmentMap[baseMatrixSize - 1 - i * 2 - k]!]![alignmentMap[i * 2 + j]!] = true
         }
 
         // Bottom side: set(alignmentMap[base-1-i*2-k], alignmentMap[base-1-i*2-j])
         if (messageBits[rowOffset + rowSize * 4 + columnOffset + k]) {
           matrix[alignmentMap[baseMatrixSize - 1 - i * 2 - j]!]![
             alignmentMap[baseMatrixSize - 1 - i * 2 - k]!
-          ] = true;
+          ] = true
         }
 
         // Left side: set(alignmentMap[base-1-i*2-j], alignmentMap[i*2+k])
         if (messageBits[rowOffset + rowSize * 6 + columnOffset + k]) {
-          matrix[alignmentMap[i * 2 + k]!]![alignmentMap[baseMatrixSize - 1 - i * 2 - j]!] = true;
+          matrix[alignmentMap[i * 2 + k]!]![alignmentMap[baseMatrixSize - 1 - i * 2 - j]!] = true
         }
       }
     }
 
-    rowOffset += rowSize * 8;
+    rowOffset += rowSize * 8
   }
 }
 
@@ -315,47 +307,47 @@ function drawModeMessage(
   compact: boolean,
   matrixSize: number,
 ): void {
-  const center = Math.floor(matrixSize / 2);
+  const center = Math.floor(matrixSize / 2)
 
   // ZXing: set(x, y) -> matrix[y][x] (row=y, col=x)
   if (compact) {
     for (let i = 0; i < 7; i++) {
-      const offset = center - 3 + i;
+      const offset = center - 3 + i
       // set(offset, center-5) -> matrix[center-5][offset]
       if (modeMessage[i]) {
-        matrix[center - 5]![offset] = true;
+        matrix[center - 5]![offset] = true
       }
       // set(center+5, offset) -> matrix[offset][center+5]
       if (modeMessage[i + 7]) {
-        matrix[offset]![center + 5] = true;
+        matrix[offset]![center + 5] = true
       }
       // set(offset, center+5) -> matrix[center+5][offset]
       if (modeMessage[20 - i]) {
-        matrix[center + 5]![offset] = true;
+        matrix[center + 5]![offset] = true
       }
       // set(center-5, offset) -> matrix[offset][center-5]
       if (modeMessage[27 - i]) {
-        matrix[offset]![center - 5] = true;
+        matrix[offset]![center - 5] = true
       }
     }
   } else {
     for (let i = 0; i < 10; i++) {
-      const offset = center - 5 + i + Math.floor(i / 5);
+      const offset = center - 5 + i + Math.floor(i / 5)
       // set(offset, center-7) -> matrix[center-7][offset]
       if (modeMessage[i]) {
-        matrix[center - 7]![offset] = true;
+        matrix[center - 7]![offset] = true
       }
       // set(center+7, offset) -> matrix[offset][center+7]
       if (modeMessage[i + 10]) {
-        matrix[offset]![center + 7] = true;
+        matrix[offset]![center + 7] = true
       }
       // set(offset, center+7) -> matrix[center+7][offset]
       if (modeMessage[29 - i]) {
-        matrix[center + 7]![offset] = true;
+        matrix[center + 7]![offset] = true
       }
       // set(center-7, offset) -> matrix[offset][center-7]
       if (modeMessage[39 - i]) {
-        matrix[offset]![center - 7] = true;
+        matrix[offset]![center - 7] = true
       }
     }
   }
@@ -385,30 +377,30 @@ function drawBullsEye(matrix: boolean[][], center: number, size: number): void {
   for (let i = 0; i < size; i += 2) {
     for (let j = center - i; j <= center + i; j++) {
       // set(j, center-i) -> matrix[center-i][j]
-      matrix[center - i]![j] = true;
+      matrix[center - i]![j] = true
       // set(j, center+i) -> matrix[center+i][j]
-      matrix[center + i]![j] = true;
+      matrix[center + i]![j] = true
       // set(center-i, j) -> matrix[j][center-i]
-      matrix[j]![center - i] = true;
+      matrix[j]![center - i] = true
       // set(center+i, j) -> matrix[j][center+i]
-      matrix[j]![center + i] = true;
+      matrix[j]![center + i] = true
     }
   }
 
   // Orientation marks — 6 dark modules that create an asymmetric pattern.
   // ZXing: set(x, y) -> matrix[y][x]
   // set(center-size, center-size) -> matrix[center-size][center-size]
-  matrix[center - size]![center - size] = true;
+  matrix[center - size]![center - size] = true
   // set(center-size+1, center-size) -> matrix[center-size][center-size+1]
-  matrix[center - size]![center - size + 1] = true;
+  matrix[center - size]![center - size + 1] = true
   // set(center-size, center-size+1) -> matrix[center-size+1][center-size]
-  matrix[center - size + 1]![center - size] = true;
+  matrix[center - size + 1]![center - size] = true
   // set(center+size, center-size) -> matrix[center-size][center+size]
-  matrix[center - size]![center + size] = true;
+  matrix[center - size]![center + size] = true
   // set(center+size, center-size+1) -> matrix[center-size+1][center+size]
-  matrix[center - size + 1]![center + size] = true;
+  matrix[center - size + 1]![center + size] = true
   // set(center+size, center+size-1) -> matrix[center+size-1][center+size]
-  matrix[center + size - 1]![center + size] = true;
+  matrix[center + size - 1]![center + size] = true
 }
 
 // ---------------------------------------------------------------------------
@@ -427,17 +419,17 @@ function drawBullsEye(matrix: boolean[][], center: number, size: number): void {
  *     draw alternating modules on rows/cols at center +/- j
  */
 function drawReferenceGrid(matrix: boolean[][], baseMatrixSize: number, matrixSize: number): void {
-  const center = Math.floor(matrixSize / 2);
-  const centerParity = center & 1;
+  const center = Math.floor(matrixSize / 2)
+  const centerParity = center & 1
 
   for (let i = 0, j = 0; i < Math.floor(baseMatrixSize / 2) - 1; i += 15, j += 16) {
     for (let k = centerParity; k < matrixSize; k += 2) {
       // Horizontal lines at rows center-j and center+j
-      matrix[center - j]![k] = true;
-      matrix[center + j]![k] = true;
+      matrix[center - j]![k] = true
+      matrix[center + j]![k] = true
       // Vertical lines at cols center-j and center+j
-      matrix[k]![center - j] = true;
-      matrix[k]![center + j] = true;
+      matrix[k]![center - j] = true
+      matrix[k]![center + j] = true
     }
   }
 }

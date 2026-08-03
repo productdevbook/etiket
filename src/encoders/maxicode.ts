@@ -9,39 +9,39 @@
  * - Reed-Solomon error correction over GF(64)
  */
 
-import { InvalidInputError } from "../errors";
+import { InvalidInputError } from "../errors"
 
-const ROWS = 33;
-const COLS = 30;
+const ROWS = 33
+const COLS = 30
 
 // ---------------------------------------------------------------------------
 // GF(64) arithmetic — primitive polynomial x^6 + x + 1 (0x43)
 // ---------------------------------------------------------------------------
 
-const GF64_SIZE = 64;
-const GF64_MAX = 63; // order of the multiplicative group
+const GF64_SIZE = 64
+const GF64_MAX = 63 // order of the multiplicative group
 
-const GF64_EXP = new Uint8Array(128);
-const GF64_LOG = new Uint8Array(64);
+const GF64_EXP = new Uint8Array(128)
+const GF64_LOG = new Uint8Array(64)
 
-(function initGF64() {
-  let x = 1;
+;(function initGF64() {
+  let x = 1
   for (let i = 0; i < GF64_MAX; i++) {
-    GF64_EXP[i] = x;
-    GF64_LOG[x] = i;
-    x = x << 1;
-    if (x >= GF64_SIZE) x ^= 0x43; // x^6 + x + 1
+    GF64_EXP[i] = x
+    GF64_LOG[x] = i
+    x = x << 1
+    if (x >= GF64_SIZE) x ^= 0x43 // x^6 + x + 1
   }
   // Extend exp table for modular arithmetic convenience
   for (let i = GF64_MAX; i < 128; i++) {
-    GF64_EXP[i] = GF64_EXP[i - GF64_MAX]!;
+    GF64_EXP[i] = GF64_EXP[i - GF64_MAX]!
   }
-})();
+})()
 
 /** Multiply two GF(64) elements using log/antilog tables */
 function gf64Mul(a: number, b: number): number {
-  if (a === 0 || b === 0) return 0;
-  return GF64_EXP[(GF64_LOG[a]! + GF64_LOG[b]!) % GF64_MAX]!;
+  if (a === 0 || b === 0) return 0
+  return GF64_EXP[(GF64_LOG[a]! + GF64_LOG[b]!) % GF64_MAX]!
 }
 
 /**
@@ -51,33 +51,33 @@ function gf64Mul(a: number, b: number): number {
  */
 function maxicodeRS(data: number[], ecCount: number): number[] {
   // Build generator polynomial g(x) = (x - a^1)(x - a^2)...(x - a^ecCount)
-  const gen = Array.from<number>({ length: ecCount + 1 }).fill(0);
-  gen[0] = 1;
+  const gen = Array.from<number>({ length: ecCount + 1 }).fill(0)
+  gen[0] = 1
 
   for (let i = 1; i <= ecCount; i++) {
-    gen[i] = gen[i - 1]!;
-    const ai = GF64_EXP[i]!;
+    gen[i] = gen[i - 1]!
+    const ai = GF64_EXP[i]!
     for (let j = i - 1; j >= 1; j--) {
-      gen[j] = gf64Mul(gen[j]!, ai) ^ gen[j - 1]!;
+      gen[j] = gf64Mul(gen[j]!, ai) ^ gen[j - 1]!
     }
-    gen[0] = gf64Mul(gen[0]!, ai);
+    gen[0] = gf64Mul(gen[0]!, ai)
   }
 
-  const coeffs = gen.slice(0, ecCount);
+  const coeffs = gen.slice(0, ecCount)
 
   // Polynomial long division (BWIPP order)
-  const ecb = Array.from<number>({ length: ecCount }).fill(0);
-  const rsnc1 = ecCount - 1;
+  const ecb = Array.from<number>({ length: ecCount }).fill(0)
+  const rsnc1 = ecCount - 1
 
   for (const cw of data) {
-    const t = (cw ^ ecb[0]!) & GF64_MAX;
+    const t = (cw ^ ecb[0]!) & GF64_MAX
     for (let j = rsnc1; j >= 1; j--) {
-      ecb[rsnc1 - j] = ecb[rsnc1 - j + 1]! ^ gf64Mul(t, coeffs[j]!);
+      ecb[rsnc1 - j] = ecb[rsnc1 - j + 1]! ^ gf64Mul(t, coeffs[j]!)
     }
-    ecb[rsnc1] = gf64Mul(t, coeffs[0]!);
+    ecb[rsnc1] = gf64Mul(t, coeffs[0]!)
   }
 
-  return ecb;
+  return ecb
 }
 
 // ---------------------------------------------------------------------------
@@ -122,45 +122,45 @@ const MAXICODE_SYMBOL_CHAR: number[] = [
 ];
 
 // Control codes
-const CTRL_LATCH_B = 63; // Latch to Set B (from Set A)
-const CTRL_LATCH_A = 58; // Latch to Set A (from Set B)
+const CTRL_LATCH_B = 63 // Latch to Set B (from Set A)
+const CTRL_LATCH_A = 58 // Latch to Set A (from Set B)
 
 /**
  * Encode text using MaxiCode character sets with automatic set switching.
  * Starts in Code Set A. Uses latch codes when needed.
  */
 function encodeMaxiCodeText(text: string): number[] {
-  const codewords: number[] = [];
-  let currentSet = 1; // Start in Code Set A
+  const codewords: number[] = []
+  let currentSet = 1 // Start in Code Set A
 
   for (let i = 0; i < text.length; i++) {
-    const code = text.charCodeAt(i);
-    if (code > 255) continue; // Skip non-latin
+    const code = text.charCodeAt(i)
+    if (code > 255) continue // Skip non-latin
 
-    const charSet = MAXICODE_SET[code]!;
-    const symbolVal = MAXICODE_SYMBOL_CHAR[code]!;
+    const charSet = MAXICODE_SET[code]!
+    const symbolVal = MAXICODE_SYMBOL_CHAR[code]!
 
     if (charSet === 0 || charSet === currentSet) {
       // Character is in current set or available in multiple sets
-      codewords.push(symbolVal);
+      codewords.push(symbolVal)
     } else if (charSet === 1 && currentSet === 2) {
       // Need to switch from B to A
-      codewords.push(CTRL_LATCH_A);
-      codewords.push(symbolVal);
-      currentSet = 1;
+      codewords.push(CTRL_LATCH_A)
+      codewords.push(symbolVal)
+      currentSet = 1
     } else if (charSet === 2 && currentSet === 1) {
       // Need to switch from A to B
-      codewords.push(CTRL_LATCH_B);
-      codewords.push(symbolVal);
-      currentSet = 2;
+      codewords.push(CTRL_LATCH_B)
+      codewords.push(symbolVal)
+      currentSet = 2
     } else {
       // For sets C/D/E, use shift codes
       // Shift from set A: 59 = shift to set B for one char
       // For simplicity, encode unknown chars as space
-      codewords.push(32);
+      codewords.push(32)
     }
   }
-  return codewords;
+  return codewords
 }
 
 // ---------------------------------------------------------------------------
@@ -176,38 +176,38 @@ function buildPrimary(
   serviceClass: number,
   mode: 2 | 3,
 ): number[] {
-  const primary: number[] = [];
+  const primary: number[] = []
 
   // CW0: mode indicator
-  primary.push(mode);
+  primary.push(mode)
 
   if (mode === 2) {
     // Numeric postal code: 9 digits packed as a 30-bit integer
-    const postal = postalCode.replace(/\D/g, "").padEnd(9, "0").substring(0, 9);
-    const postalNum = Number.parseInt(postal, 10);
+    const postal = postalCode.replace(/\D/g, "").padEnd(9, "0").substring(0, 9)
+    const postalNum = Number.parseInt(postal, 10)
     // 30 bits -> 5 codewords of 6 bits each (MSB first)
-    primary.push((postalNum >> 24) & 0x3f);
-    primary.push((postalNum >> 18) & 0x3f);
-    primary.push((postalNum >> 12) & 0x3f);
-    primary.push((postalNum >> 6) & 0x3f);
-    primary.push(postalNum & 0x3f);
+    primary.push((postalNum >> 24) & 0x3f)
+    primary.push((postalNum >> 18) & 0x3f)
+    primary.push((postalNum >> 12) & 0x3f)
+    primary.push((postalNum >> 6) & 0x3f)
+    primary.push(postalNum & 0x3f)
   } else {
     // International alphanumeric postal code: 6 characters
-    const postal = postalCode.padEnd(6, " ").substring(0, 6);
+    const postal = postalCode.padEnd(6, " ").substring(0, 6)
     for (const ch of postal) {
-      primary.push(ch.charCodeAt(0) & 0x3f);
+      primary.push(ch.charCodeAt(0) & 0x3f)
     }
   }
 
   // Country code (3-digit ISO, max 999 -> 10 bits -> 2 codewords)
-  primary.push((countryCode >> 6) & 0x3f);
-  primary.push(countryCode & 0x3f);
+  primary.push((countryCode >> 6) & 0x3f)
+  primary.push(countryCode & 0x3f)
 
   // Service class (3 digits -> 10 bits -> 2 codewords)
-  primary.push((serviceClass >> 6) & 0x3f);
-  primary.push(serviceClass & 0x3f);
+  primary.push((serviceClass >> 6) & 0x3f)
+  primary.push(serviceClass & 0x3f)
 
-  return primary;
+  return primary
 }
 
 // ---------------------------------------------------------------------------
@@ -285,13 +285,13 @@ const BULLSEYE_DARK: number[] = [
 
 export interface MaxiCodeOptions {
   /** Encoding mode: 2 (US structured), 3 (intl structured), 4 (standard), 5 (full ECC), 6 (reader programming) */
-  mode?: 2 | 3 | 4 | 5 | 6;
+  mode?: 2 | 3 | 4 | 5 | 6
   /** Postal code (modes 2/3) */
-  postalCode?: string;
+  postalCode?: string
   /** ISO country code number (modes 2/3) */
-  countryCode?: number;
+  countryCode?: number
   /** Service class (modes 2/3, e.g. 840 for UPS) */
-  serviceClass?: number;
+  serviceClass?: number
 }
 
 /**
@@ -300,12 +300,12 @@ export interface MaxiCodeOptions {
  */
 export function encodeMaxiCode(text: string, options: MaxiCodeOptions = {}): boolean[][] {
   if (text.length === 0) {
-    throw new InvalidInputError("MaxiCode input must not be empty");
+    throw new InvalidInputError("MaxiCode input must not be empty")
   }
 
-  const mode = options.mode ?? 4;
-  let primaryData: number[];
-  let secondaryRaw: number[];
+  const mode = options.mode ?? 4
+  let primaryData: number[]
+  let secondaryRaw: number[]
 
   if (mode === 2 || mode === 3) {
     // Primary message: 10 codewords from structured header
@@ -314,78 +314,78 @@ export function encodeMaxiCode(text: string, options: MaxiCodeOptions = {}): boo
       options.countryCode ?? 840,
       options.serviceClass ?? 1,
       mode,
-    );
+    )
     // Secondary message: the text payload
-    secondaryRaw = encodeMaxiCodeText(text);
+    secondaryRaw = encodeMaxiCodeText(text)
   } else {
     // Modes 4/5/6: primary is mode + first 9 data chars,
     // secondary is the remainder
-    const allData = [mode, ...encodeMaxiCodeText(text)];
-    primaryData = allData.slice(0, 10);
-    secondaryRaw = allData.slice(10);
+    const allData = [mode, ...encodeMaxiCodeText(text)]
+    primaryData = allData.slice(0, 10)
+    secondaryRaw = allData.slice(10)
   }
 
   // Pad primary to exactly 10 codewords
   while (primaryData.length < 10) {
-    primaryData.push(33); // pad character (space in code set A)
+    primaryData.push(33) // pad character (space in code set A)
   }
-  primaryData = primaryData.slice(0, 10);
+  primaryData = primaryData.slice(0, 10)
 
   // Secondary message: pad to 84 codewords (modes 2/3/4/6) or 68 (mode 5)
-  const SECONDARY_TOTAL = mode === 5 ? 68 : 84;
+  const SECONDARY_TOTAL = mode === 5 ? 68 : 84
   while (secondaryRaw.length < SECONDARY_TOTAL) {
-    secondaryRaw.push(33); // pad character
+    secondaryRaw.push(33) // pad character
   }
-  secondaryRaw = secondaryRaw.slice(0, SECONDARY_TOTAL);
+  secondaryRaw = secondaryRaw.slice(0, SECONDARY_TOTAL)
 
   // Reed-Solomon error correction over GF(64)
   // Primary: 10 data codewords -> 10 EC codewords
-  const primaryEC = maxicodeRS(primaryData, 10);
+  const primaryEC = maxicodeRS(primaryData, 10)
 
   // Secondary: split into odd and even indexed codewords
-  const seco: number[] = [];
-  const sece: number[] = [];
+  const seco: number[] = []
+  const sece: number[] = []
   for (let i = 0; i < secondaryRaw.length; i++) {
     if (i % 2 === 0) {
-      seco.push(secondaryRaw[i]!);
+      seco.push(secondaryRaw[i]!)
     } else {
-      sece.push(secondaryRaw[i]!);
+      sece.push(secondaryRaw[i]!)
     }
   }
 
   // EC count per interleaved part
-  const secECCount = SECONDARY_TOTAL === 84 ? 20 : 28;
-  const secoEC = maxicodeRS(seco, secECCount);
-  const seceEC = maxicodeRS(sece, secECCount);
+  const secECCount = SECONDARY_TOTAL === 84 ? 20 : 28
+  const secoEC = maxicodeRS(seco, secECCount)
+  const seceEC = maxicodeRS(sece, secECCount)
 
   // Reassemble secondary EC by interleaving odd and even EC
-  const secChk: number[] = [];
+  const secChk: number[] = []
   for (let i = 0; i < secECCount; i++) {
-    secChk.push(secoEC[i]!);
-    secChk.push(seceEC[i]!);
+    secChk.push(secoEC[i]!)
+    secChk.push(seceEC[i]!)
   }
 
   // Assemble all codewords in transmission order:
   // Primary data (10) + Primary EC (10) + Secondary data (84/68) + Secondary EC (40/56)
   // Total: 144 codewords = 864 bits
-  const allCW = [...primaryData, ...primaryEC, ...secondaryRaw, ...secChk];
+  const allCW = [...primaryData, ...primaryEC, ...secondaryRaw, ...secChk]
 
   // Convert codewords to bit stream (6 bits per codeword, MSB first)
-  const bits: number[] = [];
+  const bits: number[] = []
   for (const cw of allCW) {
     for (let b = 5; b >= 0; b--) {
-      bits.push((cw >> b) & 1);
+      bits.push((cw >> b) & 1)
     }
   }
 
   // Build 33x30 matrix — initially all white
-  const pixs = new Uint8Array(ROWS * COLS); // 0 = white
+  const pixs = new Uint8Array(ROWS * COLS) // 0 = white
 
   // Place data modules using the MODMAP placement sequence
-  const maxBits = Math.min(bits.length, MODMAP.length);
+  const maxBits = Math.min(bits.length, MODMAP.length)
   for (let i = 0; i < maxBits; i++) {
     if (bits[i] === 1) {
-      pixs[MODMAP[i]!] = 1;
+      pixs[MODMAP[i]!] = 1
     }
   }
 
@@ -393,22 +393,22 @@ export function encodeMaxiCode(text: string, options: MaxiCodeOptions = {}): boo
   // This ensures data bits don't interfere with the finder pattern
   for (let r = 9; r <= 23; r++) {
     for (let c = 7; c <= 22; c++) {
-      pixs[r * COLS + c] = 0;
+      pixs[r * COLS + c] = 0
     }
   }
   // Also clear corner mark area
-  pixs[28] = 0;
-  pixs[29] = 0;
+  pixs[28] = 0
+  pixs[29] = 0
 
   // Place bullseye finder pattern dark modules
   for (const pos of BULLSEYE_DARK) {
-    pixs[pos] = 1;
+    pixs[pos] = 1
   }
 
   // Convert pixel array to boolean matrix
   const matrix: boolean[][] = Array.from({ length: ROWS }, (_, r) =>
     Array.from({ length: COLS }, (_, c) => pixs[r * COLS + c] === 1),
-  );
+  )
 
-  return matrix;
+  return matrix
 }

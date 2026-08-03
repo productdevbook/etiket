@@ -5,10 +5,10 @@ The most versatile 1D barcode. Supports full ASCII with automatic charset optimi
 ## Usage
 
 ```ts
-import { barcode } from "etiket";
+import { barcode } from "etiket"
 
-barcode("Hello World");
-barcode("ABC-123", { type: "code128", showText: true });
+barcode("Hello World")
+barcode("ABC-123", { type: "code128", showText: true })
 ```
 
 ## How It Works
@@ -31,8 +31,8 @@ etiket automatically selects the optimal charset (Auto mode):
 ## Raw Encoder
 
 ```ts
-import { encodeCode128 } from "etiket";
+import { encodeCode128 } from "etiket"
 
-const bars = encodeCode128("Hello");
+const bars = encodeCode128("Hello")
 // Returns number[] of alternating bar/space widths
 ```

@@ -3,39 +3,39 @@
  * Digits 0-9 only, with configurable check digit algorithms
  */
 
-import { InvalidInputError } from "../errors";
+import { InvalidInputError } from "../errors"
 
 /**
  * Available check digit calculation types
  */
-export type MSICheckDigitType = "mod10" | "mod11" | "mod1010" | "mod1110" | "none";
+export type MSICheckDigitType = "mod10" | "mod11" | "mod1010" | "mod1110" | "none"
 
 // Start pattern: wide bar (2), narrow space (1)
-const START = [2, 1];
+const START = [2, 1]
 
 // Stop pattern: narrow bar (1), wide space (2), narrow bar (1)
-const STOP = [1, 2, 1];
+const STOP = [1, 2, 1]
 
 // BCD bit encoding:
 // 0 bit → narrow bar (1), wide space (2)
 // 1 bit → wide bar (2), narrow space (1)
-const BIT_0 = [1, 2];
-const BIT_1 = [2, 1];
+const BIT_0 = [1, 2]
+const BIT_1 = [2, 1]
 
 /**
  * Encode a single digit into bar/space widths using BCD
  * Each digit is 4 bits, MSB first
  */
 function encodeDigit(digit: number): number[] {
-  const result: number[] = [];
+  const result: number[] = []
   for (let bit = 3; bit >= 0; bit--) {
     if ((digit >> bit) & 1) {
-      result.push(BIT_1[0]!, BIT_1[1]!);
+      result.push(BIT_1[0]!, BIT_1[1]!)
     } else {
-      result.push(BIT_0[0]!, BIT_0[1]!);
+      result.push(BIT_0[0]!, BIT_0[1]!)
     }
   }
-  return result;
+  return result
 }
 
 /**
@@ -52,27 +52,27 @@ function calculateMod10(digits: number[]): number {
   // 1. Take digits from right, double every other starting from rightmost
   // 2. Form a string of doubled values, sum individual digits
   // 3. Add non-doubled digits
-  let doubledStr = "";
-  let undoubledSum = 0;
+  let doubledStr = ""
+  let undoubledSum = 0
 
   for (let i = digits.length - 1; i >= 0; i--) {
-    const pos = digits.length - 1 - i;
+    const pos = digits.length - 1 - i
     if (pos % 2 === 0) {
       // Double this digit
-      doubledStr = String(digits[i]! * 2) + doubledStr;
+      doubledStr = String(digits[i]! * 2) + doubledStr
     } else {
-      undoubledSum += digits[i]!;
+      undoubledSum += digits[i]!
     }
   }
 
   // Sum individual digits of the doubled string
-  let doubledSum = 0;
+  let doubledSum = 0
   for (const ch of doubledStr) {
-    doubledSum += Number(ch);
+    doubledSum += Number(ch)
   }
 
-  const total = doubledSum + undoubledSum;
-  return (10 - (total % 10)) % 10;
+  const total = doubledSum + undoubledSum
+  return (10 - (total % 10)) % 10
 }
 
 /**
@@ -84,23 +84,23 @@ function calculateMod10(digits: number[]): number {
  * If remainder is 1, check digit is 0 (some implementations)
  */
 function calculateMod11(digits: number[]): number {
-  let sum = 0;
-  let weight = 2;
+  let sum = 0
+  let weight = 2
 
   for (let i = digits.length - 1; i >= 0; i--) {
-    sum += digits[i]! * weight;
-    weight++;
+    sum += digits[i]! * weight
+    weight++
     if (weight > 7) {
-      weight = 2;
+      weight = 2
     }
   }
 
-  const remainder = sum % 11;
+  const remainder = sum % 11
   // If remainder is 0 or 1, check digit is 0
   if (remainder <= 1) {
-    return 0;
+    return 0
   }
-  return 11 - remainder;
+  return 11 - remainder
 }
 
 /**
@@ -109,22 +109,22 @@ function calculateMod11(digits: number[]): number {
 function calculateCheckDigits(digits: number[], type: MSICheckDigitType): number[] {
   switch (type) {
     case "none":
-      return [];
+      return []
     case "mod10": {
-      return [calculateMod10(digits)];
+      return [calculateMod10(digits)]
     }
     case "mod11": {
-      return [calculateMod11(digits)];
+      return [calculateMod11(digits)]
     }
     case "mod1010": {
-      const c1 = calculateMod10(digits);
-      const c2 = calculateMod10([...digits, c1]);
-      return [c1, c2];
+      const c1 = calculateMod10(digits)
+      const c2 = calculateMod10([...digits, c1])
+      return [c1, c2]
     }
     case "mod1110": {
-      const c1 = calculateMod11(digits);
-      const c2 = calculateMod10([...digits, c1]);
-      return [c1, c2];
+      const c1 = calculateMod11(digits)
+      const c2 = calculateMod10([...digits, c1])
+      return [c1, c2]
     }
   }
 }
@@ -139,46 +139,46 @@ function calculateCheckDigits(digits: number[], type: MSICheckDigitType): number
  */
 export function encodeMSI(text: string, options?: { checkDigit?: MSICheckDigitType }): number[] {
   if (text.length === 0) {
-    throw new InvalidInputError("MSI input must not be empty");
+    throw new InvalidInputError("MSI input must not be empty")
   }
 
   if (!/^\d+$/.test(text)) {
-    throw new InvalidInputError("MSI barcode requires digits only (0-9)");
+    throw new InvalidInputError("MSI barcode requires digits only (0-9)")
   }
 
-  const checkDigitType = options?.checkDigit ?? "mod10";
+  const checkDigitType = options?.checkDigit ?? "mod10"
 
   // Convert text to digit array
-  const digits: number[] = [];
+  const digits: number[] = []
   for (let i = 0; i < text.length; i++) {
-    digits.push(text.charCodeAt(i) - 48);
+    digits.push(text.charCodeAt(i) - 48)
   }
 
   // Calculate check digit(s)
-  const checkDigits = calculateCheckDigits(digits, checkDigitType);
+  const checkDigits = calculateCheckDigits(digits, checkDigitType)
 
   // All digits to encode (data + check digits)
-  const allDigits = [...digits, ...checkDigits];
+  const allDigits = [...digits, ...checkDigits]
 
-  const bars: number[] = [];
+  const bars: number[] = []
 
   // Start pattern
   for (const w of START) {
-    bars.push(w);
+    bars.push(w)
   }
 
   // Encode each digit
   for (const digit of allDigits) {
-    const widths = encodeDigit(digit);
+    const widths = encodeDigit(digit)
     for (const w of widths) {
-      bars.push(w);
+      bars.push(w)
     }
   }
 
   // Stop pattern
   for (const w of STOP) {
-    bars.push(w);
+    bars.push(w)
   }
 
-  return bars;
+  return bars
 }

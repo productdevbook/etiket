@@ -5,44 +5,44 @@ etiket provides validation utilities to check inputs before encoding.
 ## Validate Barcode Input
 
 ```ts
-import { validateBarcode, isValidInput } from "etiket";
+import { validateBarcode, isValidInput } from "etiket"
 
 // Returns { valid: true } or { valid: false, error: "..." }
-validateBarcode("4006381333931", "ean13");
+validateBarcode("4006381333931", "ean13")
 // → { valid: true }
 
-validateBarcode("ABC", "ean13");
+validateBarcode("ABC", "ean13")
 // → { valid: false, error: "EAN-13 requires 12 or 13 digits" }
 
 // Boolean shorthand
-isValidInput("HELLO", "code39"); // true
-isValidInput("hello", "code39"); // false (lowercase not allowed)
+isValidInput("HELLO", "code39") // true
+isValidInput("hello", "code39") // false (lowercase not allowed)
 ```
 
 ## Validate QR Input
 
 ```ts
-import { validateQRInput } from "etiket";
+import { validateQRInput } from "etiket"
 
-validateQRInput("Hello World", "M");
+validateQRInput("Hello World", "M")
 // → { valid: true }
 
-validateQRInput("A".repeat(10000), "H");
+validateQRInput("A".repeat(10000), "H")
 // → { valid: false, error: "Data too long for QR code..." }
 ```
 
 ## Check Digits
 
 ```ts
-import { calculateEANCheckDigit, verifyEANCheckDigit } from "etiket";
+import { calculateEANCheckDigit, verifyEANCheckDigit } from "etiket"
 
 // Calculate check digit for EAN/UPC
-calculateEANCheckDigit([4, 0, 0, 6, 3, 8, 1, 3, 3, 3, 9, 3]);
+calculateEANCheckDigit([4, 0, 0, 6, 3, 8, 1, 3, 3, 3, 9, 3])
 // → 1
 
 // Verify an existing check digit
-verifyEANCheckDigit("4006381333931"); // true
-verifyEANCheckDigit("4006381333932"); // false
+verifyEANCheckDigit("4006381333931") // true
+verifyEANCheckDigit("4006381333932") // false
 ```
 
 ## Error Classes
@@ -50,13 +50,13 @@ verifyEANCheckDigit("4006381333932"); // false
 etiket throws specific error types:
 
 ```ts
-import { InvalidInputError, CapacityError, CheckDigitError } from "etiket";
+import { InvalidInputError, CapacityError, CheckDigitError } from "etiket"
 
 try {
-  barcode("abc", { type: "ean13" });
+  barcode("abc", { type: "ean13" })
 } catch (e) {
   if (e instanceof InvalidInputError) {
-    console.log(e.message); // "EAN-13 requires 12 or 13 digits"
+    console.log(e.message) // "EAN-13 requires 12 or 13 digits"
   }
 }
 ```

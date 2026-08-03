@@ -7,25 +7,25 @@ etiket supports extensive QR code customization with dot shapes, gradients, corn
 12 module shapes available:
 
 ```ts
-import { qrcode } from "etiket";
+import { qrcode } from "etiket"
 
-qrcode("Hello", { dotType: "square" }); // Default
-qrcode("Hello", { dotType: "rounded" }); // Rounded corners
-qrcode("Hello", { dotType: "dots" }); // Circular
-qrcode("Hello", { dotType: "diamond" }); // 45° rotated
-qrcode("Hello", { dotType: "classy" }); // One rounded corner
-qrcode("Hello", { dotType: "classy-rounded" });
-qrcode("Hello", { dotType: "extra-rounded" }); // Fully rounded
-qrcode("Hello", { dotType: "vertical-line" });
-qrcode("Hello", { dotType: "horizontal-line" });
-qrcode("Hello", { dotType: "small-square" }); // With gap
-qrcode("Hello", { dotType: "tiny-square" }); // Smaller with gap
+qrcode("Hello", { dotType: "square" }) // Default
+qrcode("Hello", { dotType: "rounded" }) // Rounded corners
+qrcode("Hello", { dotType: "dots" }) // Circular
+qrcode("Hello", { dotType: "diamond" }) // 45° rotated
+qrcode("Hello", { dotType: "classy" }) // One rounded corner
+qrcode("Hello", { dotType: "classy-rounded" })
+qrcode("Hello", { dotType: "extra-rounded" }) // Fully rounded
+qrcode("Hello", { dotType: "vertical-line" })
+qrcode("Hello", { dotType: "horizontal-line" })
+qrcode("Hello", { dotType: "small-square" }) // With gap
+qrcode("Hello", { dotType: "tiny-square" }) // Smaller with gap
 ```
 
 Module size (0.1 to 1):
 
 ```ts
-qrcode("Hello", { dotType: "dots", dotSize: 0.8 });
+qrcode("Hello", { dotType: "dots", dotSize: 0.8 })
 ```
 
 ## Gradients
@@ -43,7 +43,7 @@ qrcode("Hello", {
       { offset: 1, color: "#4ecdc4" },
     ],
   },
-});
+})
 
 // Radial gradient on background
 qrcode("Hello", {
@@ -54,7 +54,7 @@ qrcode("Hello", {
       { offset: 1, color: "#f0f0f0" },
     ],
   },
-});
+})
 ```
 
 ## Corner (Finder Pattern) Styling
@@ -84,7 +84,7 @@ qrcode("Hello", {
       outerShape: "dots",
     },
   },
-});
+})
 ```
 
 ## Logo Embedding
@@ -101,7 +101,7 @@ qrcode("Hello", {
     hideBackgroundDots: true, // Remove modules behind logo
     backgroundColor: "#ffffff", // Background behind logo
   },
-});
+})
 
 // Or use SVG path data
 qrcode("Hello", {
@@ -110,10 +110,10 @@ qrcode("Hello", {
     path: "M10 10 L90 10 L90 90 L10 90 Z", // SVG path
     size: 0.25,
   },
-});
+})
 
 // Or use an image (PNG, JPEG, SVG URL, or data URI)
-import { readFileSync } from "node:fs";
+import { readFileSync } from "node:fs"
 
 qrcode("Hello", {
   ecLevel: "H",
@@ -121,16 +121,16 @@ qrcode("Hello", {
     imageUrl: "https://example.com/logo.png",
     // imageWidth / imageHeight are optional (defaults to fill logo area)
   },
-});
+})
 
 // ICO/favicon files are auto-converted to PNG
-const favicon = readFileSync("favicon.ico");
+const favicon = readFileSync("favicon.ico")
 qrcode("Hello", {
   ecLevel: "H",
   logo: {
     imageUrl: `data:image/x-icon;base64,${favicon.toString("base64")}`,
   },
-});
+})
 ```
 
 **Supported image formats for `imageUrl`:**
@@ -141,7 +141,7 @@ qrcode("Hello", {
 ## Transparent Background
 
 ```ts
-qrcode("Hello", { background: "transparent" });
+qrcode("Hello", { background: "transparent" })
 ```
 
 ## XML Declaration
@@ -149,5 +149,5 @@ qrcode("Hello", { background: "transparent" });
 Add `<?xml version="1.0"?>` header for standalone SVG files:
 
 ```ts
-qrcode("Hello", { xmlDeclaration: true });
+qrcode("Hello", { xmlDeclaration: true })
 ```

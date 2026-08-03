@@ -6,8 +6,8 @@
  * Output: Array of 65 bar states (FourState: T/A/D/F)
  */
 
-import { InvalidInputError } from "../errors";
-import type { FourState } from "./fourstate";
+import { InvalidInputError } from "../errors"
+import type { FourState } from "./fourstate"
 
 /**
  * Bar construction table from USPS-B-3200 Appendix (Table 22)
@@ -92,50 +92,50 @@ const BAR_TABLE: [number, number, number, number][] = [
  * pairs go at the beginning (forward, then reverse).
  */
 function initNOf13Table(n: number, tableLength: number): number[] {
-  const table: number[] = Array.from({ length: tableLength });
-  let lo = 0;
-  let hi = tableLength - 1;
+  const table: number[] = Array.from({ length: tableLength })
+  let lo = 0
+  let hi = tableLength - 1
 
   for (let i = 0; i < 8192; i++) {
     // Count number of 1-bits
-    let bitCount = 0;
-    let tmp = i;
+    let bitCount = 0
+    let tmp = i
     while (tmp) {
-      bitCount += tmp & 1;
-      tmp >>>= 1;
+      bitCount += tmp & 1
+      tmp >>>= 1
     }
-    if (bitCount !== n) continue;
+    if (bitCount !== n) continue
 
     // Compute 13-bit reversal
-    let rev = 0;
-    tmp = i;
+    let rev = 0
+    tmp = i
     for (let b = 0; b < 13; b++) {
-      rev = (rev << 1) | (tmp & 1);
-      tmp >>>= 1;
+      rev = (rev << 1) | (tmp & 1)
+      tmp >>>= 1
     }
 
     // Skip if we already visited this pair (reverse < forward)
-    if (rev < i) continue;
+    if (rev < i) continue
 
     if (i === rev) {
       // Palindromic: place at end
-      table[hi] = i;
-      hi--;
+      table[hi] = i
+      hi--
     } else {
       // Non-palindromic: place forward then reverse
-      table[lo] = i;
-      lo++;
-      table[lo] = rev;
-      lo++;
+      table[lo] = i
+      lo++
+      table[lo] = rev
+      lo++
     }
   }
 
-  return table;
+  return table
 }
 
 // Pre-compute the character lookup tables
-const TABLE_5_OF_13 = initNOf13Table(5, 1287);
-const TABLE_2_OF_13 = initNOf13Table(2, 78);
+const TABLE_5_OF_13 = initNOf13Table(5, 1287)
+const TABLE_2_OF_13 = initNOf13Table(2, 78)
 
 /**
  * Encode USPS Intelligent Mail barcode
@@ -145,93 +145,93 @@ const TABLE_2_OF_13 = initNOf13Table(2, 78);
  * @returns Array of 65 FourState values
  */
 export function encodeIMb(trackingCode: string, routingCode: string = ""): FourState[] {
-  const track = trackingCode.replace(/\s/g, "");
-  const route = routingCode.replace(/[\s-]/g, "");
+  const track = trackingCode.replace(/\s/g, "")
+  const route = routingCode.replace(/[\s-]/g, "")
 
   if (!/^\d{20}$/.test(track)) {
-    throw new InvalidInputError("IMb tracking code must be exactly 20 digits");
+    throw new InvalidInputError("IMb tracking code must be exactly 20 digits")
   }
   if (route.length !== 0 && route.length !== 5 && route.length !== 9 && route.length !== 11) {
-    throw new InvalidInputError("IMb routing code must be 0, 5, 9, or 11 digits");
+    throw new InvalidInputError("IMb routing code must be 0, 5, 9, or 11 digits")
   }
   if (route.length > 0 && !/^\d+$/.test(route)) {
-    throw new InvalidInputError("IMb routing code must contain only digits");
+    throw new InvalidInputError("IMb routing code must contain only digits")
   }
 
   // Step 1: Convert routing code + tracking code to binary value
-  let binary = convertRoutingCode(route);
-  binary = convertTrackingCode(binary, track);
+  let binary = convertRoutingCode(route)
+  binary = convertTrackingCode(binary, track)
 
   // Step 2: CRC-11 Frame Check Sequence
-  const fcs = crc11(binary);
+  const fcs = crc11(binary)
 
   // Step 3: Convert to 10 codewords
-  const codewords = binaryToCodewords(binary);
+  const codewords = binaryToCodewords(binary)
 
   // Step 4: Integrate FCS into codewords
   // Double cw[9] for orientation detection
-  codewords[9]! *= 2;
+  codewords[9]! *= 2
   // If FCS bit 10 is set, add 659 to cw[0]
   if (fcs & (1 << 10)) {
-    codewords[0]! += 659;
+    codewords[0]! += 659
   }
 
   // Step 5: Convert codewords to 13-bit characters using lookup tables
-  const characters: number[] = Array.from({ length: 10 });
+  const characters: number[] = Array.from({ length: 10 })
   for (let i = 0; i < 10; i++) {
-    const cw = codewords[i]!;
+    const cw = codewords[i]!
     if (cw <= 1286) {
-      characters[i] = TABLE_5_OF_13[cw]!;
+      characters[i] = TABLE_5_OF_13[cw]!
     } else {
-      characters[i] = TABLE_2_OF_13[cw - 1287]!;
+      characters[i] = TABLE_2_OF_13[cw - 1287]!
     }
   }
 
   // Step 6: Apply FCS bits to flip characters (XOR with 0x1FFF)
   for (let i = 0; i < 10; i++) {
     if (fcs & (1 << i)) {
-      characters[i]! ^= 0x1fff;
+      characters[i]! ^= 0x1fff
     }
   }
 
   // Step 7: Map characters to 65 bars using bar construction table
-  const bars: FourState[] = Array.from({ length: 65 });
+  const bars: FourState[] = Array.from({ length: 65 })
   for (let i = 0; i < 65; i++) {
-    const [descChar, descBit, ascChar, ascBit] = BAR_TABLE[i]!;
-    const ascend = (characters[ascChar]! & (1 << ascBit)) !== 0;
-    const descend = (characters[descChar]! & (1 << descBit)) !== 0;
+    const [descChar, descBit, ascChar, ascBit] = BAR_TABLE[i]!
+    const ascend = (characters[ascChar]! & (1 << ascBit)) !== 0
+    const descend = (characters[descChar]! & (1 << descBit)) !== 0
 
     if (ascend && descend) {
-      bars[i] = "F";
+      bars[i] = "F"
     } else if (ascend) {
-      bars[i] = "A";
+      bars[i] = "A"
     } else if (descend) {
-      bars[i] = "D";
+      bars[i] = "D"
     } else {
-      bars[i] = "T";
+      bars[i] = "T"
     }
   }
 
-  return bars;
+  return bars
 }
 
 /** Convert routing code to initial binary value per USPS-B-3200 */
 function convertRoutingCode(route: string): bigint {
-  if (route.length === 0) return 0n;
-  if (route.length === 5) return BigInt(route) + 1n;
-  if (route.length === 9) return BigInt(route) + 100001n;
+  if (route.length === 0) return 0n
+  if (route.length === 5) return BigInt(route) + 1n
+  if (route.length === 9) return BigInt(route) + 100001n
   // route.length === 11
-  return BigInt(route) + 1000100001n;
+  return BigInt(route) + 1000100001n
 }
 
 /** Encode tracking code into binary value digit by digit per USPS-B-3200 */
 function convertTrackingCode(binary: bigint, track: string): bigint {
-  binary = binary * 10n + BigInt(track[0]!);
-  binary = binary * 5n + BigInt(track[1]!);
+  binary = binary * 10n + BigInt(track[0]!)
+  binary = binary * 5n + BigInt(track[1]!)
   for (let i = 2; i < 20; i++) {
-    binary = binary * 10n + BigInt(track[i]!);
+    binary = binary * 10n + BigInt(track[i]!)
   }
-  return binary;
+  return binary
 }
 
 /**
@@ -241,60 +241,60 @@ function convertTrackingCode(binary: bigint, track: string): bigint {
  */
 function crc11(value: bigint): number {
   // Convert to 13 bytes (big-endian)
-  const bytes: number[] = Array.from({ length: 13 });
-  let v = value;
+  const bytes: number[] = Array.from({ length: 13 })
+  let v = value
   for (let i = 12; i >= 0; i--) {
-    bytes[i] = Number(v & 0xffn);
-    v >>= 8n;
+    bytes[i] = Number(v & 0xffn)
+    v >>= 8n
   }
 
-  const genPoly = 0x0f35;
-  let fcs = 0x07ff; // initial value: all 11 bits set
+  const genPoly = 0x0f35
+  let fcs = 0x07ff // initial value: all 11 bits set
 
   // Process first byte: skip the 2 most significant bits (only 6 bits used)
-  let data = bytes[0]! << 5;
+  let data = bytes[0]! << 5
   for (let bit = 2; bit < 8; bit++) {
     if ((fcs ^ data) & 0x400) {
-      fcs = (fcs << 1) ^ genPoly;
+      fcs = (fcs << 1) ^ genPoly
     } else {
-      fcs = fcs << 1;
+      fcs = fcs << 1
     }
-    fcs &= 0x7ff;
-    data <<= 1;
+    fcs &= 0x7ff
+    data <<= 1
   }
 
   // Process remaining 12 bytes (all 8 bits each)
   for (let byteIdx = 1; byteIdx < 13; byteIdx++) {
-    data = bytes[byteIdx]! << 3;
+    data = bytes[byteIdx]! << 3
     for (let bit = 0; bit < 8; bit++) {
       if ((fcs ^ data) & 0x400) {
-        fcs = (fcs << 1) ^ genPoly;
+        fcs = (fcs << 1) ^ genPoly
       } else {
-        fcs = fcs << 1;
+        fcs = fcs << 1
       }
-      fcs &= 0x7ff;
-      data <<= 1;
+      fcs &= 0x7ff
+      data <<= 1
     }
   }
 
-  return fcs;
+  return fcs
 }
 
 /** Convert binary value to 10 codewords per USPS-B-3200 */
 function binaryToCodewords(value: bigint): number[] {
-  const codewords: number[] = Array.from({ length: 10 });
-  let remaining = value;
+  const codewords: number[] = Array.from({ length: 10 })
+  let remaining = value
 
   // Extract from LSB: cw[9] is base 636, cw[8..1] are base 1365, cw[0] is remainder
-  codewords[9] = Number(remaining % 636n);
-  remaining = remaining / 636n;
+  codewords[9] = Number(remaining % 636n)
+  remaining = remaining / 636n
 
   for (let i = 8; i >= 1; i--) {
-    codewords[i] = Number(remaining % 1365n);
-    remaining = remaining / 1365n;
+    codewords[i] = Number(remaining % 1365n)
+    remaining = remaining / 1365n
   }
 
-  codewords[0] = Number(remaining);
+  codewords[0] = Number(remaining)
 
-  return codewords;
+  return codewords
 }

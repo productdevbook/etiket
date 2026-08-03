@@ -8,7 +8,7 @@
  * Coefficient tables from ISO/IEC 15438:2001(E) Annex F.
  */
 
-const GF_MOD = 929;
+const GF_MOD = 929
 
 /**
  * Get the number of EC codewords for a given EC level.
@@ -17,9 +17,9 @@ const GF_MOD = 929;
  */
 export function getECCount(ecLevel: number): number {
   if (ecLevel < 0 || ecLevel > 8) {
-    throw new Error(`PDF417 EC level must be 0-8, got ${ecLevel}`);
+    throw new Error(`PDF417 EC level must be 0-8, got ${ecLevel}`)
   }
-  return 1 << (ecLevel + 1);
+  return 1 << (ecLevel + 1)
 }
 
 /**
@@ -119,31 +119,31 @@ const EC_COEFFICIENTS: readonly (readonly number[])[] = [
  * @returns Array of EC codewords
  */
 export function generateECCodewords(dataCodewords: number[], ecLevel: number): number[] {
-  const k = getECCount(ecLevel);
-  const coeffs = EC_COEFFICIENTS[ecLevel]!;
-  const e: number[] = Array.from({ length: k }, () => 0);
+  const k = getECCount(ecLevel)
+  const coeffs = EC_COEFFICIENTS[ecLevel]!
+  const e: number[] = Array.from({ length: k }, () => 0)
 
   for (let i = 0; i < dataCodewords.length; i++) {
-    const t1 = (dataCodewords[i]! + e[k - 1]!) % GF_MOD;
+    const t1 = (dataCodewords[i]! + e[k - 1]!) % GF_MOD
     for (let j = k - 1; j >= 1; j--) {
-      const t2 = (t1 * coeffs[j]!) % GF_MOD;
-      const t3 = GF_MOD - t2;
-      e[j] = (e[j - 1]! + t3) % GF_MOD;
+      const t2 = (t1 * coeffs[j]!) % GF_MOD
+      const t3 = GF_MOD - t2
+      e[j] = (e[j - 1]! + t3) % GF_MOD
     }
-    const t2 = (t1 * coeffs[0]!) % GF_MOD;
-    const t3 = GF_MOD - t2;
-    e[0] = t3 % GF_MOD;
+    const t2 = (t1 * coeffs[0]!) % GF_MOD
+    const t3 = GF_MOD - t2
+    e[0] = t3 % GF_MOD
   }
 
   // Negate non-zero remainders
   for (let j = 0; j < k; j++) {
     if (e[j] !== 0) {
-      e[j] = GF_MOD - e[j]!;
+      e[j] = GF_MOD - e[j]!
     }
   }
 
   // Reverse order: EC codewords are appended highest degree first
-  return e.reverse();
+  return e.reverse()
 }
 
 /**
@@ -151,9 +151,9 @@ export function generateECCodewords(dataCodewords: number[], ecLevel: number): n
  * From the PDF417 specification.
  */
 export function recommendedECLevel(dataCodewords: number): number {
-  if (dataCodewords <= 40) return 2;
-  if (dataCodewords <= 160) return 3;
-  if (dataCodewords <= 320) return 4;
-  if (dataCodewords <= 863) return 5;
-  return 6;
+  if (dataCodewords <= 40) return 2
+  if (dataCodewords <= 160) return 3
+  if (dataCodewords <= 320) return 4
+  if (dataCodewords <= 863) return 5
+  return 6
 }

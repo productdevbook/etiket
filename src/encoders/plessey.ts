@@ -6,7 +6,7 @@
  * where 0 = narrow bar + narrow space, 1 = wide bar + wide space
  */
 
-import { InvalidInputError } from "../errors";
+import { InvalidInputError } from "../errors"
 
 // Plessey encoding: each hex digit maps to 4-bit pattern
 // Each bit: 0 = narrow(1) bar + narrow(1) space, 1 = wide(2) bar + wide(2) space
@@ -27,12 +27,12 @@ const PLESSEY_PATTERNS: Record<string, number[]> = {
   D: [1, 0, 1, 1],
   E: [0, 1, 1, 1],
   F: [1, 1, 1, 1],
-};
+}
 
 // Start: narrow bar, narrow space, wide bar, wide space (1,1,2,2 -> "01" pattern)
-const START_PATTERN = [1, 1, 2, 2];
+const START_PATTERN = [1, 1, 2, 2]
 // Stop: wide bar, narrow space (2,1) — termination
-const STOP_PATTERN = [2, 1];
+const STOP_PATTERN = [2, 1]
 
 /**
  * Calculate Plessey CRC check digits using polynomial division
@@ -40,44 +40,44 @@ const STOP_PATTERN = [2, 1];
  * Produces 8-bit CRC = 2 hex check digits
  */
 function plesseyCRC(digits: string): [number, number] {
-  const POLY = 0x1e9; // x^8+x^7+x^6+x^5+x^3+1
+  const POLY = 0x1e9 // x^8+x^7+x^6+x^5+x^3+1
 
   // Convert hex digits to bit array (LSB first per Plessey convention)
-  const bits: number[] = [];
+  const bits: number[] = []
   for (const ch of digits) {
-    const val = Number.parseInt(ch, 16);
+    const val = Number.parseInt(ch, 16)
     for (let b = 0; b < 4; b++) {
-      bits.push((val >> b) & 1);
+      bits.push((val >> b) & 1)
     }
   }
 
   // Append 8 zero bits for CRC space
   for (let i = 0; i < 8; i++) {
-    bits.push(0);
+    bits.push(0)
   }
 
   // Polynomial division over GF(2)
-  const reg = bits.slice();
+  const reg = bits.slice()
   for (let i = 0; i < reg.length - 8; i++) {
     if (reg[i]) {
       for (let j = 0; j < 9; j++) {
-        reg[i + j]! ^= (POLY >> j) & 1;
+        reg[i + j]! ^= (POLY >> j) & 1
       }
     }
   }
 
   // Last 8 bits are the CRC remainder
-  const crcBits = reg.slice(-8);
+  const crcBits = reg.slice(-8)
 
   // Convert 2 groups of 4 bits (LSB first) to hex digits
-  let crc1 = 0;
-  let crc2 = 0;
+  let crc1 = 0
+  let crc2 = 0
   for (let b = 0; b < 4; b++) {
-    crc1 |= crcBits[b]! << b;
-    crc2 |= crcBits[b + 4]! << b;
+    crc1 |= crcBits[b]! << b
+    crc2 |= crcBits[b + 4]! << b
   }
 
-  return [crc1, crc2];
+  return [crc1, crc2]
 }
 
 /**
@@ -88,27 +88,27 @@ function plesseyCRC(digits: string): [number, number] {
  * @returns Array of bar widths (alternating bar/space)
  */
 export function encodePlessey(text: string): number[] {
-  const upper = text.toUpperCase();
+  const upper = text.toUpperCase()
   if (!/^[0-9A-F]+$/.test(upper)) {
-    throw new InvalidInputError("Plessey only accepts hexadecimal characters (0-9, A-F)");
+    throw new InvalidInputError("Plessey only accepts hexadecimal characters (0-9, A-F)")
   }
   if (upper.length === 0) {
-    throw new InvalidInputError("Plessey input must not be empty");
+    throw new InvalidInputError("Plessey input must not be empty")
   }
 
-  const [crc1, crc2] = plesseyCRC(upper);
-  const dataWithCheck = upper + crc1.toString(16).toUpperCase() + crc2.toString(16).toUpperCase();
+  const [crc1, crc2] = plesseyCRC(upper)
+  const dataWithCheck = upper + crc1.toString(16).toUpperCase() + crc2.toString(16).toUpperCase()
 
-  const bars: number[] = [...START_PATTERN];
+  const bars: number[] = [...START_PATTERN]
 
   for (const ch of dataWithCheck) {
-    const pattern = PLESSEY_PATTERNS[ch]!;
+    const pattern = PLESSEY_PATTERNS[ch]!
     for (const bit of pattern) {
-      bars.push(bit === 0 ? 1 : 2); // bar: narrow or wide
-      bars.push(bit === 0 ? 1 : 2); // space: narrow or wide
+      bars.push(bit === 0 ? 1 : 2) // bar: narrow or wide
+      bars.push(bit === 0 ? 1 : 2) // space: narrow or wide
     }
   }
 
-  bars.push(...STOP_PATTERN);
-  return bars;
+  bars.push(...STOP_PATTERN)
+  return bars
 }

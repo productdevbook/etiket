@@ -9,9 +9,9 @@
  * - Numeric, alphanumeric, byte, kanji modes
  */
 
-import { InvalidInputError, CapacityError } from "../errors";
-import { encodeNumericData, encodeAlphanumericData, encodeByteData, pushBits } from "./qr/mode";
-import { generateECCodewords } from "./qr/reed-solomon";
+import { InvalidInputError, CapacityError } from "../errors"
+import { encodeNumericData, encodeAlphanumericData, encodeByteData, pushBits } from "./qr/mode"
+import { generateECCodewords } from "./qr/reed-solomon"
 
 // rMQR symbol sizes from Zint/ISO 23941: [rows, cols, dataCW_M, dataCW_H, ecCW_M, ecCW_H]
 // prettier-ignore
@@ -25,9 +25,9 @@ const RMQR_SIZES: [number, number, number, number, number, number][] = [
 ];
 
 // rMQR mode indicators (3 bits each, per ISO/IEC 23941)
-const RMQR_MODE_NUMERIC = 0b001;
-const RMQR_MODE_ALPHANUMERIC = 0b010;
-const RMQR_MODE_BYTE = 0b011;
+const RMQR_MODE_NUMERIC = 0b001
+const RMQR_MODE_ALPHANUMERIC = 0b010
+const RMQR_MODE_BYTE = 0b011
 // const RMQR_MODE_KANJI = 0b100;
 
 /**
@@ -67,7 +67,7 @@ const RMQR_CCI_LENGTHS: [number, number, number, number][] = [
   [8, 7, 7, 6], // 29: R17x77
   [8, 8, 7, 6], // 30: R17x99
   [9, 8, 8, 7], // 31: R17x139
-];
+]
 
 // Pre-computed rMQR format info tables from Zint (ISO/IEC 23941)
 // Index = version_index + (ecLevel == "H" ? 32 : 0)
@@ -95,8 +95,8 @@ const RMQR_FORMAT_RIGHT: number[] = [
 ];
 
 export interface RMQROptions {
-  ecLevel?: "M" | "H";
-  version?: number; // index into RMQR_SIZES (0-31)
+  ecLevel?: "M" | "H"
+  version?: number // index into RMQR_SIZES (0-31)
 }
 
 /**
@@ -109,25 +109,25 @@ function encodeRMQRData(
   versionIdx: number,
   mode: "numeric" | "alphanumeric" | "byte",
 ): number[] {
-  const cci = RMQR_CCI_LENGTHS[versionIdx]!;
-  const bits: number[] = [];
-  const data = new TextEncoder().encode(text);
+  const cci = RMQR_CCI_LENGTHS[versionIdx]!
+  const bits: number[] = []
+  const data = new TextEncoder().encode(text)
 
   if (mode === "numeric") {
-    pushBits(bits, RMQR_MODE_NUMERIC, 3);
-    pushBits(bits, text.length, cci[0]);
-    bits.push(...encodeNumericData(text));
+    pushBits(bits, RMQR_MODE_NUMERIC, 3)
+    pushBits(bits, text.length, cci[0])
+    bits.push(...encodeNumericData(text))
   } else if (mode === "alphanumeric") {
-    pushBits(bits, RMQR_MODE_ALPHANUMERIC, 3);
-    pushBits(bits, text.length, cci[1]);
-    bits.push(...encodeAlphanumericData(text));
+    pushBits(bits, RMQR_MODE_ALPHANUMERIC, 3)
+    pushBits(bits, text.length, cci[1])
+    bits.push(...encodeAlphanumericData(text))
   } else {
-    pushBits(bits, RMQR_MODE_BYTE, 3);
-    pushBits(bits, data.length, cci[2]);
-    bits.push(...encodeByteData(data));
+    pushBits(bits, RMQR_MODE_BYTE, 3)
+    pushBits(bits, data.length, cci[2])
+    bits.push(...encodeByteData(data))
   }
 
-  return bits;
+  return bits
 }
 
 /**
@@ -136,132 +136,132 @@ function encodeRMQRData(
  */
 export function encodeRMQR(text: string, options: RMQROptions = {}): boolean[][] {
   if (text.length === 0) {
-    throw new InvalidInputError("rMQR input must not be empty");
+    throw new InvalidInputError("rMQR input must not be empty")
   }
 
-  const ecLevel = options.ecLevel ?? "M";
-  const isNum = /^\d+$/.test(text);
-  const isAlpha = !isNum && /^[0-9A-Z $%*+\-./:]+$/.test(text);
+  const ecLevel = options.ecLevel ?? "M"
+  const isNum = /^\d+$/.test(text)
+  const isAlpha = !isNum && /^[0-9A-Z $%*+\-./:]+$/.test(text)
   const mode: "numeric" | "alphanumeric" | "byte" = isNum
     ? "numeric"
     : isAlpha
       ? "alphanumeric"
-      : "byte";
+      : "byte"
 
   // Select symbol size — CCI length depends on version, so iterate to find the
   // smallest version whose data capacity fits the encoded bit stream.
-  let sizeIdx = -1;
-  let bits: number[] = [];
+  let sizeIdx = -1
+  let bits: number[] = []
 
   if (options.version !== undefined) {
     // User requested a specific version
-    sizeIdx = options.version;
-    bits = encodeRMQRData(text, sizeIdx, mode);
-    const size = RMQR_SIZES[sizeIdx];
+    sizeIdx = options.version
+    bits = encodeRMQRData(text, sizeIdx, mode)
+    const size = RMQR_SIZES[sizeIdx]
     if (!size) {
-      throw new CapacityError("Invalid rMQR version index");
+      throw new CapacityError("Invalid rMQR version index")
     }
-    const dataCW = ecLevel === "M" ? size[2] : size[3];
+    const dataCW = ecLevel === "M" ? size[2] : size[3]
     if (bits.length > dataCW * 8) {
-      throw new CapacityError("Data too long for requested rMQR symbol size");
+      throw new CapacityError("Data too long for requested rMQR symbol size")
     }
   } else {
     for (let i = 0; i < RMQR_SIZES.length; i++) {
-      const size = RMQR_SIZES[i]!;
-      const dataCW = ecLevel === "M" ? size[2] : size[3];
-      const candidateBits = encodeRMQRData(text, i, mode);
+      const size = RMQR_SIZES[i]!
+      const dataCW = ecLevel === "M" ? size[2] : size[3]
+      const candidateBits = encodeRMQRData(text, i, mode)
       if (candidateBits.length <= dataCW * 8) {
-        sizeIdx = i;
-        bits = candidateBits;
-        break;
+        sizeIdx = i
+        bits = candidateBits
+        break
       }
     }
     if (sizeIdx === -1) {
-      throw new CapacityError("Data too long for any rMQR symbol size");
+      throw new CapacityError("Data too long for any rMQR symbol size")
     }
   }
 
-  const size = RMQR_SIZES[sizeIdx]!;
-  const [rows, cols, dataCW_M, dataCW_H, ecCW_M, ecCW_H] = size;
-  const dataCW = ecLevel === "M" ? dataCW_M : dataCW_H;
-  const ecCW = ecLevel === "M" ? ecCW_M : ecCW_H;
+  const size = RMQR_SIZES[sizeIdx]!
+  const [rows, cols, dataCW_M, dataCW_H, ecCW_M, ecCW_H] = size
+  const dataCW = ecLevel === "M" ? dataCW_M : dataCW_H
+  const ecCW = ecLevel === "M" ? ecCW_M : ecCW_H
 
   // Pad bits to data capacity
-  const totalDataBits = dataCW * 8;
-  const termLen = Math.min(3, totalDataBits - bits.length);
-  pushBits(bits, 0, termLen);
-  while (bits.length % 8 !== 0) bits.push(0);
-  let toggle = true;
+  const totalDataBits = dataCW * 8
+  const termLen = Math.min(3, totalDataBits - bits.length)
+  pushBits(bits, 0, termLen)
+  while (bits.length % 8 !== 0) bits.push(0)
+  let toggle = true
   while (bits.length < totalDataBits) {
-    pushBits(bits, toggle ? 236 : 17, 8);
-    toggle = !toggle;
+    pushBits(bits, toggle ? 236 : 17, 8)
+    toggle = !toggle
   }
 
   // Convert to bytes
-  const dataBytes: number[] = [];
+  const dataBytes: number[] = []
   for (let i = 0; i < bits.length; i += 8) {
-    let byte = 0;
+    let byte = 0
     for (let j = 0; j < 8 && i + j < bits.length; j++) {
-      byte = (byte << 1) | bits[i + j]!;
+      byte = (byte << 1) | bits[i + j]!
     }
-    dataBytes.push(byte);
+    dataBytes.push(byte)
   }
 
   // EC
-  const ecBytes = generateECCodewords(dataBytes, ecCW);
-  const allBytes = [...dataBytes, ...ecBytes];
+  const ecBytes = generateECCodewords(dataBytes, ecCW)
+  const allBytes = [...dataBytes, ...ecBytes]
 
   // Build matrix (null = data area, boolean = function pattern)
   const matrix: (boolean | null)[][] = Array.from({ length: rows }, () =>
     Array.from<boolean | null>({ length: cols }).fill(null),
-  );
+  )
 
   // Follow EXACT Zint rmqr_setup_grid order:
   // 1. Timing patterns FIRST (all 4 edges)
   for (let c = 0; c < cols; c++) {
-    matrix[0]![c] = !(c & 1);
-    matrix[rows - 1]![c] = !(c & 1);
+    matrix[0]![c] = !(c & 1)
+    matrix[rows - 1]![c] = !(c & 1)
   }
   for (let r = 0; r < rows; r++) {
-    matrix[r]![0] = !(r & 1);
-    matrix[r]![cols - 1] = !(r & 1);
+    matrix[r]![0] = !(r & 1)
+    matrix[r]![cols - 1] = !(r & 1)
   }
 
   // 2. Finder pattern (7×7 at top-left) - OVERRIDES timing
   for (let r = 0; r < 7; r++) {
     for (let c = 0; c < 7; c++) {
-      const isOuter = r === 0 || r === 6 || c === 0 || c === 6;
-      const isInner = r >= 2 && r <= 4 && c >= 2 && c <= 4;
-      matrix[r]![c] = isOuter || isInner;
+      const isOuter = r === 0 || r === 6 || c === 0 || c === 6
+      const isInner = r >= 2 && r <= 4 && c >= 2 && c <= 4
+      matrix[r]![c] = isOuter || isInner
     }
   }
 
   // 3. Bottom-right alignment (5×5) - OVERRIDES timing
-  const arx = cols - 5;
-  const ary = rows - 5;
-  const AP = [0x1f, 0x11, 0x15, 0x11, 0x1f];
+  const arx = cols - 5
+  const ary = rows - 5
+  const AP = [0x1f, 0x11, 0x15, 0x11, 0x1f]
   for (let r = 0; r < 5; r++) {
     for (let c = 0; c < 5; c++) {
-      matrix[ary + r]![arx + c] = ((AP[r]! >> (4 - c)) & 1) === 1;
+      matrix[ary + r]![arx + c] = ((AP[r]! >> (4 - c)) & 1) === 1
     }
   }
 
   // 4. Corner finder patterns
-  matrix[rows - 2]![0] = true;
-  matrix[rows - 2]![1] = false;
-  matrix[rows - 1]![1] = true;
-  matrix[0]![cols - 2] = true;
-  matrix[1]![cols - 2] = false;
-  matrix[1]![cols - 1] = true;
+  matrix[rows - 2]![0] = true
+  matrix[rows - 2]![1] = false
+  matrix[rows - 1]![1] = true
+  matrix[0]![cols - 2] = true
+  matrix[1]![cols - 2] = false
+  matrix[1]![cols - 1] = true
 
   // 5. Separator
-  for (let r = 0; r < 7; r++) matrix[r]![7] = false;
-  if (rows > 7) for (let c = 0; c < 8; c++) matrix[7]![c] = false;
+  for (let r = 0; r < 7; r++) matrix[r]![7] = false
+  if (rows > 7) for (let c = 0; c < 8; c++) matrix[7]![c] = false
 
   // 4b. Sub-alignment vertical timing columns (rMQR-specific)
   // Column positions from rmqr_table_d1, indexed by width group
   // These must be placed BEFORE data, as they are function patterns
-  const widthGroupIdx = [43, 59, 77, 99, 139].indexOf(cols);
+  const widthGroupIdx = [43, 59, 77, 99, 139].indexOf(cols)
   // prettier-ignore
   const SUB_ALIGN: number[][] = [
     [21], [19,39], [25,51], [23,49,75], [27,55,83,111],
@@ -270,102 +270,102 @@ export function encodeRMQR(text: string, options: RMQROptions = {}): boolean[][]
     for (const ac of SUB_ALIGN[widthGroupIdx]!) {
       // Vertical timing column
       for (let r = 0; r < rows; r++) {
-        matrix[r]![ac] = r % 2 === 0;
+        matrix[r]![ac] = r % 2 === 0
       }
       // Top square (2x2 dark at rows 1-2, cols ac±1)
       if (ac - 1 >= 0) {
-        matrix[1]![ac - 1] = true;
-        matrix[2]![ac - 1] = true;
+        matrix[1]![ac - 1] = true
+        matrix[2]![ac - 1] = true
       }
       if (ac + 1 < cols) {
-        matrix[1]![ac + 1] = true;
-        matrix[2]![ac + 1] = true;
+        matrix[1]![ac + 1] = true
+        matrix[2]![ac + 1] = true
       }
       // Bottom square (2x2 dark at rows v_size-3/-2, cols ac±1)
       if (ac - 1 >= 0) {
-        matrix[rows - 3]![ac - 1] = true;
-        matrix[rows - 2]![ac - 1] = true;
+        matrix[rows - 3]![ac - 1] = true
+        matrix[rows - 2]![ac - 1] = true
       }
       if (ac + 1 < cols) {
-        matrix[rows - 3]![ac + 1] = true;
-        matrix[rows - 2]![ac + 1] = true;
+        matrix[rows - 3]![ac + 1] = true
+        matrix[rows - 2]![ac + 1] = true
       }
     }
   }
 
   // 5. Format info from pre-computed Zint tables (18 bits each side)
-  const fmtIdx = sizeIdx + (ecLevel === "H" ? 32 : 0);
-  const leftFmt = RMQR_FORMAT_LEFT[fmtIdx]!;
-  const rightFmt = RMQR_FORMAT_RIGHT[fmtIdx]!;
+  const fmtIdx = sizeIdx + (ecLevel === "H" ? 32 : 0)
+  const leftFmt = RMQR_FORMAT_LEFT[fmtIdx]!
+  const rightFmt = RMQR_FORMAT_RIGHT[fmtIdx]!
 
   // Left format info: rows 1-5, cols 8-10 (bit = j*5+i), rows 1-3 col 11 (bits 15-17)
   for (let i = 0; i < 5; i++) {
     for (let j = 0; j < 3; j++) {
-      matrix[i + 1]![j + 8] = ((leftFmt >> (j * 5 + i)) & 1) === 1;
+      matrix[i + 1]![j + 8] = ((leftFmt >> (j * 5 + i)) & 1) === 1
     }
   }
-  matrix[1]![11] = ((leftFmt >> 15) & 1) === 1;
-  matrix[2]![11] = ((leftFmt >> 16) & 1) === 1;
-  matrix[3]![11] = ((leftFmt >> 17) & 1) === 1;
+  matrix[1]![11] = ((leftFmt >> 15) & 1) === 1
+  matrix[2]![11] = ((leftFmt >> 16) & 1) === 1
+  matrix[3]![11] = ((leftFmt >> 17) & 1) === 1
 
   // Right format info: rows (rows-6)-(rows-2), cols (cols-8)-(cols-6), + 3 extra
   for (let i = 0; i < 5; i++) {
     for (let j = 0; j < 3; j++) {
-      matrix[i + rows - 6]![j + cols - 8] = ((rightFmt >> (j * 5 + i)) & 1) === 1;
+      matrix[i + rows - 6]![j + cols - 8] = ((rightFmt >> (j * 5 + i)) & 1) === 1
     }
   }
-  matrix[rows - 6]![cols - 5] = ((rightFmt >> 15) & 1) === 1;
-  matrix[rows - 6]![cols - 4] = ((rightFmt >> 16) & 1) === 1;
-  matrix[rows - 6]![cols - 3] = ((rightFmt >> 17) & 1) === 1;
+  matrix[rows - 6]![cols - 5] = ((rightFmt >> 15) & 1) === 1
+  matrix[rows - 6]![cols - 4] = ((rightFmt >> 16) & 1) === 1
+  matrix[rows - 6]![cols - 3] = ((rightFmt >> 17) & 1) === 1
 
   // 6. Place data bits (column-pair zigzag, skip timing columns)
-  const allBits: number[] = [];
+  const allBits: number[] = []
   for (const byte of allBytes) {
-    pushBits(allBits, byte, 8);
+    pushBits(allBits, byte, 8)
   }
 
   // Record which cells are data (null) before placement
-  const isData: boolean[][] = matrix.map((row) => row.map((cell) => cell === null));
+  const isData: boolean[][] = matrix.map((row) => row.map((cell) => cell === null))
 
   // 6b. Data placement: exact Zint qr_populate_grid algorithm for rMQR
   // x_start = cols - 3 (righthand timing pattern)
   // Start from bottom (y = rows-1), going up, right col first then left
-  let i = 0;
-  const n = allBits.length;
-  let y = rows - 1;
-  let direction = 1; // 1 = up, 0 = down
-  let row = 0;
-  const xStart = cols - 3;
+  let i = 0
+  const n = allBits.length
+  let y = rows - 1
+  let direction = 1 // 1 = up, 0 = down
+  let row = 0
+  const xStart = cols - 3
 
   while (i < n) {
-    const x = xStart - row * 2;
-    if (x < 0) break;
+    const x = xStart - row * 2
+    if (x < 0) break
 
     // Right column of pair (x + 1)
     if (x + 1 < cols && matrix[y]![x + 1] === null) {
-      matrix[y]![x + 1] = allBits[i]! === 1;
-      i++;
+      matrix[y]![x + 1] = allBits[i]! === 1
+      i++
     }
 
     // Left column of pair (x)
     if (i < n && x >= 0 && matrix[y]![x] === null) {
-      matrix[y]![x] = allBits[i]! === 1;
-      i++;
+      matrix[y]![x] = allBits[i]! === 1
+      i++
     }
 
     if (direction === 1) {
-      y--;
+      y--
       if (y === -1) {
-        row++;
-        y = 0;
-        direction = 0;
+        row++
+        y = 0
+        direction = 0
       }
     } else {
-      y++;
+      y++
       if (y === rows) {
-        row++;
-        y = rows - 1;
-        direction = 1;
+        row++
+        y = rows - 1
+        direction = 1
       }
     }
   }
@@ -373,22 +373,22 @@ export function encodeRMQR(text: string, options: RMQROptions = {}): boolean[][]
   // Fill remaining data cells with 0
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
-      if (matrix[r]![c] === null) matrix[r]![c] = false;
+      if (matrix[r]![c] === null) matrix[r]![c] = false
     }
   }
 
   // 7. Apply mask: (row/2 + col/3) % 2 == 0 (fixed mask per ISO/IEC 23941)
-  const result = matrix.map((row) => row.map((cell) => cell === true));
+  const result = matrix.map((row) => row.map((cell) => cell === true))
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       // Only mask data modules (recorded before data placement)
       if (isData[r]![c]) {
         if ((Math.floor(r / 2) + Math.floor(c / 3)) % 2 === 0) {
-          result[r]![c] = !result[r]![c];
+          result[r]![c] = !result[r]![c]
         }
       }
     }
   }
 
-  return result;
+  return result
 }

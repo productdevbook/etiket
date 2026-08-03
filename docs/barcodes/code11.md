@@ -5,9 +5,9 @@ Barcode used in telecommunications for labeling equipment.
 ## Usage
 
 ```ts
-import { barcode } from "etiket";
+import { barcode } from "etiket"
 
-barcode("123-456", { type: "code11" });
+barcode("123-456", { type: "code11" })
 ```
 
 Character set: `0-9`, `-`
@@ -20,7 +20,7 @@ Check digits are automatic:
 ## Raw Encoder
 
 ```ts
-import { encodeCode11 } from "etiket";
+import { encodeCode11 } from "etiket"
 
-const bars = encodeCode11("123-456");
+const bars = encodeCode11("123-456")
 ```

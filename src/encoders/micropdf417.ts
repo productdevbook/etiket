@@ -9,8 +9,8 @@
  * - Smaller than standard PDF417 for short data
  */
 
-import { InvalidInputError, CapacityError } from "../errors";
-import { encodeData } from "./pdf417/encoder";
+import { InvalidInputError, CapacityError } from "../errors"
+import { encodeData } from "./pdf417/encoder"
 
 // ---------------------------------------------------------------------------
 // PDF417 cluster tables (17-bit bitmasks) — same as standard PDF417
@@ -205,33 +205,33 @@ const CLUSTER_2: number[] = [
   0x1c7ea,
 ];
 
-const CLUSTERS = [CLUSTER_0, CLUSTER_1, CLUSTER_2];
+const CLUSTERS = [CLUSTER_0, CLUSTER_1, CLUSTER_2]
 
 // ---------------------------------------------------------------------------
 // Convert 17-bit bitmask to bar/space widths
 // ---------------------------------------------------------------------------
 
 function bitmaskToWidths(bitmask: number): number[] {
-  const widths: number[] = [];
-  let current = (bitmask >>> 16) & 1;
-  let count = 1;
+  const widths: number[] = []
+  let current = (bitmask >>> 16) & 1
+  let count = 1
   for (let i = 15; i >= 0; i--) {
-    const bit = (bitmask >>> i) & 1;
+    const bit = (bitmask >>> i) & 1
     if (bit === current) {
-      count++;
+      count++
     } else {
-      widths.push(count);
-      current = bit;
-      count = 1;
+      widths.push(count)
+      current = bit
+      count = 1
     }
   }
-  widths.push(count);
-  return widths;
+  widths.push(count)
+  return widths
 }
 
 function getCodewordPattern(codeword: number, cluster: number): number[] {
-  const table = CLUSTERS[cluster]!;
-  return bitmaskToWidths(table[codeword]!);
+  const table = CLUSTERS[cluster]!
+  return bitmaskToWidths(table[codeword]!)
 }
 
 // ---------------------------------------------------------------------------
@@ -304,11 +304,11 @@ const SYMBOL_METRICS: [number, number, number, number, number, number][] = [
 // ---------------------------------------------------------------------------
 
 function renderRAP(rapValue: number): boolean[] {
-  const modules: boolean[] = [];
+  const modules: boolean[] = []
   for (let bit = 9; bit >= 0; bit--) {
-    modules.push(((rapValue >> bit) & 1) === 1);
+    modules.push(((rapValue >> bit) & 1) === 1)
   }
-  return modules;
+  return modules
 }
 
 // ---------------------------------------------------------------------------
@@ -316,22 +316,22 @@ function renderRAP(rapValue: number): boolean[] {
 // ---------------------------------------------------------------------------
 
 function renderPattern(pattern: number[]): boolean[] {
-  const modules: boolean[] = [];
-  let isBar = true;
+  const modules: boolean[] = []
+  let isBar = true
   for (const w of pattern) {
     for (let i = 0; i < w; i++) {
-      modules.push(isBar);
+      modules.push(isBar)
     }
-    isBar = !isBar;
+    isBar = !isBar
   }
-  return modules;
+  return modules
 }
 
 // ---------------------------------------------------------------------------
 // GF(929) RS error correction (same field as PDF417, arbitrary EC count)
 // ---------------------------------------------------------------------------
 
-const GF_MOD = 929;
+const GF_MOD = 929
 
 // MicroPDF417 EC coefficients from ISO/IEC 24728 / Zint zint_pdf_Microcoeffs
 // Indexed by EC count (k), offset into the flat array
@@ -361,26 +361,26 @@ const MICRO_EC_COEFFS: Record<number, number[]> = {
  * Algorithm from Zint pdf417.c — uses pre-computed Microcoeffs table.
  */
 function microPDF417RS(data: number[], ecCW: number): number[] {
-  const coeffs = MICRO_EC_COEFFS[ecCW];
-  if (!coeffs) throw new Error(`No MicroPDF417 EC coefficients for k=${ecCW}`);
+  const coeffs = MICRO_EC_COEFFS[ecCW]
+  if (!coeffs) throw new Error(`No MicroPDF417 EC coefficients for k=${ecCW}`)
 
-  const ec = Array.from<number>({ length: ecCW }).fill(0);
+  const ec = Array.from<number>({ length: ecCW }).fill(0)
   for (const cw of data) {
-    const total = (cw + ec[ecCW - 1]!) % GF_MOD;
+    const total = (cw + ec[ecCW - 1]!) % GF_MOD
     for (let j = ecCW - 1; j >= 0; j--) {
       if (j === 0) {
-        ec[j] = (GF_MOD - ((total * coeffs[j]!) % GF_MOD)) % GF_MOD;
+        ec[j] = (GF_MOD - ((total * coeffs[j]!) % GF_MOD)) % GF_MOD
       } else {
-        ec[j] = (ec[j - 1]! + GF_MOD - ((total * coeffs[j]!) % GF_MOD)) % GF_MOD;
+        ec[j] = (ec[j - 1]! + GF_MOD - ((total * coeffs[j]!) % GF_MOD)) % GF_MOD
       }
     }
   }
 
   // Negate non-zero values and reverse (Zint convention)
   for (let j = 0; j < ecCW; j++) {
-    if (ec[j] !== 0) ec[j] = GF_MOD - ec[j]!;
+    if (ec[j] !== 0) ec[j] = GF_MOD - ec[j]!
   }
-  return ec.reverse();
+  return ec.reverse()
 }
 
 // ---------------------------------------------------------------------------
@@ -388,13 +388,13 @@ function microPDF417RS(data: number[], ecCW: number): number[] {
 // ---------------------------------------------------------------------------
 
 export interface MicroPDF417Options {
-  columns?: 1 | 2 | 3 | 4;
+  columns?: 1 | 2 | 3 | 4
 }
 
 export interface MicroPDF417Result {
-  matrix: boolean[][];
-  rows: number;
-  cols: number;
+  matrix: boolean[][]
+  rows: number
+  cols: number
 }
 
 /**
@@ -405,94 +405,94 @@ export function encodeMicroPDF417(
   options: MicroPDF417Options = {},
 ): MicroPDF417Result {
   if (text.length === 0) {
-    throw new InvalidInputError("MicroPDF417 input must not be empty");
+    throw new InvalidInputError("MicroPDF417 input must not be empty")
   }
 
   // Encode data to codewords using PDF417 compaction
-  const dataCW = encodeData(text);
+  const dataCW = encodeData(text)
 
   // Select symbol size
-  const metric = selectSize(dataCW.length, options.columns);
+  const metric = selectSize(dataCW.length, options.columns)
   if (!metric) {
-    throw new CapacityError(`Data too long for MicroPDF417: ${dataCW.length} codewords needed`);
+    throw new CapacityError(`Data too long for MicroPDF417: ${dataCW.length} codewords needed`)
   }
 
-  const [cols, rows, ecCW, rapl, rapc, rapr] = metric;
-  const maxDataCW = rows * cols - ecCW;
+  const [cols, rows, ecCW, rapl, rapc, rapr] = metric
+  const maxDataCW = rows * cols - ecCW
 
   // Pad data codewords: MicroPDF417 prepends 900 (text latch) as padding
   // This matches Zint/bwip-js behavior where padding goes BEFORE data
   while (dataCW.length < maxDataCW) {
-    dataCW.unshift(900);
+    dataCW.unshift(900)
   }
 
   // Generate EC codewords using RS over GF(929)
   // Generate EC using RS over GF(929) with roots 3^1..3^ecCW
-  const ec = microPDF417RS(dataCW, ecCW);
+  const ec = microPDF417RS(dataCW, ecCW)
 
   // Combine data + EC codewords
-  const allCW = [...dataCW, ...ec];
+  const allCW = [...dataCW, ...ec]
 
   // Build matrix row by row
-  const matrix: boolean[][] = [];
+  const matrix: boolean[][] = []
 
   for (let i = 0; i < rows; i++) {
     // Cluster for this row: (i + rapl - 1) mod 3
-    const cluster = (((i + rapl - 1) % 3) + 3) % 3;
-    const rowModules: boolean[] = [];
+    const cluster = (((i + rapl - 1) % 3) + 3) % 3
+    const rowModules: boolean[] = []
 
     // Left RAP
-    const leftRAPIdx = (((i + rapl - 1) % 52) + 52) % 52;
-    rowModules.push(...renderRAP(RAP_LEFT_RIGHT[leftRAPIdx]!));
+    const leftRAPIdx = (((i + rapl - 1) % 52) + 52) % 52
+    rowModules.push(...renderRAP(RAP_LEFT_RIGHT[leftRAPIdx]!))
 
     // Data codewords and center RAP
     if (cols === 1) {
       // 1 col: left_RAP | cw0 | right_RAP
-      const cw0 = allCW[i]!;
-      rowModules.push(...renderPattern(getCodewordPattern(cw0, cluster)));
+      const cw0 = allCW[i]!
+      rowModules.push(...renderPattern(getCodewordPattern(cw0, cluster)))
     } else if (cols === 2) {
       // 2 col: left_RAP | cw0 | cw1 | right_RAP
-      const cw0 = allCW[i * 2]!;
-      const cw1 = allCW[i * 2 + 1]!;
-      rowModules.push(...renderPattern(getCodewordPattern(cw0, cluster)));
-      rowModules.push(...renderPattern(getCodewordPattern(cw1, cluster)));
+      const cw0 = allCW[i * 2]!
+      const cw1 = allCW[i * 2 + 1]!
+      rowModules.push(...renderPattern(getCodewordPattern(cw0, cluster)))
+      rowModules.push(...renderPattern(getCodewordPattern(cw1, cluster)))
     } else if (cols === 3) {
       // 3 col: left_RAP | cw0 | center_RAP | cw1 | cw2 | right_RAP
-      const cw0 = allCW[i * 3]!;
-      const cw1 = allCW[i * 3 + 1]!;
-      const cw2 = allCW[i * 3 + 2]!;
-      rowModules.push(...renderPattern(getCodewordPattern(cw0, cluster)));
+      const cw0 = allCW[i * 3]!
+      const cw1 = allCW[i * 3 + 1]!
+      const cw2 = allCW[i * 3 + 2]!
+      rowModules.push(...renderPattern(getCodewordPattern(cw0, cluster)))
       // Center RAP
-      const centerRAPIdx = (((i + rapc - 1) % 52) + 52) % 52;
-      rowModules.push(...renderRAP(RAP_CENTER[centerRAPIdx]!));
-      rowModules.push(...renderPattern(getCodewordPattern(cw1, cluster)));
-      rowModules.push(...renderPattern(getCodewordPattern(cw2, cluster)));
+      const centerRAPIdx = (((i + rapc - 1) % 52) + 52) % 52
+      rowModules.push(...renderRAP(RAP_CENTER[centerRAPIdx]!))
+      rowModules.push(...renderPattern(getCodewordPattern(cw1, cluster)))
+      rowModules.push(...renderPattern(getCodewordPattern(cw2, cluster)))
     } else {
       // 4 col: left_RAP | cw0 | cw1 | center_RAP | cw2 | cw3 | right_RAP
-      const cw0 = allCW[i * 4]!;
-      const cw1 = allCW[i * 4 + 1]!;
-      const cw2 = allCW[i * 4 + 2]!;
-      const cw3 = allCW[i * 4 + 3]!;
-      rowModules.push(...renderPattern(getCodewordPattern(cw0, cluster)));
-      rowModules.push(...renderPattern(getCodewordPattern(cw1, cluster)));
+      const cw0 = allCW[i * 4]!
+      const cw1 = allCW[i * 4 + 1]!
+      const cw2 = allCW[i * 4 + 2]!
+      const cw3 = allCW[i * 4 + 3]!
+      rowModules.push(...renderPattern(getCodewordPattern(cw0, cluster)))
+      rowModules.push(...renderPattern(getCodewordPattern(cw1, cluster)))
       // Center RAP
-      const centerRAPIdx = (((i + rapc - 1) % 52) + 52) % 52;
-      rowModules.push(...renderRAP(RAP_CENTER[centerRAPIdx]!));
-      rowModules.push(...renderPattern(getCodewordPattern(cw2, cluster)));
-      rowModules.push(...renderPattern(getCodewordPattern(cw3, cluster)));
+      const centerRAPIdx = (((i + rapc - 1) % 52) + 52) % 52
+      rowModules.push(...renderRAP(RAP_CENTER[centerRAPIdx]!))
+      rowModules.push(...renderPattern(getCodewordPattern(cw2, cluster)))
+      rowModules.push(...renderPattern(getCodewordPattern(cw3, cluster)))
     }
 
     // Right RAP
-    const rightRAPIdx = (((i + rapr - 1) % 52) + 52) % 52;
-    rowModules.push(...renderRAP(RAP_LEFT_RIGHT[rightRAPIdx]!));
+    const rightRAPIdx = (((i + rapr - 1) % 52) + 52) % 52
+    rowModules.push(...renderRAP(RAP_LEFT_RIGHT[rightRAPIdx]!))
 
     // Stop bar (1 module)
-    rowModules.push(true);
+    rowModules.push(true)
 
-    matrix.push(rowModules);
+    matrix.push(rowModules)
   }
 
-  return { matrix, rows, cols: matrix[0]?.length ?? 0 };
+  return { matrix, rows, cols: matrix[0]?.length ?? 0 }
 }
 
 function selectSize(
@@ -500,10 +500,10 @@ function selectSize(
   requestedCols?: number,
 ): [number, number, number, number, number, number] | undefined {
   for (const metric of SYMBOL_METRICS) {
-    const [cols, rows, ecCW] = metric;
-    if (requestedCols && cols !== requestedCols) continue;
-    const maxDataCW = rows * cols - ecCW;
-    if (dataCWCount <= maxDataCW) return metric;
+    const [cols, rows, ecCW] = metric
+    if (requestedCols && cols !== requestedCols) continue
+    const maxDataCW = rows * cols - ecCW
+    if (dataCWCount <= maxDataCW) return metric
   }
-  return undefined;
+  return undefined
 }

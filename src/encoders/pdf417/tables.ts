@@ -9,10 +9,10 @@
  */
 
 /** Start pattern: 17 modules — bar,space,bar,space,bar,space,bar,space */
-export const START_PATTERN: readonly number[] = [8, 1, 1, 1, 1, 1, 1, 3];
+export const START_PATTERN: readonly number[] = [8, 1, 1, 1, 1, 1, 1, 3]
 
 /** Stop pattern: 18 modules (includes terminating bar) — bar,space,bar,space,bar,space,bar,space,bar */
-export const STOP_PATTERN: readonly number[] = [7, 1, 1, 1, 1, 1, 1, 2, 1];
+export const STOP_PATTERN: readonly number[] = [7, 1, 1, 1, 1, 1, 1, 2, 1]
 
 /**
  * PDF417 codeword-to-module-pattern tables from ISO/IEC 15438:2001(E) Annex A.
@@ -214,28 +214,28 @@ const CLUSTER_2: number[] = [
   0x1c7ea,
 ];
 
-const CLUSTERS = [CLUSTER_0, CLUSTER_1, CLUSTER_2];
+const CLUSTERS = [CLUSTER_0, CLUSTER_1, CLUSTER_2]
 
 /**
  * Convert a 17-bit module bitmask to an array of 8 bar/space widths.
  * The bitmask starts with a bar (1-bit) and ends with a space (0-bit).
  */
 function bitmaskToWidths(bitmask: number): number[] {
-  const widths: number[] = [];
-  let current = (bitmask >>> 16) & 1;
-  let count = 1;
+  const widths: number[] = []
+  let current = (bitmask >>> 16) & 1
+  let count = 1
   for (let i = 15; i >= 0; i--) {
-    const bit = (bitmask >>> i) & 1;
+    const bit = (bitmask >>> i) & 1
     if (bit === current) {
-      count++;
+      count++
     } else {
-      widths.push(count);
-      current = bit;
-      count = 1;
+      widths.push(count)
+      current = bit
+      count = 1
     }
   }
-  widths.push(count);
-  return widths;
+  widths.push(count)
+  return widths
 }
 
 /**
@@ -245,8 +245,8 @@ function bitmaskToWidths(bitmask: number): number[] {
  * @returns Array of 8 bar/space widths totaling 17 modules
  */
 export function getCodewordPattern(codeword: number, cluster: number): number[] {
-  const clusterIndex = cluster / 3;
-  const table = CLUSTERS[clusterIndex]!;
+  const clusterIndex = cluster / 3
+  const table = CLUSTERS[clusterIndex]!
   if (codeword < 0 || codeword >= table.length) {
     throw new Error(
       "Codeword " +
@@ -256,9 +256,9 @@ export function getCodewordPattern(codeword: number, cluster: number): number[] 
         " (max " +
         (table.length - 1) +
         ")",
-    );
+    )
   }
-  return bitmaskToWidths(table[codeword]!);
+  return bitmaskToWidths(table[codeword]!)
 }
 
 /**
@@ -266,7 +266,7 @@ export function getCodewordPattern(codeword: number, cluster: number): number[] 
  * Cluster cycles: row 0 -> cluster 0, row 1 -> cluster 3, row 2 -> cluster 6, row 3 -> cluster 0, etc.
  */
 export function getRowCluster(row: number): number {
-  return (row % 3) * 3;
+  return (row % 3) * 3
 }
 
 // ---- Text compaction sub-mode tables ----
@@ -355,7 +355,7 @@ export const TEXT_SWITCH = {
 
   // from Punct
   PUNCT_TO_ALPHA: 29, // PAL - latch to alpha
-} as const;
+} as const
 
 /** High-level mode latch codewords */
 export const MODE_LATCH = {
@@ -363,4 +363,4 @@ export const MODE_LATCH = {
   BYTE_COMPACTION: 901,
   NUMERIC_COMPACTION: 902,
   BYTE_COMPACTION_6: 924, // byte compaction, groups of 6
-} as const;
+} as const
