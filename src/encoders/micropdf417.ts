@@ -11,7 +11,6 @@
 
 import { InvalidInputError, CapacityError } from "../errors";
 import { encodeData } from "./pdf417/encoder";
-import { generateECCodewords } from "./pdf417/ec";
 
 // ---------------------------------------------------------------------------
 // PDF417 cluster tables (17-bit bitmasks) — same as standard PDF417

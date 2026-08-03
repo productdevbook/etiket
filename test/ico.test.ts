@@ -1,12 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { icoToPngDataURI } from "../src/renderers/svg/ico";
 
-function uint8ToBase64(data: Uint8Array): string {
-  let binary = "";
-  for (let i = 0; i < data.length; i++) binary += String.fromCharCode(data[i]!);
-  return btoa(binary);
-}
-
 function base64ToUint8(b64: string): Uint8Array {
   const binary = atob(b64);
   const bytes = new Uint8Array(binary.length);
@@ -128,7 +122,6 @@ describe("ICO to PNG converter", () => {
   it("selects the largest entry from multi-entry ICO", () => {
     // Create ICO with 2 entries: 4x4 and 8x8
     const bpp = 32;
-    const headerSize = 40;
 
     const small = createImageData(4, 4, 255, 0, 0);
     const large = createImageData(8, 8, 0, 255, 0);

@@ -15,7 +15,6 @@ import {
   encodeITF,
   encodeCodabar,
   encodeGS1128,
-  renderBarcodeSVG,
 } from "../src/index";
 
 /**

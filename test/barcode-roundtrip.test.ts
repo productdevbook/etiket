@@ -24,35 +24,6 @@ import {
   encodeLeitcode,
 } from "../src/index";
 
-/**
- * Convert a 1D barcode bar-width array to a scaled pixel row for scanning.
- * Returns a Uint8Array of grayscale pixel values (0=black, 255=white).
- */
-function barsToPixelRow(bars: number[], scale = 4, margin = 40): Uint8Array {
-  // Calculate total width
-  let totalWidth = 0;
-  for (const w of bars) totalWidth += w;
-  const imgWidth = totalWidth * scale + margin * 2;
-
-  const row = new Uint8Array(imgWidth);
-  row.fill(255); // white background
-
-  let x = margin;
-  let isBar = true;
-  for (const w of bars) {
-    if (isBar) {
-      const end = x + w * scale;
-      for (let px = x; px < end && px < imgWidth; px++) {
-        row[px] = 0; // black bar
-      }
-    }
-    x += w * scale;
-    isBar = !isBar;
-  }
-
-  return row;
-}
-
 describe("1D barcode encoding produces valid bar patterns", () => {
   it("Code 128 encodes valid patterns", () => {
     const bars = encodeCode128("ABC123");

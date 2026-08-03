@@ -5,20 +5,7 @@
 
 import { describe, expect, it } from "vitest";
 import { readBarcodes } from "zxing-wasm/reader";
-import {
-  encodeQR,
-  encodeMicroQR,
-  encodeDataMatrix,
-  encodePDF417,
-  encodeAztec,
-  renderMatrixSVG,
-  renderBarcodeSVG,
-  qrcode,
-  datamatrix,
-  pdf417,
-  aztec,
-  barcode,
-} from "../src/index";
+import { encodeQR, encodeMicroQR, encodeDataMatrix, encodePDF417, encodeAztec } from "../src/index";
 
 /**
  * Convert a boolean matrix to a grayscale PNG-like ImageData buffer

@@ -92,7 +92,7 @@ export function rsEncode(data: number[], ecCount: number, wordSize: number): num
   let gen = [1];
   for (let i = 1; i <= ecCount; i++) {
     const root = gf.exp[i]!;
-    const newGen = new Array<number>(gen.length + 1).fill(0);
+    const newGen = Array.from<number>({ length: gen.length + 1 }).fill(0);
     for (let j = 0; j < gen.length; j++) {
       newGen[j] ^= gen[j]!;
       newGen[j + 1] ^= gfMul(gf, gen[j]!, root);
@@ -102,7 +102,7 @@ export function rsEncode(data: number[], ecCount: number, wordSize: number): num
 
   // Polynomial long division: (data * x^ecCount) mod gen
   // Create dividend = data codewords followed by ecCount zeros
-  const dividend = [...data, ...new Array<number>(ecCount).fill(0)];
+  const dividend = [...data, ...Array.from<number>({ length: ecCount }).fill(0)];
 
   for (let i = 0; i < data.length; i++) {
     if (dividend[i] !== 0) {
@@ -139,7 +139,7 @@ export function generateCheckWords(
   const totalWords = Math.floor(totalBits / wordSize);
 
   // Convert stuffed bits to codewords (first messageSizeInWords positions filled)
-  const messageWords = new Array<number>(totalWords).fill(0);
+  const messageWords = Array.from<number>({ length: totalWords }).fill(0);
   for (let i = 0; i < messageSizeInWords; i++) {
     let value = 0;
     for (let j = 0; j < wordSize; j++) {

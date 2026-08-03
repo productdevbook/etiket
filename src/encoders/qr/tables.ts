@@ -284,35 +284,6 @@ export const REMAINDER_BITS: number[] = [
 ]
 
 /**
- * Total codewords (data + EC) for each version
- */
-export function getTotalCodewords(version: number): number {
-  const size = version * 4 + 17;
-  // Total modules minus function patterns, format info, version info
-  // Formula from spec: data region modules / 8
-  const totalModules = size * size;
-  // Function pattern modules
-  const finderModules = 3 * (8 * 8); // 3 finder patterns with separators (approximate)
-  const alignPos = ALIGNMENT_POSITIONS[version - 1]!;
-  let alignModules = 0;
-  if (alignPos.length > 0) {
-    const count = alignPos.length;
-    // Alignment patterns that don't overlap with finder patterns
-    const totalAlign = count * count - 3; // minus 3 corners that overlap with finders (for v >= 7 it's more complex but close enough)
-    alignModules = Math.max(0, totalAlign) * 25;
-  }
-  const timingModules = 2 * (size - 16);
-  const formatModules = 31;
-  const versionModules = version >= 7 ? 36 : 0;
-  const darkModule = 1;
-
-  const functionModules =
-    finderModules + alignModules + timingModules + formatModules + versionModules + darkModule;
-  const dataModules = totalModules - functionModules;
-  return Math.floor(dataModules / 8);
-}
-
-/**
  * Version info bit strings for versions 7-40
  * 18-bit BCH code
  */

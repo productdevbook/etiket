@@ -92,7 +92,7 @@ const BAR_TABLE: [number, number, number, number][] = [
  * pairs go at the beginning (forward, then reverse).
  */
 function initNOf13Table(n: number, tableLength: number): number[] {
-  const table: number[] = new Array(tableLength);
+  const table: number[] = Array.from({ length: tableLength });
   let lo = 0;
   let hi = tableLength - 1;
 
@@ -177,7 +177,7 @@ export function encodeIMb(trackingCode: string, routingCode: string = ""): FourS
   }
 
   // Step 5: Convert codewords to 13-bit characters using lookup tables
-  const characters: number[] = new Array(10);
+  const characters: number[] = Array.from({ length: 10 });
   for (let i = 0; i < 10; i++) {
     const cw = codewords[i]!;
     if (cw <= 1286) {
@@ -195,7 +195,7 @@ export function encodeIMb(trackingCode: string, routingCode: string = ""): FourS
   }
 
   // Step 7: Map characters to 65 bars using bar construction table
-  const bars: FourState[] = new Array(65);
+  const bars: FourState[] = Array.from({ length: 65 });
   for (let i = 0; i < 65; i++) {
     const [descChar, descBit, ascChar, ascBit] = BAR_TABLE[i]!;
     const ascend = (characters[ascChar]! & (1 << ascBit)) !== 0;
@@ -241,7 +241,7 @@ function convertTrackingCode(binary: bigint, track: string): bigint {
  */
 function crc11(value: bigint): number {
   // Convert to 13 bytes (big-endian)
-  const bytes: number[] = new Array(13);
+  const bytes: number[] = Array.from({ length: 13 });
   let v = value;
   for (let i = 12; i >= 0; i--) {
     bytes[i] = Number(v & 0xffn);
@@ -282,7 +282,7 @@ function crc11(value: bigint): number {
 
 /** Convert binary value to 10 codewords per USPS-B-3200 */
 function binaryToCodewords(value: bigint): number[] {
-  const codewords: number[] = new Array(10);
+  const codewords: number[] = Array.from({ length: 10 });
   let remaining = value;
 
   // Extract from LSB: cw[9] is base 636, cw[8..1] are base 1365, cw[0] is remainder

@@ -52,7 +52,6 @@ import {
   gs1datamatrixPNG,
   pdf417PNG,
   aztecPNG,
-  renderMatrixPNG,
 } from "etiket";
 
 import type { GradientOptions, LogoOptions } from "etiket";

@@ -197,7 +197,7 @@ function selectSize(
 
 /** Create a boolean matrix initialized to all false */
 function createBoolMatrix(size: number): boolean[][] {
-  return Array.from({ length: size }, () => new Array<boolean>(size).fill(false));
+  return Array.from({ length: size }, () => Array.from<boolean>({ length: size }).fill(false));
 }
 
 // ---------------------------------------------------------------------------
@@ -213,7 +213,7 @@ function createBoolMatrix(size: number): boolean[][] {
  * from the center, which shifts coordinate positions.
  */
 function buildAlignmentMap(baseMatrixSize: number, matrixSize: number, compact: boolean): number[] {
-  const alignmentMap = new Array<number>(baseMatrixSize);
+  const alignmentMap = Array.from<number>({ length: baseMatrixSize });
 
   if (compact) {
     for (let i = 0; i < baseMatrixSize; i++) {
