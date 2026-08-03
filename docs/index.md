@@ -5,7 +5,8 @@ Zero-dependency barcode & QR code generator — SVG & PNG output. 40+ formats, s
 ## Why etiket?
 
 - **Zero dependencies** — No bloat, no supply chain risk
-- **20+ barcode formats** — 1D, 2D, QR codes all in one package
+- **40+ symbologies** — 1D, postal, 2D, stacked and polychrome in one package
+- **SVG and PNG** — PNG written directly, with no canvas or native dependency
 - **Styled QR codes** — 12 dot types, gradients, corner styling, logo embedding
 - **Tree-shakeable** — Import only what you need via sub-path exports
 - **Pure ESM** — Modern, lightweight, TypeScript-first
@@ -14,7 +15,7 @@ Zero-dependency barcode & QR code generator — SVG & PNG output. 40+ formats, s
 ## Quick Example
 
 ```ts
-import { barcode, qrcode } from "etiket";
+import { barcode, qrcode, postal, qrcodePNG } from "etiket";
 
 // Code 128 barcode
 const svg = barcode("Hello World");
@@ -26,15 +27,36 @@ const qr = qrcode("https://example.com", {
   dotType: "dots",
   color: "#1a1a2e",
 });
+
+// Royal Mail 4-state postal barcode
+const rm = postal("SN34RD1A", { type: "rm4scc" });
+
+// PNG bytes, no canvas required
+const png = qrcodePNG("https://example.com", { moduleSize: 8 });
 ```
 
-## Bundle Size
+## Format Families
 
-| Entry               | Size (gzip) |
-| :------------------ | :---------- |
-| `etiket`            | ~24KB       |
-| `etiket/barcode`    | ~8KB        |
-| `etiket/qr`         | ~10KB       |
-| `etiket/datamatrix` | ~5KB        |
-| `etiket/pdf417`     | ~6KB        |
-| `etiket/aztec`      | ~7KB        |
+| Family                   | Examples                                                               |
+| :----------------------- | :--------------------------------------------------------------------- |
+| [1D](/barcodes/)         | Code 128, EAN/UPC, Code 39/93, ITF, Codabar, MSI, GS1-128, GS1 DataBar |
+| [Postal](/postal/)       | POSTNET, PLANET, RM4SCC, KIX, Australia Post, Japan Post, IMb          |
+| [QR](/qr-code/)          | QR Code, Micro QR, rMQR                                                |
+| [2D](/2d-codes/)         | Data Matrix, PDF417, MicroPDF417, Aztec, MaxiCode, DotCode, Han Xin    |
+| [Stacked](/2d-codes/)    | Codablock-F, Code 16K                                                  |
+| [Polychrome](/2d-codes/) | JAB Code                                                               |
+
+Run `etiket list` to print the full set from the [CLI](/getting-started/cli).
+
+## Entry Points
+
+| Entry               | Contents                       |
+| :------------------ | :----------------------------- |
+| `etiket`            | Everything                     |
+| `etiket/barcode`    | 1D barcodes                    |
+| `etiket/postal`     | Postal symbologies             |
+| `etiket/qr`         | QR, Micro QR, rMQR             |
+| `etiket/datamatrix` | Data Matrix and GS1 DataMatrix |
+| `etiket/pdf417`     | PDF417 and MicroPDF417         |
+| `etiket/aztec`      | Aztec Code                     |
+| `etiket/png`        | PNG output for every format    |

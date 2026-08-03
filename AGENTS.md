@@ -11,12 +11,15 @@ Zero-dependency barcode & QR code generator — SVG & PNG output. 40+ formats, s
 src/
   index.ts                  # Main API — all exports
   barcode.ts                # Sub-path: etiket/barcode
+  postal.ts                 # Sub-path: etiket/postal
   qr.ts                     # Sub-path: etiket/qr
   datamatrix.ts             # Sub-path: etiket/datamatrix
   pdf417.ts                 # Sub-path: etiket/pdf417
   aztec.ts                  # Sub-path: etiket/aztec
   png.ts                    # Sub-path: etiket/png
-  cli.ts                    # CLI entry (citty + consola)
+  cli.ts                    # CLI bin entry (runMain only)
+  _cli.ts                   # CLI command definitions (citty + consola)
+  _postal.ts                # Postal encode + render dispatch
   errors.ts                 # Custom error classes
   env.d.ts                  # Runtime type declarations
   svg.ts                    # Backward-compat re-exports
@@ -71,6 +74,8 @@ src/
   renderers/
     svg/
       barcode.ts            # 1D barcode SVG
+      postal.ts             # Height-modulated postal SVG (2-state + 4-state)
+      color-matrix.ts       # Palette-indexed matrix SVG (JAB Code)
       qr.ts                 # QR SVG with styling
       matrix.ts             # Generic 2D matrix SVG
       shapes.ts             # 12 dot type generators
@@ -81,12 +86,12 @@ src/
       types.ts              # All rendering types
       utils.ts              # escapeAttr utility
     png/
-      types.ts              # BarcodePNGOptions, MatrixPNGOptions
+      types.ts              # BarcodePNGOptions, MatrixPNGOptions, PostalPNGOptions
       crc32.ts              # CRC32 for PNG chunk checksums
       adler32.ts            # Adler32 for zlib wrapper
       deflate.ts            # Stored DEFLATE + zlib compression
       png-encoder.ts        # PNG chunk assembly (palette + true color RGBA)
-      rasterize.ts          # bars/matrix → pixel rows → PNG
+      rasterize.ts          # bars/matrix/postal/MaxiCode → pixel rows → PNG
     text.ts                 # Terminal output (Unicode blocks)
     data-uri.ts             # SVG → Data URI / Base64
   validators/
@@ -94,20 +99,31 @@ src/
     barcode.ts              # Per-format validation
     qr.ts                   # QR validation with metadata
 test/
-  *.test.ts                 # 70 test files, 950+ tests
+  *.test.ts                 # 81 test files, 1560+ tests
   qr-roundtrip.test.ts      # QR encode→decode via jsQR (all versions, EC, masks)
+  2d-roundtrip.test.ts      # 2D decode verification via zxing-wasm
+  encoders-modes-roundtrip.test.ts # Encoder mode coverage, decoded with zxing
   barcode-roundtrip.test.ts # 1D barcode structural validation
+  cli.test.ts               # Every CLI subcommand, driven through citty
 docs/
   **/*.md                   # Documentation (mdzilla-compatible)
 ```
 
 ## Public API
 
-Single entry: `etiket` (everything). Sub-paths: `etiket/barcode`, `etiket/qr`, `etiket/datamatrix`, `etiket/pdf417`, `etiket/aztec`, `etiket/png`.
+Single entry: `etiket` (everything). Sub-paths: `etiket/barcode`, `etiket/postal`, `etiket/qr`, `etiket/datamatrix`, `etiket/pdf417`, `etiket/aztec`, `etiket/png`.
 
-Key functions: `barcode()`, `qrcode()`, `datamatrix()`, `pdf417()`, `aztec()`, `gs1datamatrix()`, `swissQR()`, `gs1DigitalLink()`, `wifi()`, `vcard()`, `mecard()`, `event()`, `phone()`, `email()`, `sms()`, `geo()`, `encode()`, `optimizeSVG()`.
+1D + postal: `barcode()`, `encodeBars()`, `postal()`, `encodePostal()`.
 
-PNG functions: `barcodePNG()`, `qrcodePNG()`, `datamatrixPNG()`, `pdf417PNG()`, `aztecPNG()`, `gs1datamatrixPNG()` + `*PNGDataURI()` variants. Low-level: `renderBarcodePNG()`, `renderMatrixPNG()`.
+2D: `qrcode()`, `microqr()`, `rmqr()`, `datamatrix()`, `gs1datamatrix()`, `pdf417()`, `micropdf417()`, `aztec()`, `maxicode()`, `dotcode()`, `hanxin()`, `codablockf()`, `code16k()`, `jabcode()`.
+
+Helpers: `swissQR()`, `gs1DigitalLink()`, `wifi()`, `vcard()`, `mecard()`, `event()`, `phone()`, `email()`, `sms()`, `geo()`, `url()`, `encode()`, `optimizeSVG()`.
+
+PNG: `barcodePNG()`, `postalPNG()`, `qrcodePNG()`, `microqrPNG()`, `rmqrPNG()`, `datamatrixPNG()`, `gs1datamatrixPNG()`, `pdf417PNG()`, `micropdf417PNG()`, `aztecPNG()`, `maxicodePNG()`, `dotcodePNG()`, `hanxinPNG()`, `codablockfPNG()`, `code16kPNG()` + `*PNGDataURI()` variants. Low-level: `renderBarcodePNG()`, `renderMatrixPNG()`, `renderPostalPNG()`, `renderMaxiCodePNG()`.
+
+`encode()` returns a discriminated union: `{ type: "1d", bars }`, `{ type: "2d", matrix }` or `{ type: "postal", bars }`. Its 1D dispatch delegates to `encodeBars()` so the two cannot diverge.
+
+**Height-modulated formats.** POSTNET/PLANET/RM4SCC/KIX/AusPost/JapanPost/IMb encode data in bar _height_. They render through `renderPostalSVG`/`renderPostalPNG`, never the bar-width renderer. `barcode()` routes `postnet`/`planet` there automatically; `encodeBars()` throws for them.
 
 ## Build & Scripts
 
@@ -141,7 +157,30 @@ pnpm docs:dev       # npx mdzilla ./docs
 - **Framework:** vitest
 - **Location:** `test/` directory (flat structure)
 - **Coverage:** `@vitest/coverage-v8`
-- **Round-trip testing:** jsQR for QR decode verification, zbarimg for 1D barcode verification
-- **Dev dependencies for testing:** `jsqr`, `zbar.wasm`
-- Run all: `pnpm test`
+- **Round-trip testing:** jsQR for QR decode verification, zxing-wasm for 2D
+  (QR, Micro QR, Data Matrix, PDF417, Aztec), zbar.wasm for 1D
+- **Dev dependencies for testing:** `jsqr`, `zbar.wasm`, `zxing-wasm`, `bwip-js`, `rmqr`
+- Run all: `pnpm test` (lint + typecheck + vitest)
 - Run single: `pnpm vitest run test/<file>.test.ts`
+- Coverage: `pnpm vitest run --coverage`
+
+### Testing Notes
+
+- Prefer round-trip verification over asserting on encoder internals: encode,
+  decode with a third-party reader, compare. That is what caught the Data Matrix
+  C40 and Aztec binary-shift defects.
+- For payloads of high-range bytes, assert on the decoded **bytes**, not the
+  decoded string — readers guess a character set and may pick Shift-JIS over
+  Latin-1. `decodeBytes` in `encoders-modes-roundtrip.test.ts` does this.
+- The PNG encoder emits stored (uncompressed) DEFLATE, so tests can decode PNG
+  output and assert on real pixels; `ico-formats.test.ts` shows the pattern.
+
+## Project Status
+
+v1-ready. The full gate (`pnpm test`) is green:
+
+- **81 test files, 1560+ tests** passing
+- **Zero** lint warnings, zero typecheck errors
+- **~95%** statement coverage
+- Every symbology reachable from the public API, the CLI and (except JAB Code)
+  PNG output

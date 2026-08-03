@@ -37,15 +37,25 @@ const qr = qrcode("https://example.com", { dotType: "dots", ecLevel: "H" });
 ## CLI
 
 ```sh
+npx etiket list                       # every supported symbology
 npx etiket qr "Hello World" -o qr.svg
 npx etiket qr "Hello" --terminal
 npx etiket qr "Hello" --size 300 --ec H --dot-type dots
+npx etiket qr "Hello" -o qr.png       # .png output writes a PNG
 npx etiket barcode "4006381333931" --type ean13 --show-text -o barcode.svg
+npx etiket postal "SN34RD1A" --type rm4scc -o postal.svg
 npx etiket datamatrix "Hello" -o dm.svg
 npx etiket pdf417 "Hello" -o pdf.svg
 npx etiket aztec "Hello" -o aztec.svg
+npx etiket maxicode "Hello" -o maxi.svg
 npx etiket wifi "MyNetwork" "secret123" -o wifi.svg
+npx etiket contact "Ada Lovelace" --email ada@example.com -o card.svg
 ```
+
+Every symbology has a subcommand (`qr`, `microqr`, `rmqr`, `barcode`, `postal`,
+`datamatrix`, `pdf417`, `micropdf417`, `aztec`, `maxicode`, `dotcode`, `hanxin`,
+`codablockf`, `code16k`, `jabcode`) plus the `wifi`, `contact` and `link`
+helpers. Add `--png` or use a `.png` output path for raster output.
 
 ## Tree Shaking
 
@@ -53,11 +63,12 @@ Import only what you need:
 
 ```ts
 import { barcode, barcodeDataURI, barcodeBase64 } from "etiket/barcode";
-import { qrcode, qrcodeDataURI, qrcodeBase64, qrcodeTerminal } from "etiket/qr";
+import { postal, encodePostal } from "etiket/postal";
+import { qrcode, qrcodeDataURI, qrcodeBase64, qrcodeTerminal, microqr, rmqr } from "etiket/qr";
 import { datamatrix, gs1datamatrix } from "etiket/datamatrix";
-import { pdf417 } from "etiket/pdf417";
+import { pdf417, micropdf417 } from "etiket/pdf417";
 import { aztec } from "etiket/aztec";
-import { barcodePNG, qrcodePNG } from "etiket/png"; // PNG output
+import { barcodePNG, qrcodePNG, postalPNG } from "etiket/png"; // PNG output
 ```
 
 ## Supported Formats
@@ -95,32 +106,59 @@ import { barcodePNG, qrcodePNG } from "etiket/png"; // PNG output
 
 ### 2D Codes
 
-| Format             | Function              | Description                                 |
-| :----------------- | :-------------------- | :------------------------------------------ |
-| **QR Code**        | `qrcode()`            | Versions 1-40, all EC levels, all modes     |
-| **Micro QR**       | `encodeMicroQR()`     | M1-M4 (11x11 to 17x17)                      |
-| **Data Matrix**    | `datamatrix()`        | ECC 200, ASCII/C40/Text auto encoding       |
-| **GS1 DataMatrix** | `gs1datamatrix()`     | FNC1 + AI parsing                           |
-| **PDF417**         | `pdf417()`            | Text/Byte/Numeric, 9 EC levels, ISO-8859-15 |
-| **MicroPDF417**    | `encodeMicroPDF417()` | Compact PDF417 for small items              |
-| **Aztec**          | `aztec()`             | Compact + full-range, no quiet zone         |
-| **MaxiCode**       | `encodeMaxiCode()`    | 33×30 hexagonal, UPS shipping labels        |
-| **rMQR**           | `encodeRMQR()`        | Rectangular Micro QR (R7x43 to R17x139)     |
-| **Codablock F**    | `encodeCodablockF()`  | Stacked Code 128                            |
-| **Code 16K**       | `encodeCode16K()`     | Stacked barcode, 2-16 rows                  |
-| **DotCode**        | `encodeDotCode()`     | Checkerboard dots, high-speed printing      |
-| **Han Xin**        | `encodeHanXin()`      | Chinese market, 84 versions, 4 finders      |
-| **JAB Code**       | `encodeJABCode()`     | Polychrome (4/8 color), ISO/IEC 23634       |
+| Format             | Function          | Description                                 |
+| :----------------- | :---------------- | :------------------------------------------ |
+| **QR Code**        | `qrcode()`        | Versions 1-40, all EC levels, all modes     |
+| **Micro QR**       | `microqr()`       | M1-M4 (11x11 to 17x17)                      |
+| **Data Matrix**    | `datamatrix()`    | ECC 200, ASCII/C40/Text auto encoding       |
+| **GS1 DataMatrix** | `gs1datamatrix()` | FNC1 + AI parsing                           |
+| **PDF417**         | `pdf417()`        | Text/Byte/Numeric, 9 EC levels, ISO-8859-15 |
+| **MicroPDF417**    | `micropdf417()`   | Compact PDF417 for small items              |
+| **Aztec**          | `aztec()`         | Compact + full-range, no quiet zone         |
+| **MaxiCode**       | `maxicode()`      | 33×30 hexagonal, UPS shipping labels        |
+| **rMQR**           | `rmqr()`          | Rectangular Micro QR (R7x43 to R17x139)     |
+| **Codablock F**    | `codablockf()`    | Stacked Code 128                            |
+| **Code 16K**       | `code16k()`       | Stacked barcode, 2-16 rows                  |
+| **DotCode**        | `dotcode()`       | Checkerboard dots, high-speed printing      |
+| **Han Xin**        | `hanxin()`        | Chinese market, 84 versions, 4 finders      |
+| **JAB Code**       | `jabcode()`       | Polychrome (4/8 color), ISO/IEC 23634       |
 
-### 4-State Postal Barcodes
+Each also has a raw encoder (`encodeMicroQR`, `encodeMaxiCode`, …) and, except
+for JAB Code, a `*PNG()` variant.
 
-| Format             | Function                | Description           |
-| :----------------- | :---------------------- | :-------------------- |
-| **RM4SCC**         | `encodeRM4SCC()`        | Royal Mail (UK)       |
-| **KIX**            | `encodeKIX()`           | PostNL (Netherlands)  |
-| **Australia Post** | `encodeAustraliaPost()` | Australia Post        |
-| **Japan Post**     | `encodeJapanPost()`     | Japan Post (Kasutama) |
-| **USPS IMb**       | `encodeIMb()`           | Intelligent Mail (US) |
+### Postal Barcodes
+
+Postal symbologies are height-modulated — the data lives in each bar's vertical
+extent, not its width — so they have their own encoder and renderer.
+
+| Format             | `type`    | Description                   |
+| :----------------- | :-------- | :---------------------------- |
+| **POSTNET**        | `postnet` | USPS ZIP (5, 9 or 11 digits)  |
+| **PLANET**         | `planet`  | USPS PLANET (11 or 13 digits) |
+| **RM4SCC**         | `rm4scc`  | Royal Mail (UK)               |
+| **KIX**            | `kix`     | PostNL (Netherlands)          |
+| **Australia Post** | `auspost` | Australia Post                |
+| **Japan Post**     | `jppost`  | Japan Post (Kasutama)         |
+| **USPS IMb**       | `imb`     | Intelligent Mail (US)         |
+
+```ts
+import { postal, encodePostal, postalPNG } from "etiket";
+
+postal("12345-6789", { type: "postnet" }); // SVG
+postal("SN34RD1A", { type: "rm4scc" });
+postal("12345678", { type: "auspost", fcc: "59" });
+postal("01234567094987654321", { type: "imb", routingCode: "01234567891" });
+
+postalPNG("12345", { type: "postnet" }); // Uint8Array
+
+// Raw bar states: 'T' | 'A' | 'D' | 'F' (4-state), or 1 / 0 (POSTNET, PLANET)
+const bars = encodePostal("SN34RD1A", { type: "rm4scc" });
+```
+
+`barcode()` accepts `postnet` and `planet` and routes them to the postal
+renderer automatically. The per-format raw encoders (`encodeRM4SCC`,
+`encodeKIX`, `encodeAustraliaPost`, `encodeJapanPost`, `encodeIMb`,
+`encodePOSTNET`, `encodePLANET`) remain available.
 
 ## Usage
 
@@ -217,12 +255,44 @@ qrcode("Test", {
 
 ### 2D Codes
 
+Every 2D, stacked and polychrome symbology has a high-level function returning
+SVG:
+
 ```ts
-import { datamatrix, pdf417, aztec } from "etiket";
+import {
+  datamatrix,
+  gs1datamatrix,
+  pdf417,
+  micropdf417,
+  aztec,
+  microqr,
+  rmqr,
+  maxicode,
+  dotcode,
+  hanxin,
+  codablockf,
+  code16k,
+  jabcode,
+} from "etiket";
 
 datamatrix("Hello World");
+gs1datamatrix("(01)12345678901231");
 pdf417("Hello World", { ecLevel: 4, columns: 5 });
+micropdf417("Hello", { columns: 2 });
 aztec("Hello World", { ecPercent: 33 });
+
+microqr("12345", { version: 3 });
+rmqr("Hello", { ecLevel: "H" });
+maxicode("Hello", { mode: 2, postalCode: "123456789", countryCode: 840 });
+dotcode("Hello");
+hanxin("Hello", { ecLevel: 3 });
+
+// Stacked linear symbologies (rows taller than modules are wide)
+codablockf("Hello World", { columns: 8 });
+code16k("Hello World");
+
+// Polychrome
+jabcode("Hello", { colors: 8 });
 ```
 
 ## Output Formats
@@ -248,10 +318,33 @@ const uri = qrcodeDataURI("Hello"); // data:image/svg+xml,...
 const b64 = qrcodeBase64("Hello"); // data:image/svg+xml;base64,...
 const term = qrcodeTerminal("Hello"); // Terminal (UTF-8 blocks)
 
-// PNG (zero-dependency raster output)
+// PNG (zero-dependency raster output — no canvas, no native deps)
 const png = qrcodePNG("Hello"); // Uint8Array
 const pngUri = qrcodePNGDataURI("Hello"); // data:image/png;base64,...
 const barPng = barcodePNG("12345", { type: "code128" }); // Uint8Array
+```
+
+PNG output is available for every format except JAB Code, each with a matching
+`*PNGDataURI` variant:
+
+`barcodePNG`, `postalPNG`, `qrcodePNG`, `microqrPNG`, `rmqrPNG`,
+`datamatrixPNG`, `gs1datamatrixPNG`, `pdf417PNG`, `micropdf417PNG`, `aztecPNG`,
+`maxicodePNG`, `dotcodePNG`, `hanxinPNG`, `codablockfPNG`, `code16kPNG`.
+
+### Raw Encoding
+
+`encode()` returns the underlying data for any symbology without rendering:
+
+```ts
+import { encode } from "etiket";
+
+const result = encode("Hello", { type: "qr", qr: { ecLevel: "H" } });
+
+if (result.type === "1d")
+  result.bars; // bar/space widths
+else if (result.type === "2d")
+  result.matrix; // boolean[][]
+else result.bars; // postal bar states
 ```
 
 ## Convenience Helpers
