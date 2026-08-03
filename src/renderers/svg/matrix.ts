@@ -4,21 +4,19 @@
  */
 
 import type { SVGAccessibilityOptions } from "./types";
-import { escapeAttr } from "./utils";
-
-function escapeXml(str: string): string {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
+import { escapeAttr, escapeXml } from "./utils";
 
 export interface MatrixSVGOptions extends SVGAccessibilityOptions {
   size?: number;
   color?: string;
   background?: string;
   margin?: number; // in modules
+  /**
+   * Height of each matrix row as a multiple of the module width. Default 1
+   * (square modules). Stacked linear symbologies such as Code 16K,
+   * Codablock-F, PDF417 and MicroPDF417 use taller rows.
+   */
+  rowHeight?: number;
 }
 
 /**
@@ -30,6 +28,7 @@ export function renderMatrixSVG(matrix: boolean[][], options: MatrixSVGOptions =
     color = "#000",
     background = "#fff",
     margin = 2,
+    rowHeight = 1,
     ariaLabel,
     role = "img",
     title,
@@ -41,10 +40,11 @@ export function renderMatrixSVG(matrix: boolean[][], options: MatrixSVGOptions =
   const maxDim = Math.max(rowCount, colCount);
   const totalModules = maxDim + margin * 2;
   const moduleSize = size / totalModules;
+  const moduleHeight = moduleSize * rowHeight;
 
   // For rectangular matrices, compute actual SVG dimensions
   const svgWidth = (colCount + margin * 2) * moduleSize;
-  const svgHeight = (rowCount + margin * 2) * moduleSize;
+  const svgHeight = rowCount * moduleHeight + margin * 2 * moduleSize;
 
   // Build SVG opening tag with accessibility attributes
   let svgOpen = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${svgWidth} ${svgHeight}" width="${svgWidth}" height="${svgHeight}" role="${escapeAttr(role)}"`;
@@ -73,8 +73,8 @@ export function renderMatrixSVG(matrix: boolean[][], options: MatrixSVGOptions =
     for (let c = 0; c < colCount; c++) {
       if (matrix[r]![c]) {
         const x = (c + margin) * moduleSize;
-        const y = (r + margin) * moduleSize;
-        pathParts.push(`M${x},${y}h${moduleSize}v${moduleSize}h-${moduleSize}z`);
+        const y = margin * moduleSize + r * moduleHeight;
+        pathParts.push(`M${x},${y}h${moduleSize}v${moduleHeight}h-${moduleSize}z`);
       }
     }
   }
@@ -97,7 +97,7 @@ export function renderMaxiCodeSVG(matrix: boolean[][], options: MatrixSVGOptions
     size = 400,
     color = "#000",
     background = "#fff",
-    margin = 4,
+    margin = 2,
     ariaLabel,
     role = "img",
     title,
@@ -109,11 +109,11 @@ export function renderMaxiCodeSVG(matrix: boolean[][], options: MatrixSVGOptions
   const pitch = size / cols; // module-to-module horizontal distance
   const modH = pitch * 0.866; // sqrt(3)/2 for hex vertical spacing
   const r = pitch * 0.55; // module radius (0.55 = touching, verified scannable with rxing)
-  const pad = pitch * 2; // quiet zone
+  const pad = pitch * margin; // quiet zone, in modules
   const svgW = cols * pitch + pitch / 2 + pad * 2;
   const svgH = rows * modH + pad * 2;
 
-  let svgOpen = `<svg xmlns="http://www.w3.org/2000/svg" width="${Math.round(svgW)}" height="${Math.round(svgH)}" role="${escapeAttr(role)}"`;
+  let svgOpen = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${Math.round(svgW)} ${Math.round(svgH)}" width="${Math.round(svgW)}" height="${Math.round(svgH)}" role="${escapeAttr(role)}"`;
   if (ariaLabel) svgOpen += ` aria-label="${escapeAttr(ariaLabel)}"`;
   svgOpen += ">";
 

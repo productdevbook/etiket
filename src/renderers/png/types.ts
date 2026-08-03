@@ -15,6 +15,25 @@ export interface BarcodePNGOptions {
   background?: string;
 }
 
+export interface PostalPNGOptions {
+  /** Bar width in pixels (default: 2) */
+  scale?: number;
+  /** Centre-to-centre distance between bars in pixels (default: scale * 2) */
+  pitch?: number;
+  /** Full-bar height in pixels (default: 40) */
+  height?: number;
+  /** Quiet zone in pixels (default: 10) */
+  margin?: number;
+  /** Centre tracker band height as a fraction of total height, 4-state (default: 1/3) */
+  trackerRatio?: number;
+  /** Short bar height as a fraction of total height, POSTNET/PLANET (default: 0.4) */
+  shortRatio?: number;
+  /** Foreground color as hex string (default: "#000000") */
+  color?: string;
+  /** Background color as hex string (default: "#ffffff") */
+  background?: string;
+}
+
 export interface MatrixPNGOptions {
   /** Pixels per module (default: 10) */
   moduleSize?: number;
