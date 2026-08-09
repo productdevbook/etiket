@@ -278,7 +278,11 @@ gs1composite("databar-omni", "(01)09521234543213|(11)990102")
 `gs1composite()` is the odd one out: it takes the linear symbology as its first
 argument and a `"<linear data>|<composite data>"` string as its second, and
 returns the complete symbol — the linear component with its linkage flag set,
-the separator, and the 2D component above it.
+the separator, and the 2D component above it. The primary can be `ean13`,
+`ean8`, `upca`, `upce`, `gs1-128` or any of the DataBar family: `databar-omni`,
+`databar-truncated`, `databar-limited`, `databar-stacked`,
+`databar-stacked-omni`, `databar-expanded` and `databar-expanded-stacked`.
+Only a `gs1-128` primary can carry a CC-C component.
 
 MaxiCode modes 2 and 3 carry a structured primary message and need the postal
 fields; a malformed postal code is an error rather than a silently mangled
@@ -511,23 +515,23 @@ without etiket's renderer.
 
 ### Linear
 
-| Function                                            | Returns                                |
-| :-------------------------------------------------- | :------------------------------------- |
-| `encodeCode128(text, options?)`                     | `number[]`                             |
-| `encodeEAN13(text)` / `encodeEAN8(text)`            | `{ bars: number[]; guards: number[] }` |
-| `encodeUPCA(text)` / `encodeUPCE(text)`             | `{ bars: number[]; guards: number[] }` |
-| `encodeEAN2(text)` / `encodeEAN5(text)`             | `number[]`                             |
-| `encodeCode39(text, options?)`                      | `number[]`                             |
-| `encodeCode39Extended(text, options?)`              | `number[]`                             |
-| `encodeCode93(text)` / `encodeCode93Extended(text)` | `number[]`                             |
-| `encodeITF(text)` / `encodeITF14(text)`             | `number[]`                             |
-| `encodeCodabar(text, options?)`                     | `number[]`                             |
-| `encodeMSI(text, options?)`                         | `number[]`                             |
-| `encodePharmacode(value)`                           | `number[]` — takes a **number**        |
-| `encodeCode11(text)`                                | `number[]`                             |
-| `encodeGS1128(text)`                                | `number[]`                             |
-| `encodeIdentcode(text)` / `encodeLeitcode(text)`    | `number[]`                             |
-| `encodePlessey(text)`                               | `number[]`                             |
+| Function                                            | Returns                                                |
+| :-------------------------------------------------- | :----------------------------------------------------- |
+| `encodeCode128(text, options?)`                     | `number[]`                                             |
+| `encodeEAN13(text)` / `encodeEAN8(text)`            | `{ bars: number[]; guards: number[] }`                 |
+| `encodeUPCA(text)` / `encodeUPCE(text)`             | `{ bars: number[]; guards: number[] }`                 |
+| `encodeEAN2(text)` / `encodeEAN5(text)`             | `number[]`                                             |
+| `encodeCode39(text, options?)`                      | `number[]`                                             |
+| `encodeCode39Extended(text, options?)`              | `number[]`                                             |
+| `encodeCode93(text)` / `encodeCode93Extended(text)` | `number[]`                                             |
+| `encodeITF(text)` / `encodeITF14(text)`             | `number[]`                                             |
+| `encodeCodabar(text, options?)`                     | `number[]`                                             |
+| `encodeMSI(text, options?)`                         | `number[]`                                             |
+| `encodePharmacode(value)`                           | `number[]` — takes a **number**                        |
+| `encodeCode11(text)`                                | `number[]`                                             |
+| `encodeGS1128(text, options?)`                      | `number[]` — `options.linkage` sets the composite flag |
+| `encodeIdentcode(text)` / `encodeLeitcode(text)`    | `number[]`                                             |
+| `encodePlessey(text)`                               | `number[]`                                             |
 
 ```ts
 import {

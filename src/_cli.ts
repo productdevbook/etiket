@@ -76,6 +76,7 @@ import type {
 } from "./renderers/svg/types"
 import type { ErrorCorrectionLevel, QRCodeOptions } from "./encoders/qr/types"
 import type { DataMatrixShape } from "./encoders/datamatrix/tables"
+import { COMPOSITE_LINEAR_TYPES } from "./encoders/gs1-composite"
 import type { CompositeLinearType } from "./encoders/gs1-composite"
 
 /** Symbologies reachable through `etiket barcode`. */
@@ -1087,8 +1088,7 @@ const compositeCommand = defineCommand({
   args: {
     linear: {
       type: "positional",
-      description:
-        "Primary symbology: databar-omni, databar-truncated, databar-expanded, ean13, ean8, upca, upce",
+      description: `Primary symbology: ${COMPOSITE_LINEAR_TYPES.join(", ")}`,
       required: true,
     },
     data: {
@@ -1108,17 +1108,10 @@ const compositeCommand = defineCommand({
       version?: string
       columns?: string
     }
-    const linearTypes = [
-      "databar-omni",
-      "databar-truncated",
-      "databar-expanded",
-      "ean13",
-      "ean8",
-      "upca",
-      "upce",
-    ]
-    if (!linearTypes.includes(values.linear)) {
-      consola.error(`Unknown composite primary "${values.linear}" — use ${linearTypes.join(", ")}`)
+    if (!COMPOSITE_LINEAR_TYPES.includes(values.linear as CompositeLinearType)) {
+      consola.error(
+        `Unknown composite primary "${values.linear}" — use ${COMPOSITE_LINEAR_TYPES.join(", ")}`,
+      )
       process.exitCode = 1
       return
     }

@@ -26,10 +26,15 @@ import { CapacityError, InvalidInputError } from "../errors"
 import { encodeEAN13, encodeEAN8 } from "./ean"
 import {
   encodeGS1DataBarExpanded,
+  encodeGS1DataBarLimited,
   encodeGS1DataBarOmni,
   encodeGS1DataBarTruncated,
+  gs1DataBarExpandedStackedRows,
+  gs1DataBarStackedOmniRows,
+  gs1DataBarStackedRows,
 } from "./gs1-databar"
-import { parseAIString } from "./gs1-128"
+import type { StackedRows } from "./gs1-databar"
+import { encodeGS1128, parseAIString } from "./gs1-128"
 import {
   microPDF417CodewordModules,
   microPDF417RAPModules,
@@ -44,15 +49,24 @@ import { encodeUPCA, encodeUPCE } from "./upc"
 /** Composite component version. */
 export type CompositeType = "CC-A" | "CC-B" | "CC-C"
 
+/** Every linear symbology a composite component can sit above. */
+export const COMPOSITE_LINEAR_TYPES = [
+  "ean13",
+  "ean8",
+  "upca",
+  "upce",
+  "gs1-128",
+  "databar-omni",
+  "databar-truncated",
+  "databar-limited",
+  "databar-stacked",
+  "databar-stacked-omni",
+  "databar-expanded",
+  "databar-expanded-stacked",
+] as const
+
 /** Linear symbology a composite component can sit above. */
-export type CompositeLinearType =
-  | "ean13"
-  | "ean8"
-  | "upca"
-  | "upce"
-  | "databar-omni"
-  | "databar-truncated"
-  | "databar-expanded"
+export type CompositeLinearType = (typeof COMPOSITE_LINEAR_TYPES)[number]
 
 export interface GS1CompositeOptions {
   /**
@@ -63,7 +77,7 @@ export interface GS1CompositeOptions {
   /** Data columns of the 2D component: 2-4 for CC-A/CC-B, up to 30 for CC-C. */
   columns?: number
   /** Linear symbology the component will sit above; sets the default columns. */
-  linear?: CompositeLinearType | "gs1-128"
+  linear?: CompositeLinearType
   /** Width in modules of a GS1-128 linear component; required for CC-C. */
   linearWidth?: number
 }
@@ -96,8 +110,13 @@ export interface GS1CompositeSymbolResult {
   composite: boolean[][]
   /** The separator rows on their own */
   separator: boolean[][]
-  /** Bar/space widths of the linear component, bar first */
+  /**
+   * Bar/space widths of the linear component, bar first. Empty for the stacked
+   * primaries, which have no single row of bars; `linearRows` carries those.
+   */
   linear: number[]
+  /** Module rows of a stacked primary component, absent for the others */
+  linearRows?: boolean[][]
   /** Column of `matrix` the linear component starts at */
   linearOffset: number
   /** Height in modules of the linear component */
@@ -152,7 +171,7 @@ const CCA_METRICS: [number, number, number, number, number, number][] = [
 ]
 
 /** Default 2D data columns per linear symbology (GS1 General Specifications). */
-const LINEAR_COLUMNS: Record<CompositeLinearType | "gs1-128", number> = {
+const LINEAR_COLUMNS: Record<CompositeLinearType, number> = {
   ean13: 4,
   ean8: 3,
   upca: 4,
@@ -160,7 +179,11 @@ const LINEAR_COLUMNS: Record<CompositeLinearType | "gs1-128", number> = {
   "gs1-128": 4,
   "databar-omni": 4,
   "databar-truncated": 4,
+  "databar-limited": 3,
+  "databar-stacked": 2,
+  "databar-stacked-omni": 2,
   "databar-expanded": 4,
+  "databar-expanded-stacked": 4,
 }
 
 /**
@@ -312,6 +335,22 @@ function capacityRemainder(state: CompositeState, used: number): number {
 }
 
 /**
+ * CC-C data columns for a GS1-128 `linearWidth` modules wide.
+ *
+ * CC-C sits over a GS1-128 and matches its width: 68 modules is the narrowest
+ * linear component that can carry one, and every further column needs the 17
+ * modules one PDF417 codeword takes.
+ */
+function ccCColumns(linearWidth: number): number {
+  if (linearWidth < 68) {
+    throw new CapacityError(
+      "GS1 Composite: CC-C needs a GS1-128 linear component at least 68 modules wide",
+    )
+  }
+  return Math.max(1, Math.floor((linearWidth - 52) / 17))
+}
+
+/**
  * Bits left over once the symbol is rounded up to the next valid size,
  * upgrading the composite version when the data no longer fits.
  */
@@ -325,7 +364,7 @@ function remainingBits(state: CompositeState, used: number): number {
     }
     if (state.version === "CC-B" && state.linearWidth >= 68) {
       state.version = "CC-C"
-      state.columns = Math.max(1, Math.floor((state.linearWidth - 52) / 17))
+      state.columns = ccCColumns(state.linearWidth)
       continue
     }
     return -1
@@ -934,8 +973,18 @@ export function encodeGS1Composite(
     throw new InvalidInputError(`Invalid composite type: ${String(requested)}`)
   }
 
+  if (requested === "CC-C" && resolved.linear && resolved.linear !== "gs1-128") {
+    throw new InvalidInputError("GS1 Composite: only a GS1-128 primary can carry a CC-C component")
+  }
+
   const linearWidth = resolved.linearWidth ?? -1
-  const defaultColumns = resolved.columns ?? (resolved.linear ? LINEAR_COLUMNS[resolved.linear] : 2)
+  const defaultColumns =
+    resolved.columns ??
+    (requested === "CC-C" && resolved.linear === "gs1-128"
+      ? ccCColumns(linearWidth)
+      : resolved.linear
+        ? LINEAR_COLUMNS[resolved.linear]
+        : 2)
 
   const state: CompositeState = {
     version: requested,
@@ -993,6 +1042,13 @@ function result(matrix: boolean[][], state: CompositeState): GS1CompositeResult 
 }
 
 // ─── Public API: complete symbol ────────────────────────────────────────────
+
+/** Total width in modules of a bar/space width sequence. */
+function sum(widths: number[]): number {
+  let total = 0
+  for (const width of widths) total += width
+  return total
+}
 
 /** Bar/space widths, bar first, expanded to modules. */
 function barsToModules(bars: number[]): boolean[] {
@@ -1065,12 +1121,29 @@ function stripGTINPrefix(data: string): string {
   return data.startsWith("(01)") ? data.slice(4) : data
 }
 
+/** Rows of a stacked linear component, or null when the primary is one row. */
+function encodeStackedLinear(linearType: CompositeLinearType, data: string): StackedRows | null {
+  switch (linearType) {
+    case "databar-stacked":
+      return gs1DataBarStackedRows(stripGTINPrefix(data), { linkage: true })
+    case "databar-stacked-omni":
+      return gs1DataBarStackedOmniRows(stripGTINPrefix(data), { linkage: true })
+    case "databar-expanded-stacked":
+      return gs1DataBarExpandedStackedRows(data, { linkage: true })
+    default:
+      return null
+  }
+}
+
 /** Bar widths and rendered height of the linear component. */
 function encodeLinear(
   linearType: CompositeLinearType,
   data: string,
+  type: CompositeType,
 ): { bars: number[]; height: number } {
   switch (linearType) {
+    case "gs1-128":
+      return { bars: encodeGS1128(data, { linkage: type === "CC-C" ? "C" : "A" }), height: 32 }
     case "ean13":
       return { bars: encodeEAN13(data).bars, height: 74 }
     case "ean8":
@@ -1086,6 +1159,8 @@ function encodeLinear(
         bars: encodeGS1DataBarTruncated(stripGTINPrefix(data), { linkage: true }),
         height: 13,
       }
+    case "databar-limited":
+      return { bars: encodeGS1DataBarLimited(stripGTINPrefix(data), { linkage: true }), height: 10 }
     case "databar-expanded":
       return { bars: encodeGS1DataBarExpanded(data, { linkage: true }), height: 34 }
     default:
@@ -1131,10 +1206,25 @@ export function encodeGS1CompositeSymbol(
     throw new InvalidInputError("GS1 Composite: both components must carry data")
   }
 
-  const columns = options.columns ?? LINEAR_COLUMNS[linearType]
-  const encoded = encodeGS1Composite(compositeData, { ...options, columns, linear: linearType })
-  const { bars, height } = encodeLinear(linearType, linearData)
-  const linearModules = barsToModules(bars)
+  // A GS1-128 is the only linear component whose width the 2D component has to
+  // match, and the linkage flag it carries depends on the version the data ends
+  // up needing — so measure it first, then encode it again once that is known.
+  const linearWidth =
+    linearType === "gs1-128" ? sum(encodeGS1128(linearData, { linkage: "A" })) : -1
+  const encoded = encodeGS1Composite(compositeData, { ...options, linear: linearType, linearWidth })
+  const stacked = encodeStackedLinear(linearType, linearData)
+  const { bars, height } = stacked
+    ? { bars: [], height: sum(stacked.heights) }
+    : encodeLinear(linearType, linearData, encoded.type)
+  const linearRows: boolean[][] = stacked
+    ? stacked.rows.map((row) => row.map((m) => m === 1))
+    : [barsToModules(bars)]
+  const linearHeights = stacked ? stacked.heights : [height]
+
+  // The separator is drawn against the row of the linear component it touches,
+  // which is the top row of a stacked one.
+  const linearModules = linearRows[0]!
+  const linearWidthModules = linearModules.length
 
   const composite = encoded.composite
   const compositeWidth = encoded.cols
@@ -1145,7 +1235,43 @@ export function encodeGS1CompositeSymbol(
   let width: number
   let compositeOffset = 0
 
-  if (linearType.startsWith("databar")) {
+  if (stacked) {
+    // A stacked primary already carries its leading guard space, so the
+    // separator runs against its top row directly.
+    const top = stacked.rows[0]!
+    const expandedStacked = linearType === "databar-expanded-stacked"
+    const finders = expandedStacked ? expandedFinders(top.length) : [18]
+    const row = databarSeparator(top, finders, !expandedStacked)
+
+    if (expandedStacked) {
+      // The 2D component is centred over an Expanded Stacked primary.
+      width = top.length
+      compositeOffset = Math.ceil((width - compositeWidth) / 2)
+    } else {
+      // A stacked Omnidirectional primary is narrower than its 2D component,
+      // which overhangs it to the right by one module.
+      width = compositeWidth + 1
+      compositeOffset = 1
+    }
+    separatorOffset = 0
+    linearOffset = 0
+    separator = [padRow(row, 0, Math.max(0, width - row.length))]
+  } else if (linearType === "databar-limited") {
+    // DataBar Limited has no finder pattern along its top edge, so its
+    // separator is a plain complement of the linear row; the three modules at
+    // the left and the nine at the right stay light (ISO/IEC 24723 5.3.3). The
+    // 2D component sits six modules in from the right hand end.
+    const bottom = [0, ...linearModules.map((m) => (m ? 1 : 0))]
+    const row = bottom.map((m) => m === 0)
+    row.fill(false, 0, 3)
+    row.fill(false, row.length - 9)
+
+    width = Math.max(compositeWidth + 6, bottom.length)
+    compositeOffset = width - 6 - compositeWidth
+    separatorOffset = width - bottom.length
+    linearOffset = separatorOffset + 1
+    separator = [padRow(row, separatorOffset, 0)]
+  } else if (linearType.startsWith("databar")) {
     // The DataBar separator is derived from the linear row itself, which starts
     // with a one module guard space that the bar widths do not carry.
     const bottom = [0, ...linearModules.map((m) => (m ? 1 : 0))]
@@ -1163,24 +1289,52 @@ export function encodeGS1CompositeSymbol(
       linearOffset = 5
     }
     separator = [padRow(row, separatorOffset, Math.max(0, width - separatorOffset - row.length))]
+  } else if (linearType === "gs1-128") {
+    // The GS1-128 separator is the plain complement of the linear row. The 2D
+    // component is right aligned on a symbol character boundary left of centre,
+    // which keeps it clear of the human readable text; a CC-C is wider than the
+    // linear component and overhangs it by seven modules instead.
+    const characters = Math.floor((linearWidthModules - 2) / 11)
+    const inset = Math.floor((characters - 9) / 2)
+    const rightEdge = (characters - inset - 1) * 11 + 10 + (inset === 0 ? 2 : 0)
+    const start = encoded.type === "CC-C" ? -7 : rightEdge - compositeWidth
+
+    compositeOffset = Math.max(0, start)
+    linearOffset = Math.max(0, -start)
+    separatorOffset = linearOffset
+    width = Math.max(compositeOffset + compositeWidth, linearOffset + linearWidthModules)
+    separator = [
+      padRow(
+        linearModules.map((m) => !m),
+        separatorOffset,
+        Math.max(0, width - separatorOffset - linearWidthModules),
+      ),
+    ]
   } else {
-    separatorOffset = Math.max(0, compositeWidth - (linearModules.length + 2))
+    separatorOffset = Math.max(0, compositeWidth - (linearWidthModules + 2))
     linearOffset = separatorOffset + 1
-    width = Math.max(compositeWidth, linearOffset + linearModules.length)
-    separator = guardSeparator(linearModules.length).map((row) =>
+    width = Math.max(compositeWidth, linearOffset + linearWidthModules)
+    separator = guardSeparator(linearWidthModules).map((row) =>
       padRow(row, separatorOffset, Math.max(0, width - separatorOffset - row.length)),
     )
   }
 
+  const pad = (row: boolean[], left: number): boolean[] =>
+    padRow(row, left, Math.max(0, width - left - row.length))
+
   const matrix = [
-    ...composite.map((row) =>
-      padRow(row, compositeOffset, Math.max(0, width - compositeOffset - row.length)),
-    ),
+    ...composite.map((row) => pad(row, compositeOffset)),
     ...separator,
-    padRow(linearModules, linearOffset, Math.max(0, width - linearOffset - linearModules.length)),
+    ...linearRows.map((row) => pad(row, linearOffset)),
   ]
 
-  const rowHeights = [...composite.map(() => 2), ...separator.map(() => 1), height]
+  // CC-A and CC-B are MicroPDF417 rows, two modules high; CC-C is PDF417, three.
+  const compositeRowHeight = encoded.type === "CC-C" ? 3 : 2
+  const rowHeights = [
+    ...composite.map(() => compositeRowHeight),
+    ...separator.map(() => 1),
+    ...linearHeights,
+  ]
 
   return {
     linearType,
@@ -1191,6 +1345,7 @@ export function encodeGS1CompositeSymbol(
     composite,
     separator,
     linear: bars,
+    ...(stacked ? { linearRows } : {}),
     linearOffset,
     linearHeight: height,
   }

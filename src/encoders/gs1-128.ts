@@ -393,10 +393,33 @@ function encodeCodeC(text: string, pos: number, codes: number[]): number {
 }
 
 /**
+ * Composite linkage flag, appended as the last symbol character before the
+ * check character (ISO/IEC 24723 table 3). The value depends on the code set in
+ * force at the end of the message: it is a code set switch character that the
+ * decoder never acts on, because the symbol ends immediately after it.
+ */
+export type GS1128Linkage = "A" | "C"
+
+/** Linkage flag symbol value by code set in force, then flag. */
+const LINKAGE_VALUE: Record<"A" | "B" | "C", Record<GS1128Linkage, number>> = {
+  A: { A: CODE_B, C: CODE_C },
+  B: { A: CODE_C, C: CODE_A },
+  C: { A: CODE_A, C: CODE_B },
+}
+
+export interface GS1128Options {
+  /**
+   * Set the composite linkage flag. `"A"` signals a CC-A or CC-B component,
+   * `"C"` a CC-C component; both make the symbol one character wider.
+   */
+  linkage?: GS1128Linkage
+}
+
+/**
  * Build Code 128 symbol values from data string with embedded FNC1 markers
  * FNC1 is represented as \xF1 (241) in the internal string
  */
-function buildCodes(data: string): number[] {
+function buildCodes(data: string, linkage?: GS1128Linkage): number[] {
   const codes: number[] = []
   let pos = 0
 
@@ -409,7 +432,10 @@ function buildCodes(data: string): number[] {
 
   const numericRun = countNumericFromPos(data, analyzePos)
 
-  if (numericRun >= 4) {
+  // The leading FNC1 is one symbol character in either code set, so a two digit
+  // AI costs the same started in C (pair, then latch out) as in B (two
+  // characters) and anything longer is cheaper in C.
+  if (numericRun >= 2) {
     codes.push(START_C)
   } else {
     codes.push(START_B)
@@ -434,8 +460,13 @@ function buildCodes(data: string): number[] {
         currentSet = "B"
       }
     } else {
+      // Latching into Code C costs a symbol character, so it only pays for six
+      // digits or more, or four that run to the end of the data. An odd run
+      // leaves a digit over: encode that one first so the Code C stretch stays
+      // even, which is what the reference implementation does.
       const numRun = countNumericFromPos(data, pos)
-      if (numRun >= 4 || (numRun >= 2 && pos + numRun >= data.length)) {
+      const worthSwitching = numRun >= 6 || (numRun >= 4 && pos + numRun >= data.length)
+      if (worthSwitching && numRun % 2 === 0) {
         codes.push(CODE_C)
         currentSet = "C"
         pos = encodeCodeC(data, pos, codes)
@@ -461,6 +492,8 @@ function buildCodes(data: string): number[] {
     }
   }
 
+  if (linkage) codes.push(LINKAGE_VALUE[currentSet][linkage])
+
   // Calculate checksum
   let checksum = codes[0]!
   for (let i = 1; i < codes.length; i++) {
@@ -479,9 +512,10 @@ function buildCodes(data: string): number[] {
  * 2. Plain string (encoded as-is with FNC1 start)
  *
  * @param text - Data string to encode
+ * @param options - Composite linkage flag
  * @returns Array of bar widths (alternating bar/space)
  */
-export function encodeGS1128(text: string): number[] {
+export function encodeGS1128(text: string, options: GS1128Options = {}): number[] {
   if (text.length === 0) {
     throw new InvalidInputError("GS1-128 input must not be empty")
   }
@@ -519,7 +553,7 @@ export function encodeGS1128(text: string): number[] {
   }
 
   // Build Code 128 symbol values
-  const codes = buildCodes(data)
+  const codes = buildCodes(data, options.linkage)
 
   // Convert to bar widths
   const bars: number[] = []

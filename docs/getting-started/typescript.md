@@ -298,22 +298,33 @@ encodePDF417("segment one", { macro: block }).rows > 0 // true
 
 ### 1D encoders
 
-| Type                | Definition                                               |
-| :------------------ | :------------------------------------------------------- |
-| `Code128Charset`    | `"auto" \| "A" \| "B" \| "C"`                            |
-| `Code128Options`    | `{ charset?: Code128Charset }`                           |
-| `MSICheckDigitType` | `"mod10" \| "mod11" \| "mod1010" \| "mod1110" \| "none"` |
+| Type                | Definition                                                   |
+| :------------------ | :----------------------------------------------------------- |
+| `Code128Charset`    | `"auto" \| "A" \| "B" \| "C"`                                |
+| `Code128Options`    | `{ charset?: Code128Charset }`                               |
+| `MSICheckDigitType` | `"mod10" \| "mod11" \| "mod1010" \| "mod1110" \| "none"`     |
+| `GS1128Linkage`     | `"A" \| "C"` — which composite component the symbol links to |
+| `GS1128Options`     | `{ linkage?: GS1128Linkage }`                                |
 
 ```ts
-import type { Code128Charset, Code128Options, MSICheckDigitType } from "etiket"
-import { encodeCode128, encodeMSI } from "etiket"
+import type {
+  Code128Charset,
+  Code128Options,
+  GS1128Linkage,
+  GS1128Options,
+  MSICheckDigitType,
+} from "etiket"
+import { encodeCode128, encodeGS1128, encodeMSI } from "etiket"
 
 const charset: Code128Charset = "C"
 const opts: Code128Options = { charset }
 const check: MSICheckDigitType = "mod1010"
+const linkage: GS1128Linkage = "A"
+const gs1Opts: GS1128Options = { linkage }
 
 encodeCode128("12345678", opts)
 encodeMSI("1234", { checkDigit: check })
+encodeGS1128("(01)09501101020917", gs1Opts)
 ```
 
 ## Result Types

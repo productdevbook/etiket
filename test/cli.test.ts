@@ -831,6 +831,18 @@ describe("gs1composite", () => {
     expect(Array.from(png.slice(0, 4))).toEqual([137, 80, 78, 71])
   })
 
+  it.each([
+    ["gs1-128", "(01)03612345678904|(10)LOT42"],
+    ["databar-limited", "01234567890128|(10)LOT42"],
+    ["databar-stacked", "01234567890128|(10)LOT42"],
+    ["databar-stacked-omni", "01234567890128|(10)LOT42"],
+    ["databar-expanded-stacked", "(01)01234567890128(3103)000189|(10)LOT42"],
+    ["ean13", "590123412345|(10)LOT42"],
+  ])("writes a %s composite", async (linear, data) => {
+    const svg = await runToFile(["gs1composite", linear, data], `${linear}.svg`)
+    expect(svg).toContain("<svg")
+  })
+
   it("rejects an unknown primary symbology", async () => {
     expect(await runExpectingFailure(["gs1composite", "nope", "0123|(10)X"])).toBe(1)
   })

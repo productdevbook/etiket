@@ -1262,6 +1262,25 @@ function pushRow(matrix: boolean[][], row: number[], count = 1): void {
 }
 
 /**
+ * A stacked symbol as distinct rows plus the height in modules of each one.
+ *
+ * The public encoders expand this to one entry per module row; a composite
+ * symbol needs the unexpanded form, because it stacks its own rows on top and
+ * carries the heights alongside.
+ */
+export interface StackedRows {
+  rows: number[][]
+  heights: number[]
+}
+
+/** One matrix entry per module row. */
+function expandRows({ rows, heights }: StackedRows): boolean[][] {
+  const matrix: boolean[][] = []
+  for (let i = 0; i < rows.length; i++) pushRow(matrix, rows[i]!, heights[i])
+  return matrix
+}
+
+/**
  * Blank the four modules at each end of a separator, which always stay light
  * (ISO/IEC 24724 4.3.2).
  */
@@ -1318,6 +1337,11 @@ export function encodeGS1DataBarStacked(
   gtin: string,
   options: GS1DataBarOptions = {},
 ): boolean[][] {
+  return expandRows(gs1DataBarStackedRows(gtin, options))
+}
+
+/** Rows of a GS1 DataBar Stacked symbol; see {@link encodeGS1DataBarStacked}. */
+export function gs1DataBarStackedRows(gtin: string, options: GS1DataBarOptions = {}): StackedRows {
   const { top, bottom } = omniStackedRows(gtin, "Stacked", options.linkage)
 
   const separator = Array.from<number>({ length: OMN_STACKED_WIDTH }).fill(0)
@@ -1326,11 +1350,7 @@ export function encodeGS1DataBarStacked(
   }
   padSeparator(separator)
 
-  const matrix: boolean[][] = []
-  pushRow(matrix, top, 5)
-  pushRow(matrix, separator)
-  pushRow(matrix, bottom, 7)
-  return matrix
+  return { rows: [top, separator, bottom], heights: [5, 1, 7] }
 }
 
 /**
@@ -1346,6 +1366,14 @@ export function encodeGS1DataBarStackedOmni(
   gtin: string,
   options: GS1DataBarOptions = {},
 ): boolean[][] {
+  return expandRows(gs1DataBarStackedOmniRows(gtin, options))
+}
+
+/** Rows of a Stacked Omnidirectional symbol; see {@link encodeGS1DataBarStackedOmni}. */
+export function gs1DataBarStackedOmniRows(
+  gtin: string,
+  options: GS1DataBarOptions = {},
+): StackedRows {
   const { top, bottom } = omniStackedRows(gtin, "Stacked Omnidirectional", options.linkage)
 
   const above = top.map((module) => 1 - module)
@@ -1366,13 +1394,10 @@ export function encodeGS1DataBarStackedOmni(
     }
   }
 
-  const matrix: boolean[][] = []
-  pushRow(matrix, top, OMN_STACKED_OMNI_HEIGHT)
-  pushRow(matrix, above)
-  pushRow(matrix, middle)
-  pushRow(matrix, below)
-  pushRow(matrix, bottom, OMN_STACKED_OMNI_HEIGHT)
-  return matrix
+  return {
+    rows: [top, above, middle, below, bottom],
+    heights: [OMN_STACKED_OMNI_HEIGHT, 1, 1, 1, OMN_STACKED_OMNI_HEIGHT],
+  }
 }
 
 /** Module positions of the finder patterns within an Expanded Stacked row */
@@ -1401,6 +1426,14 @@ export function encodeGS1DataBarExpandedStacked(
   data: string,
   options: GS1DataBarOptions & { segments?: number } = {},
 ): boolean[][] {
+  return expandRows(gs1DataBarExpandedStackedRows(data, options))
+}
+
+/** Rows of an Expanded Stacked symbol; see {@link encodeGS1DataBarExpandedStacked}. */
+export function gs1DataBarExpandedStackedRows(
+  data: string,
+  options: GS1DataBarOptions & { segments?: number } = {},
+): StackedRows {
   if (data.length === 0) {
     throw new InvalidInputError("GS1 DataBar Expanded Stacked: data must not be empty")
   }
@@ -1464,14 +1497,18 @@ export function encodeGS1DataBarExpandedStacked(
   for (let i = 0; i < width; i++) between[i] = i % 2
   padSeparator(between)
 
-  const matrix: boolean[][] = []
+  const out: StackedRows = { rows: [], heights: [] }
+  const push = (row: number[], height = 1): void => {
+    out.rows.push(row)
+    out.heights.push(height)
+  }
   for (let r = 0; r < rows.length; r++) {
-    if (r !== 0) pushRow(matrix, separators[r]!)
-    pushRow(matrix, rows[r]!, EXP_STACKED_HEIGHT)
+    if (r !== 0) push(separators[r]!)
+    push(rows[r]!, EXP_STACKED_HEIGHT)
     if (r !== rows.length - 1) {
-      pushRow(matrix, separators[r]!)
-      pushRow(matrix, between)
+      push(separators[r]!)
+      push(between)
     }
   }
-  return matrix
+  return out
 }

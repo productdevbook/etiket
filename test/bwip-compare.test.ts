@@ -43,6 +43,7 @@ import {
   encodeCode93,
   encodeDotCode,
   encodeEAN13,
+  encodeGS1128,
   encodeGS1Composite,
   encodeHanXin,
   encodeHIBCPrimary,
@@ -170,6 +171,26 @@ function runPostal<T>(spec: PostalCase<T>): void {
 // 1D symbologies
 // ---------------------------------------------------------------------------
 
+/**
+ * GS1-128 payloads covering the code set choices the AI structure forces: a
+ * leading two digit AI, digit runs of every parity, alphanumeric values and the
+ * FNC1 separators between variable length elements.
+ */
+const GS1_128_PAYLOADS = [
+  "(01)03612345678904",
+  "(01)03612345678904(10)ABC123",
+  "(01)03612345678904(17)260101(10)LOT42",
+  "(00)123456789012345675",
+  "(10)ABC",
+  "(10)12345",
+  "(21)SERIAL01",
+  "(21)A1B2C3",
+  "(90)ABCDEF123456",
+  "(240)ABC/def_9",
+  "(8020)ABC123456",
+  "(01)95012345678903(3103)000123(15)261231",
+]
+
 describe("bwip-js cross-verification: 1D", () => {
   runLinear({
     format: "msi (mod10)",
@@ -245,6 +266,27 @@ describe("bwip-js cross-verification: 1D", () => {
     payloads: ["Test123", "Test12345", "Hello World 123"],
     etiket: (p) => encodeCode128(p),
     bwip: (p) => bwipBars("code128", p),
+  })
+
+  runLinear({
+    format: "gs1-128",
+    payloads: GS1_128_PAYLOADS,
+    etiket: (p) => encodeGS1128(p),
+    bwip: (p) => bwipBars("gs1-128", p),
+  })
+
+  runLinear({
+    format: "gs1-128 (CC-A/CC-B linkage flag)",
+    payloads: GS1_128_PAYLOADS,
+    etiket: (p) => encodeGS1128(p, { linkage: "A" }),
+    bwip: (p) => bwipBars("gs1-128", p, { linkagea: true }),
+  })
+
+  runLinear({
+    format: "gs1-128 (CC-C linkage flag)",
+    payloads: GS1_128_PAYLOADS,
+    etiket: (p) => encodeGS1128(p, { linkage: "C" }),
+    bwip: (p) => bwipBars("gs1-128", p, { linkagec: true }),
   })
 
   runLinear({
