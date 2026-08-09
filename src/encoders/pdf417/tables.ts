@@ -373,6 +373,7 @@ export const MODE_LATCH = {
   BYTE_COMPACTION: 901,
   NUMERIC_COMPACTION: 902,
   BYTE_COMPACTION_6: 924, // byte compaction, groups of 6
+  BYTE_SHIFT: 913, // one byte, then back to the mode and sub-mode in force
   ECI_USER: 925, // ECI 810900-811799, one codeword follows
   ECI_GENERAL: 926, // ECI 900-810899, two codewords follow
   ECI_CHARSET: 927, // ECI 0-899, one codeword follows

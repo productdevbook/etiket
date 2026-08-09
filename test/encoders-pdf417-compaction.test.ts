@@ -17,6 +17,7 @@ import { describe, expect, it } from "vitest"
 import { readBarcodes } from "zxing-wasm/reader"
 import { encodePDF417 } from "../src/index"
 import { encodeData, numericToCodewords, textToCodewords } from "../src/encoders/pdf417/encoder"
+import { bwipMatrix } from "./_bwip"
 
 function matrixToImageData(matrix: boolean[][], scaleX = 3, scaleY = 8, margin = 4) {
   const rows = matrix.length
@@ -211,6 +212,112 @@ describe("PDF417 byte compaction", () => {
       // 0x80 upwards: not representable in any text compaction sub-mode
       const payload = Array.from({ length }, (_, i) => String.fromCharCode(0xa0 + i)).join("")
       expect(await decode(payload)).toBe(payload)
+    })
+  }
+})
+
+describe("PDF417 byte shift", () => {
+  it("shifts a lone byte instead of latching out and back", () => {
+    // 'A' pad | 913 é | 'B' pad — a 901 latch would need a 900 latch to return
+    expect(encodeData("AéB")).toEqual([29, 913, 233, 59])
+  })
+
+  it("carries the text sub-mode across the shift", () => {
+    // 'a' stays Lower over the shift, so 'b' needs no second Lower latch
+    expect(encodeData("aéb")).toEqual([810, 913, 233, 59])
+    expect(subCodewords([810])).toEqual([27, 0])
+    expect(subCodewords([59])).toEqual([1, 29])
+  })
+
+  it("latches for two adjacent bytes, where a shift carries only one", () => {
+    expect(encodeData("ABÜÜCD")).toEqual([1, 901, 220, 220, 900, 63])
+  })
+
+  it("keeps one byte compaction segment when that is shorter", () => {
+    // Alternating text and bytes: seven shift pairs would cost eleven codewords
+    expect(encodeData("Ünïcödé")).toEqual([901, 369, 367, 713, 321, 144, 233])
+  })
+
+  const READABLE = [
+    "AéB",
+    "aéb",
+    "ABÜCD",
+    "Hello Wörld",
+    "Ünïcödé Latin1",
+    "café",
+    "naïve résumé",
+    "Grüße",
+    "ünicode",
+    "AééB",
+    "1234567890é1234567890",
+  ]
+
+  for (const payload of READABLE) {
+    it(`round-trips ${JSON.stringify(payload)}`, async () => {
+      expect(await decode(payload)).toBe(payload)
+    })
+  }
+})
+
+/**
+ * Symbol size against the reference.
+ *
+ * The two encoders segment differently — etiket enters text compaction for a
+ * run of any length where BWIPP waits for five, and shifts lone bytes where
+ * BWIPP sometimes latches — so the module patterns legitimately differ. What
+ * must hold is that etiket never spends more codewords than BWIPP on the same
+ * data (#145).
+ */
+describe("PDF417 symbol size vs bwip-js", () => {
+  /** BWIPP reads `^NNN` escapes with parse:true, which is how Latin-1 bytes get in. */
+  function escapeLatin(text: string): string {
+    let out = ""
+    for (const ch of text) {
+      const code = ch.charCodeAt(0)
+      out += code > 126 || code < 32 ? `^${String(code).padStart(3, "0")}` : ch
+    }
+    return out
+  }
+
+  /** One column puts every codeword on its own row, so rows reveal the count. */
+  function bwipCodewords(payload: string): number {
+    const rows = bwipMatrix("pdf417", escapeLatin(payload), {
+      parse: true,
+      columns: 1,
+      eclevel: 0,
+    }).length
+    // Each row carries one data codeword; the symbol adds a length descriptor
+    // and, at EC level 0, two error correction codewords.
+    return rows - 3
+  }
+
+  const PAYLOADS = [
+    "Hello World",
+    "The quick brown fox",
+    "Ünïcödé Latin1",
+    "ABÜCD",
+    "Hello Wörld",
+    "AéB",
+    "testÿ",
+    "ÀBCDEF",
+    "ABC DEF ghi 123 é JKL",
+    "Grüße",
+    "Ünïcödé",
+    "aébéc",
+    "café",
+    "naïve résumé",
+    "AééB",
+    "1234567890é1234567890",
+    "MIXED case 123 with ümlaut",
+    "0123456789012345678901234567890",
+    ";;;;;;;;ABCD",
+    "$1,234.56 = 100% * #7 & ^2",
+  ]
+
+  for (const payload of PAYLOADS) {
+    it(`is no larger than bwip-js for ${JSON.stringify(payload)}`, () => {
+      const mine = encodeData(payload).length
+      expect(mine, `${mine} codewords against bwip-js`).toBeLessThanOrEqual(bwipCodewords(payload))
     })
   }
 })

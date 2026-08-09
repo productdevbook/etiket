@@ -52,20 +52,49 @@ export function encodeData(text: string, options: PDF417DataOptions = {}): numbe
   }
 
   const bytes = latin
-  const segments = analyzeSegments(bytes)
+  // Text compaction is the mode a reader starts in.
+  let state: EncoderState = {
+    inText: true,
+    subMode: TextSubMode.Alpha,
+    latched: codewords.length > 0,
+  }
 
-  for (const segment of segments) {
-    switch (segment.mode) {
-      case "text":
-        encodeTextSegment(text.slice(segment.start, segment.end), codewords)
-        break
-      case "numeric":
-        encodeNumericSegment(text.slice(segment.start, segment.end), codewords)
-        break
-      case "byte":
-        encodeByteSegment(bytes.slice(segment.start, segment.end), codewords)
-        break
+  const emit = (segments: readonly Segment[]): void => {
+    const run = encodeSegments(segments, text, bytes, state)
+    codewords.push(...run.codewords)
+    state = run.state
+  }
+
+  let pos = 0
+  while (pos < text.length) {
+    const digits = countDigits(text, pos)
+    if (
+      digits >= NUMERIC_RUN_THRESHOLD ||
+      (digits === text.length && digits >= ALL_NUMERIC_THRESHOLD)
+    ) {
+      emit([{ mode: "numeric", start: pos, end: pos + digits }])
+      pos += digits
+      continue
     }
+
+    const textRun = countTextCompactable(text, pos)
+    if (textRun >= TEXT_RUN_THRESHOLD) {
+      emit([{ mode: "text", start: pos, end: pos + textRun }])
+      pos += textRun
+      continue
+    }
+
+    // A stretch of bytes with text too short to be worth its own latch mixed
+    // in. Two ways to carry it, and which one is shorter depends on the mix:
+    // one byte compaction segment over the lot, or text compaction with the
+    // isolated bytes shifted into. Encode both and keep the shorter.
+    const end = mixedRegionEnd(text, pos)
+    const shifted = encodeSegments(mixedSegments(text, pos, end, state.inText), text, bytes, state)
+    const latched = encodeSegments([{ mode: "byte", start: pos, end }], text, bytes, state)
+    const chosen = shifted.codewords.length <= latched.codewords.length ? shifted : latched
+    codewords.push(...chosen.codewords)
+    state = chosen.state
+    pos = end
   }
 
   return codewords
@@ -74,9 +103,103 @@ export function encodeData(text: string, options: PDF417DataOptions = {}): numbe
 // ---- Segment analysis ----
 
 interface Segment {
-  mode: "text" | "byte" | "numeric"
+  mode: "text" | "byte" | "numeric" | "byteShift"
   start: number
   end: number
+}
+
+/** Where the encoder stands: the mode in force, and text compaction's sub-mode. */
+interface EncoderState {
+  inText: boolean
+  subMode: TextSubMode
+  /** Something has been emitted, so returning to text compaction costs a latch. */
+  latched: boolean
+}
+
+/** Encode a run of segments from `state`, reporting where it leaves the encoder. */
+function encodeSegments(
+  segments: readonly Segment[],
+  text: string,
+  bytes: readonly number[],
+  state: EncoderState,
+): { codewords: number[]; state: EncoderState } {
+  const codewords: number[] = []
+  let { inText, subMode, latched } = state
+
+  for (const segment of segments) {
+    switch (segment.mode) {
+      case "text": {
+        if (!inText) {
+          if (latched) codewords.push(MODE_LATCH.TEXT_COMPACTION)
+          subMode = TextSubMode.Alpha
+          inText = true
+        }
+        const run = packText(text.slice(segment.start, segment.end), subMode)
+        codewords.push(...run.codewords)
+        subMode = run.endMode
+        break
+      }
+      case "numeric":
+        encodeNumericSegment(text.slice(segment.start, segment.end), codewords)
+        inText = false
+        break
+      case "byteShift":
+        // 913 carries one byte without leaving text compaction, where latching
+        // out and back would cost two more codewords.
+        codewords.push(MODE_LATCH.BYTE_SHIFT, bytes[segment.start]!)
+        break
+      case "byte":
+        encodeByteSegment([...bytes.slice(segment.start, segment.end)], codewords)
+        inText = false
+        break
+    }
+    latched = latched || codewords.length > 0
+  }
+
+  return { codewords, state: { inText, subMode, latched } }
+}
+
+/**
+ * End of the stretch that byte compaction could cover in one segment: it runs
+ * up to the next text run or digit run long enough to be worth its own mode.
+ */
+function mixedRegionEnd(text: string, from: number): number {
+  let pos = from
+  while (pos < text.length) {
+    if (countDigits(text, pos) >= NUMERIC_RUN_THRESHOLD) break
+    const run = countTextCompactable(text, pos)
+    if (run >= TEXT_RUN_THRESHOLD) break
+    pos += Math.max(run, 1)
+  }
+  return pos
+}
+
+/** Cover a mixed region with text compaction, shifting into byte for lone bytes. */
+function mixedSegments(text: string, from: number, to: number, inText: boolean): Segment[] {
+  const segments: Segment[] = []
+  let pos = from
+
+  while (pos < to) {
+    const run = Math.min(countTextCompactable(text, pos), to - pos)
+    if (run > 0) {
+      segments.push({ mode: "text", start: pos, end: pos + run })
+      pos += run
+      inText = true
+      continue
+    }
+
+    let end = pos
+    while (end < to && countTextCompactable(text, end) === 0) end++
+    if (end - pos === 1 && inText) {
+      segments.push({ mode: "byteShift", start: pos, end })
+    } else {
+      segments.push({ mode: "byte", start: pos, end })
+      inText = false
+    }
+    pos = end
+  }
+
+  return segments
 }
 
 // ISO-8859-15 differs from ISO-8859-1 at these code points
@@ -153,46 +276,13 @@ const NUMERIC_RUN_THRESHOLD = 13
  * from a much shorter run — the same cut-off BWIPP uses.
  */
 const ALL_NUMERIC_THRESHOLD = 8
-
 /**
- * Analyze input and split into optimal segments by compaction mode.
- * - Runs of 13+ digits, and all-digit messages of 8+ digits, use numeric compaction
- * - Runs of text-compactable characters use text compaction
- * - Everything else uses byte compaction
+ * A text run shorter than this is not automatically worth a text compaction
+ * segment of its own: the two codewords its latches cost can outweigh what the
+ * two-characters-per-codeword packing saves, so short runs go through the
+ * mixed-region comparison instead. The same cut-off BWIPP uses.
  */
-function analyzeSegments(bytes: number[]): Segment[] {
-  const text = String.fromCharCode(...bytes)
-  const segments: Segment[] = []
-  let pos = 0
-
-  while (pos < text.length) {
-    // Check for long numeric run (13+ digits for efficiency)
-    const numericRun = countDigits(text, pos)
-    if (
-      numericRun >= NUMERIC_RUN_THRESHOLD ||
-      (numericRun === text.length && numericRun >= ALL_NUMERIC_THRESHOLD)
-    ) {
-      segments.push({ mode: "numeric", start: pos, end: pos + numericRun })
-      pos += numericRun
-      continue
-    }
-
-    // Check for text-compactable run
-    const textRun = countTextCompactable(text, pos)
-    if (textRun > 0) {
-      segments.push({ mode: "text", start: pos, end: pos + textRun })
-      pos += textRun
-      continue
-    }
-
-    // Byte mode for non-text bytes
-    const byteRun = countNonTextCompactable(text, pos)
-    segments.push({ mode: "byte", start: pos, end: pos + byteRun })
-    pos += byteRun
-  }
-
-  return segments
-}
+const TEXT_RUN_THRESHOLD = 5
 
 function countDigits(text: string, pos: number): number {
   let count = 0
@@ -210,34 +300,37 @@ function countTextCompactable(text: string, pos: number): number {
   return count
 }
 
-function countNonTextCompactable(text: string, pos: number): number {
-  let count = 0
-  // Digits all live in the Mixed sub-mode, so `isTextCompactable` already stops
-  // this run at the start of a numeric one
-  while (pos + count < text.length && !isTextCompactable(text[pos + count]!)) {
-    count++
-  }
-  return Math.max(count, 1)
-}
-
 // ---- Text compaction ----
 
+/** One text compaction run: its codewords, and the sub-mode it leaves behind. */
+interface TextRun {
+  codewords: number[]
+  endMode: TextSubMode
+}
+
 /**
- * Encode a text segment using text compaction mode.
- * Characters are encoded as pairs of values packed into codewords.
- * Each codeword carries two sub-codeword values: high * 30 + low.
+ * Pack a text run into codewords, starting from `startMode`.
+ *
+ * Characters are encoded as pairs of sub-codeword values, `high * 30 + low`. An
+ * odd count is padded with 29, which reads as a punctuation shift in Alpha,
+ * Lower and Mixed and as an Alpha latch in Punctuation — so the pad moves the
+ * sub-mode only in that last case (ISO/IEC 15438 5.4.2.1).
  */
-function encodeTextSegment(text: string, codewords: number[]): void {
-  // Text compaction mode latch (900) — default mode, only needed if switching from another mode
-  // For the first segment, text mode is the default so no latch needed.
-  // For subsequent segments, we add the latch.
-  if (codewords.length > 0) {
-    codewords.push(MODE_LATCH.TEXT_COMPACTION)
+function packText(text: string, startMode: TextSubMode): TextRun {
+  const { values, endMode } = textToSubCodewords(text, startMode)
+  let mode = endMode
+
+  if (values.length % 2 === 1) {
+    values.push(TEXT_SWITCH.ALPHA_TO_PUNCT_SHIFT)
+    if (mode === TextSubMode.Punctuation) mode = TextSubMode.Alpha
   }
 
-  for (const cw of textToCodewords(text)) {
-    codewords.push(cw)
+  const codewords: number[] = []
+  for (let i = 0; i < values.length; i += 2) {
+    codewords.push(values[i]! * 30 + values[i + 1]!)
   }
+
+  return { codewords, endMode: mode }
 }
 
 /**
@@ -248,18 +341,7 @@ function encodeTextSegment(text: string, codewords: number[]): void {
  * appear.
  */
 export function textToCodewords(text: string): number[] {
-  const subCodewords = textToSubCodewords(text)
-  const codewords: number[] = []
-
-  // Pack sub-codewords into pairs → codewords
-  // Each pair: high * 30 + low
-  for (let i = 0; i < subCodewords.length; i += 2) {
-    const high = subCodewords[i]!
-    const low = i + 1 < subCodewords.length ? subCodewords[i + 1]! : 29 // pad with 29 (PS) per ISO 15438 5.4.2.1
-    codewords.push(high * 30 + low)
-  }
-
-  return codewords
+  return packText(text, TextSubMode.Alpha).codewords
 }
 
 /** The four text compaction sub-modes, in the order ISO/IEC 15438 Table 4 lists them */
@@ -370,9 +452,12 @@ function relaxLatches(cost: number[], back: (TextStep | undefined)[], index: num
  * the string and picking the cheapest at the end — matching, sub-codeword for
  * sub-codeword, what BWIPP produces for the same input.
  */
-function textToSubCodewords(text: string): number[] {
+function textToSubCodewords(
+  text: string,
+  startMode: TextSubMode,
+): { values: number[]; endMode: TextSubMode } {
   const length = text.length
-  if (length === 0) return []
+  if (length === 0) return { values: [], endMode: startMode }
 
   const cost: number[][] = []
   const back: (TextStep | undefined)[][] = []
@@ -380,8 +465,7 @@ function textToSubCodewords(text: string): number[] {
     cost.push([Infinity, Infinity, Infinity, Infinity])
     back.push([undefined, undefined, undefined, undefined])
   }
-  // Text compaction always starts in Alpha
-  cost[0]![TextSubMode.Alpha] = 0
+  cost[0]![startMode] = 0
 
   for (let i = 0; i < length; i++) {
     relaxLatches(cost[i]!, back[i]!, i)
@@ -432,7 +516,7 @@ function textToSubCodewords(text: string): number[] {
 
   const values: number[] = []
   for (const chunk of chunks) values.push(...chunk)
-  return values
+  return { values, endMode: bestMode }
 }
 
 /** Get the sub-codeword value for a character in a given sub-mode, or -1 if not available */
