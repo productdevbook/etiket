@@ -102,7 +102,7 @@ src/
     barcode.ts              # Per-format validation
     qr.ts                   # QR validation with metadata
 test/
-  *.test.ts                 # 138 test files, 3470+ tests
+  *.test.ts                 # 140 test files, 3520+ tests
   _bwip.ts                  # bwip-js (BWIPP) oracle: module data extraction
   bwip-compare.test.ts      # Module-for-module comparison against BWIPP
   qr-roundtrip.test.ts      # QR encode→decode via jsQR (all versions, EC, masks)
@@ -115,6 +115,9 @@ test/
   encoders-large-symbols.test.ts # Every 2D format at the sizes a long payload reaches
   encoders-input-limits.test.ts  # What each encoder does with more than fits
   encoders-qr-mask-choice.test.ts # The mask each symbol picks, pinned
+  _png.ts / _svg.ts         # Read a PNG back, draw an SVG: renderers decoded
+  renderers-png-roundtrip.test.ts # PNG output decoded through zxing
+  renderers-svg-roundtrip.test.ts # SVG output rasterised and decoded
   api-subpaths.test.ts      # package.json#exports vs the source entries
   docs-coverage.test.ts     # Every export has an API reference entry
   cli.test.ts               # Every CLI subcommand, driven through citty
@@ -243,7 +246,7 @@ is known and turns red the moment it is fixed.
 
 v1. The full gate (`pnpm test`) is green:
 
-- **138 test files, 3470+ tests** passing
+- **140 test files, 3520+ tests** passing
 - **Zero** lint warnings, zero typecheck errors
 - **96.8%** statements, **93.2%** branches — thresholds enforced in CI by
   `vitest.config.ts`
