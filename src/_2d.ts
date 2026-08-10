@@ -7,6 +7,8 @@ import { encodeDataMatrix, encodeGS1DataMatrix } from "./encoders/datamatrix/ind
 import { encodePDF417 } from "./encoders/pdf417/index"
 import { encodeMicroPDF417 } from "./encoders/micropdf417"
 import { encodeAztec, encodeAztecRune } from "./encoders/aztec/index"
+import { encodeMailmark } from "./encoders/mailmark"
+import type { MailmarkOptions } from "./encoders/mailmark"
 import { encodeMicroQR } from "./encoders/qr/micro"
 import { encodeRMQR } from "./encoders/rmqr"
 import { encodeMaxiCode } from "./encoders/maxicode"
@@ -98,6 +100,19 @@ export function aztec(text: string, options?: AztecOptions & MatrixSVGOptions): 
  */
 export function aztecrune(value: number, options: MatrixSVGOptions = {}): string {
   return renderMatrixSVG(encodeAztecRune(value), { margin: 0, ...options })
+}
+
+/**
+ * Generate a Royal Mail Mailmark 2D barcode as SVG.
+ *
+ * @example
+ * ```ts
+ * const svg = mailmark("JGB 012100123456789AB19XY1A 0            ", { type: 9 })
+ * ```
+ */
+export function mailmark(text: string, options: MailmarkOptions & MatrixSVGOptions = {}): string {
+  const { type, ...svgOpts } = options
+  return renderMatrixSVG(encodeMailmark(text, { type }), svgOpts)
 }
 
 /**

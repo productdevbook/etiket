@@ -22,6 +22,7 @@ import {
   micropdf417,
   aztec,
   aztecrune,
+  mailmark,
   microqr,
   rmqr,
   maxicode,
@@ -49,6 +50,7 @@ import {
   micropdf417PNG,
   aztecPNG,
   aztecrunePNG,
+  mailmarkPNG,
   microqrPNG,
   rmqrPNG,
   hanxinPNG,
@@ -101,6 +103,7 @@ const MATRIX_TYPES = [
   "rmqr",
   "datamatrix",
   "gs1-datamatrix",
+  "mailmark",
   "pdf417",
   "micropdf417",
   "aztec",
@@ -1251,6 +1254,18 @@ export const main = defineCommand({
       png: micropdf417PNG,
     }),
     aztec: aztecCommand,
+    mailmark: defineMatrixCommand({
+      name: "mailmark",
+      description: "Generate a Royal Mail Mailmark 2D barcode",
+      args: {
+        type: { type: "string", description: "Barcode type: 7 (24x24), 9 (32x32) or 29 (16x48)" },
+      },
+      encoding: (args) => ({
+        type: num(args.type as string | undefined, "type") as 7 | 9 | 29 | undefined,
+      }),
+      svg: mailmark,
+      png: mailmarkPNG,
+    }),
     aztecrune: defineMatrixCommand({
       name: "aztecrune",
       description: "Generate an Aztec Rune (a value 0-255 in 11x11 modules)",

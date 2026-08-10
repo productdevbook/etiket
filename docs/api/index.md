@@ -225,6 +225,7 @@ accessibility fields — on top of its own encoder options.
 | :------------------------------------------ | :-------------------------------------------------------------- |
 | `datamatrix(text, options?)`                | `shape`, `dmre`, `symbolSize`, `eci`                            |
 | `gs1datamatrix(text, options?)`             | `shape`, `dmre`, `symbolSize`                                   |
+| `mailmark(text, options?)`                  | `type` — 7 (24x24), 9 (32x32) or 29 (16x48)                     |
 | `pdf417(text, options?)`                    | `ecLevel`, `columns`, `compact`, `eci`, plus `width` / `height` |
 | `micropdf417(text, options?)`               | `columns`                                                       |
 | `aztec(text, options?)`                     | `ecPercent`, `layers`, `compact`, `eci`                         |
@@ -421,6 +422,7 @@ Every family has a `*PNG` function returning a `Uint8Array` and a matching
 | QR          | `qrcodePNG`, `microqrPNG`, `rmqrPNG`                                               | `qrcodePNGDataURI`, `microqrPNGDataURI`, `rmqrPNGDataURI`                                               |
 | Data Matrix | `datamatrixPNG`, `gs1datamatrixPNG`                                                | `datamatrixPNGDataURI`, `gs1datamatrixPNGDataURI`                                                       |
 | PDF417      | `pdf417PNG`, `micropdf417PNG`                                                      | `pdf417PNGDataURI`, `micropdf417PNGDataURI`                                                             |
+| Mailmark    | `mailmarkPNG`                                                                      | `mailmarkPNGDataURI`                                                                                    |
 | Aztec Rune  | `aztecrunePNG`                                                                     | `aztecrunePNGDataURI`                                                                                   |
 | Aztec       | `aztecPNG`                                                                         | `aztecPNGDataURI`                                                                                       |
 | Stacked     | `codablockfPNG`, `code16kPNG`                                                      | `codablockfPNGDataURI`, `code16kPNGDataURI`                                                             |
@@ -699,25 +701,26 @@ or `"numeric"` (2 bars per digit).
 
 ### 2D
 
-| Function                               | Returns                                   |
-| :------------------------------------- | :---------------------------------------- |
-| `encodeQR(text, options?)`             | `boolean[][]`                             |
-| `encodeQRSequence(text, options?)`     | `boolean[][][]`                           |
-| `encodeMicroQR(text, options?)`        | `boolean[][]`                             |
-| `encodeRMQR(text, options?)`           | `boolean[][]`                             |
-| `encodeDataMatrix(text, options?)`     | `boolean[][]`                             |
-| `encodeGS1DataMatrix(text, options?)`  | `boolean[][]`                             |
-| `encodePDF417(text, options?)`         | `{ matrix, rows, cols }`                  |
-| `encodePDF417Sequence(text, options?)` | `{ matrix, rows, cols }[]` — Macro PDF417 |
-| `encodeMicroPDF417(text, options?)`    | `{ matrix, rows, cols }`                  |
-| `encodeAztec(text, options?)`          | `boolean[][]`                             |
-| `encodeAztecRune(value)`               | `boolean[][]` — 11x11, a byte 0 to 255    |
-| `encodeMaxiCode(text, options?)`       | `boolean[][]` — 33×30                     |
-| `encodeDotCode(text, options?)`        | `boolean[][]`                             |
-| `encodeHanXin(text, options?)`         | `boolean[][]`                             |
-| `encodeCodablockF(text, options?)`     | `{ matrix, rows, cols, separatorRows }`   |
-| `encodeCode16K(text)`                  | `{ matrix, rows, cols, separatorRows }`   |
-| `encodeJABCode(text, options?)`        | `JABCodeResult`                           |
+| Function                               | Returns                                     |
+| :------------------------------------- | :------------------------------------------ |
+| `encodeQR(text, options?)`             | `boolean[][]`                               |
+| `encodeQRSequence(text, options?)`     | `boolean[][][]`                             |
+| `encodeMicroQR(text, options?)`        | `boolean[][]`                               |
+| `encodeRMQR(text, options?)`           | `boolean[][]`                               |
+| `encodeDataMatrix(text, options?)`     | `boolean[][]`                               |
+| `encodeGS1DataMatrix(text, options?)`  | `boolean[][]`                               |
+| `encodePDF417(text, options?)`         | `{ matrix, rows, cols }`                    |
+| `encodePDF417Sequence(text, options?)` | `{ matrix, rows, cols }[]` — Macro PDF417   |
+| `encodeMicroPDF417(text, options?)`    | `{ matrix, rows, cols }`                    |
+| `encodeAztec(text, options?)`          | `boolean[][]`                               |
+| `encodeAztecRune(value)`               | `boolean[][]` — 11x11, a byte 0 to 255      |
+| `encodeMailmark(text, options?)`       | `boolean[][]` — a Data Matrix of fixed size |
+| `encodeMaxiCode(text, options?)`       | `boolean[][]` — 33×30                       |
+| `encodeDotCode(text, options?)`        | `boolean[][]`                               |
+| `encodeHanXin(text, options?)`         | `boolean[][]`                               |
+| `encodeCodablockF(text, options?)`     | `{ matrix, rows, cols, separatorRows }`     |
+| `encodeCode16K(text)`                  | `{ matrix, rows, cols, separatorRows }`     |
+| `encodeJABCode(text, options?)`        | `JABCodeResult`                             |
 
 ```ts
 import {
@@ -732,6 +735,7 @@ import {
   encodeMicroPDF417,
   encodeAztec,
   encodeAztecRune,
+  encodeMailmark,
   encodeMaxiCode,
   encodeDotCode,
   encodeHanXin,
@@ -751,6 +755,7 @@ encodePDF417Sequence("A".repeat(3000), { symbols: 3 }).length // 3
 encodeMicroPDF417("Hello", { columns: 2 }).cols
 encodeAztec("Hello", { ecPercent: 33 })
 encodeAztecRune(42)
+encodeMailmark("JGB 012100123456789AB19XY1A 0                ", { type: 9 })
 encodeMaxiCode("Hello", { mode: 4 }).length // 33
 encodeDotCode("Hello")
 encodeHanXin("Hello", { ecLevel: 2 })

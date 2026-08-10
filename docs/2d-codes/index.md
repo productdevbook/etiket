@@ -8,6 +8,7 @@ returning the module matrix, and PNG output.
 | :---------------------------------------------------- | :---------------- | :-------------------- | :------------------- |
 | [Data Matrix](/2d-codes/datamatrix)                   | `datamatrix()`    | `encodeDataMatrix`    | `datamatrixPNG()`    |
 | [GS1 DataMatrix](/2d-codes/datamatrix#gs1-datamatrix) | `gs1datamatrix()` | `encodeGS1DataMatrix` | `gs1datamatrixPNG()` |
+| [Royal Mail Mailmark](/2d-codes/mailmark)             | `mailmark()`      | `encodeMailmark`      | `mailmarkPNG()`      |
 | [PDF417](/2d-codes/pdf417)                            | `pdf417()`        | `encodePDF417`        | `pdf417PNG()`        |
 | [MicroPDF417](/2d-codes/micropdf417)                  | `micropdf417()`   | `encodeMicroPDF417`   | `micropdf417PNG()`   |
 | [Aztec](/2d-codes/aztec)                              | `aztec()`         | `encodeAztec`         | `aztecPNG()`         |

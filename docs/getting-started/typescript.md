@@ -116,6 +116,8 @@ void everything
 | `EncodingMode`         | `"numeric" \| "alphanumeric" \| "byte" \| "kanji" \| "auto"`                  |
 | `MicroQROptions`       | `version` (1–4), `ecLevel` (`L`/`M`/`Q`), `mask` (0–3)                        |
 | `RMQROptions`          | `ecLevel` (`M`/`H`), `version` (0–31), `eci`                                  |
+| `MailmarkType`         | `7 \| 9 \| 29` — the Royal Mail barcode types                                 |
+| `MailmarkOptions`      | `{ type?: MailmarkType }`                                                     |
 | `QRSequenceOptions`    | `QRCodeOptions` minus `structuredAppend`, plus `symbols`                      |
 
 ```ts

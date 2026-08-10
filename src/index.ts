@@ -19,6 +19,7 @@ export {
   pdf417,
   aztec,
   aztecrune,
+  mailmark,
   microqr,
   rmqr,
   maxicode,
@@ -158,6 +159,8 @@ export type { PDF417Options } from "./encoders/pdf417/index"
 export { encodeMicroPDF417 } from "./encoders/micropdf417"
 export type { MicroPDF417Options } from "./encoders/micropdf417"
 export { encodeAztec, encodeAztecRune } from "./encoders/aztec/index"
+export { encodeMailmark } from "./encoders/mailmark"
+export type { MailmarkOptions, MailmarkType } from "./encoders/mailmark"
 export type { AztecOptions } from "./encoders/aztec/index"
 export { encodeHIBCPrimary, encodeHIBCSecondary, encodeHIBCConcatenated } from "./encoders/hibc"
 export {
@@ -184,6 +187,8 @@ export {
   aztecPNGDataURI,
   aztecrunePNG,
   aztecrunePNGDataURI,
+  mailmarkPNG,
+  mailmarkPNGDataURI,
   postalPNG,
   postalPNGDataURI,
   microqrPNG,

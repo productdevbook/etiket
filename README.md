@@ -753,8 +753,8 @@ Contributions are welcome! Here are some areas where help is especially apprecia
   tokenizer or small state machine we could find, and Channel Code's
   construction is an enumeration. Copying the reference's tables and then
   comparing against the reference is not verification.
-- **Mailmark, Code 49, Code One, Ultracode** — implementable and comparable
-  against BWIPP, just not written yet.
+- **Code 49, Code One, Ultracode** — implementable and comparable against
+  BWIPP, just not written yet.
 
 **Also welcome:**
 

@@ -132,7 +132,7 @@ width-modulated types, including the numbering schemes that ride on another
 symbology — `isbn`, `issn`, `ismn`, `ean14`, `sscc18`, `code32`, `pzn`, `pzn8` —
 and the discrete 2 of 5 family.
 
-2D: `qrcode()`, `microqr()`, `rmqr()`, `datamatrix()`, `gs1datamatrix()`, `pdf417()`, `micropdf417()`, `aztec()`, `aztecrune()`, `maxicode()`, `dotcode()`, `hanxin()`, `codablockf()`, `code16k()`, `jabcode()`.
+2D: `qrcode()`, `microqr()`, `rmqr()`, `datamatrix()`, `gs1datamatrix()`, `pdf417()`, `micropdf417()`, `aztec()`, `aztecrune()`, `maxicode()`, `dotcode()`, `hanxin()`, `codablockf()`, `code16k()`, `jabcode()`, `mailmark()`.
 
 GS1: `gs1qr()`, `gs1composite()`, `encodeGS1CompositeSymbol()`, the DataBar
 family including the stacked variants. A composite symbol assembles over every
@@ -236,7 +236,7 @@ is known and turns red the moment it is fixed.
 
 v1. The full gate (`pnpm test`) is green:
 
-- **119 test files, 3140+ tests** passing
+- **122 test files, 3200+ tests** passing
 - **Zero** lint warnings, zero typecheck errors
 - **96.7%** statements, **92.9%** branches — thresholds enforced in CI by
   `vitest.config.ts`

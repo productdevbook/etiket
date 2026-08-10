@@ -22,6 +22,8 @@ export {
   aztecPNGDataURI,
   aztecrunePNG,
   aztecrunePNGDataURI,
+  mailmarkPNG,
+  mailmarkPNGDataURI,
   postalPNG,
   postalPNGDataURI,
   microqrPNG,

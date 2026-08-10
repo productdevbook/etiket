@@ -13,6 +13,7 @@ import type { AztecOptions } from "./encoders/aztec/index"
 import type { MaxiCodeOptions } from "./encoders/maxicode"
 import type { HanXinOptions } from "./encoders/hanxin"
 import type { DataMatrixSizeOptions } from "./encoders/datamatrix/tables"
+import type { MailmarkOptions } from "./encoders/mailmark"
 
 /** Width-modulated linear symbologies rendered by `barcode()`. */
 // prettier-ignore
@@ -91,6 +92,7 @@ export const EXTRA_ENCODE_TYPES = [
   "rmqr",
   "datamatrix",
   "gs1-datamatrix",
+  "mailmark",
   "pdf417",
   "micropdf417",
   "aztec",
@@ -127,6 +129,7 @@ export interface EncodeOptions extends Omit<BarcodeEncodingOptions, "type"> {
   hanxin?: HanXinOptions
   codablockf?: { columns?: number }
   datamatrix?: DataMatrixSizeOptions
+  mailmark?: MailmarkOptions
 }
 
 export interface Encode1DResult {

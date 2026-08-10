@@ -363,6 +363,7 @@ export function validateBarcode(text: string, type: string): { valid: boolean; e
     case "hanxin":
     case "codablock-f":
     case "code16k":
+    case "mailmark":
     case "jabcode": {
       if (text.length === 0) {
         return { valid: false, error: `${type} input must not be empty` }

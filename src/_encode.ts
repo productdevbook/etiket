@@ -11,6 +11,7 @@ import { encodeDataMatrix, encodeGS1DataMatrix } from "./encoders/datamatrix/ind
 import { encodePDF417 } from "./encoders/pdf417/index"
 import { encodeMicroPDF417 } from "./encoders/micropdf417"
 import { encodeAztec, encodeAztecRune } from "./encoders/aztec/index"
+import { encodeMailmark } from "./encoders/mailmark"
 import { encodeMaxiCode } from "./encoders/maxicode"
 import { encodeDotCode } from "./encoders/dotcode"
 import { encodeHanXin } from "./encoders/hanxin"
@@ -54,6 +55,8 @@ export function encode(text: string, options: EncodeOptions = {}): EncodeResult 
       return { type: "2d", matrix: encodeDataMatrix(text, options.datamatrix) }
     case "gs1-datamatrix":
       return { type: "2d", matrix: encodeGS1DataMatrix(text, options.datamatrix) }
+    case "mailmark":
+      return { type: "2d", matrix: encodeMailmark(text, options.mailmark) }
     case "pdf417":
       return { type: "2d", matrix: encodePDF417(text, options.pdf417).matrix }
     case "micropdf417":

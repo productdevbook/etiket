@@ -11,6 +11,8 @@ import type { PDF417Options } from "./encoders/pdf417/index"
 import type { AztecOptions } from "./encoders/aztec/index"
 import { encodePDF417 } from "./encoders/pdf417/index"
 import { encodeAztec, encodeAztecRune } from "./encoders/aztec/index"
+import { encodeMailmark } from "./encoders/mailmark"
+import type { MailmarkOptions } from "./encoders/mailmark"
 import { encodeMicroQR } from "./encoders/qr/micro"
 import { encodeRMQR } from "./encoders/rmqr"
 import { encodeHanXin } from "./encoders/hanxin"
@@ -204,6 +206,25 @@ export function aztecrunePNG(value: number, options?: MatrixPNGOptions): Uint8Ar
  */
 export function aztecrunePNGDataURI(value: number, options?: MatrixPNGOptions): string {
   return toPNGDataURI(aztecrunePNG(value, options))
+}
+
+/**
+ * Generate a Royal Mail Mailmark 2D barcode as PNG
+ */
+export function mailmarkPNG(
+  text: string,
+  options?: MailmarkOptions & MatrixPNGOptions,
+): Uint8Array {
+  const { type, ...pngOpts } = options ?? {}
+  return renderMatrixPNG(encodeMailmark(text, { type }), pngOpts)
+}
+
+/** Generate a Royal Mail Mailmark 2D barcode as a PNG data URI */
+export function mailmarkPNGDataURI(
+  text: string,
+  options?: MailmarkOptions & MatrixPNGOptions,
+): string {
+  return toPNGDataURI(mailmarkPNG(text, options))
 }
 
 /**

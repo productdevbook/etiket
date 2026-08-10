@@ -108,7 +108,8 @@ Run `etiket list` to print the full set from the [CLI](/getting-started/cli).
   [MicroPDF417](/2d-codes/micropdf417), [Aztec](/2d-codes/aztec),
   [MaxiCode](/2d-codes/maxicode), [DotCode](/2d-codes/dotcode),
   [Han Xin](/2d-codes/hanxin), [Codablock F](/2d-codes/codablock-f),
-  [Code 16K](/2d-codes/code16k), [JAB Code](/2d-codes/jabcode)
+  [Code 16K](/2d-codes/code16k), [JAB Code](/2d-codes/jabcode),
+  [Royal Mail Mailmark](/2d-codes/mailmark)
 
 ## How the output is verified
 
