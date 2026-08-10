@@ -6,6 +6,10 @@ export default defineConfig({
     // zxing-wasm fetches its WebAssembly binary on first use unless told
     // otherwise; this hands it the copy in node_modules instead
     setupFiles: ["test/_zxing-setup.ts"],
+    // A sweep that encodes a few hundred symbols and decodes them again takes
+    // seconds, and more of them under coverage on a loaded CI runner. This is
+    // a runaway guard, not a performance budget.
+    testTimeout: 30_000,
     coverage: {
       provider: "v8",
       include: ["src/**/*.ts"],
