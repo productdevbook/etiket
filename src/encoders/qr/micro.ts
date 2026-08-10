@@ -10,6 +10,8 @@
 
 import { CapacityError, InvalidInputError } from "../../errors"
 import { pushBits, encodeNumericData, encodeAlphanumericData, encodeByteData } from "./mode"
+import { optimizeSegments } from "./segment"
+import type { QRSegment } from "./types"
 import { generateECCodewords } from "./reed-solomon"
 
 export interface MicroQROptions {
@@ -102,22 +104,10 @@ export function encodeMicroQR(text: string, options: MicroQROptions = {}): boole
     throw new InvalidInputError("Micro QR input must not be empty")
   }
 
-  // Detect mode
-  const isNum = /^\d+$/.test(text)
-  const isAlpha = !isNum && /^[0-9A-Z $%*+\-./:]+$/.test(text)
-  const mode: "numeric" | "alphanumeric" | "byte" = isNum
-    ? "numeric"
-    : isAlpha
-      ? "alphanumeric"
-      : "byte"
-
-  // Select version
-  const { version, cap, ecKey } = selectMicroVersion(text, mode, options)
+  const { version, cap, ecKey, segments } = selectMicroVersion(text, options)
   const size = version * 2 + 9 // M1=11, M2=13, M3=15, M4=17
 
-  // Encode data
-  const data = new TextEncoder().encode(text)
-  const bits = buildMicroDataBits(text, data, mode, version, cap)
+  const bits = buildMicroDataBits(segments, version, cap)
 
   // Convert to full 8-bit codewords (RS needs full bytes)
   const dataBytes: number[] = []
@@ -177,14 +167,61 @@ export function encodeMicroQR(text: string, options: MicroQROptions = {}): boole
   return matrix.map((row) => row.map((cell) => cell === 1))
 }
 
+/** Mode indicator width in bits, by version. M1 carries none. */
+const MODE_BITS: Record<number, number> = { 1: 0, 2: 1, 3: 2, 4: 3 }
+
+/** Mode indicator value, by mode. */
+const MODE_VALUE: Record<string, number> = { numeric: 0, alphanumeric: 1, byte: 2, kanji: 3 }
+
+/** The order `optimizeSegments` reports head costs in. */
+const SEGMENT_MODES = ["numeric", "alphanumeric", "byte", "kanji"] as const
+
+/**
+ * Data bits a version holds.
+ *
+ * M1 and M3 finish on a four bit codeword rather than a whole byte, which is
+ * exactly the four bits between their codeword count and their capacity.
+ */
+function usableBits(version: number, cap: MicroQRCapacity): number {
+  return cap.dataCW * 8 - (version === 1 || version === 3 ? 4 : 0)
+}
+
+/** What a segment header costs in each mode at this version, or Infinity. */
+function headBitsFor(version: number): number[] {
+  return SEGMENT_MODES.map((mode) => {
+    const count = CC_BITS[version]?.[mode]
+    // Kanji is not implemented for Micro QR, and M1 and M2 have fewer modes
+    return count === undefined ? Infinity : MODE_BITS[version]! + count
+  })
+}
+
+/** Bits a run of segments takes, headers included. */
+function segmentBits(segments: QRSegment[], version: number): number {
+  let bits = 0
+  for (const segment of segments) {
+    const count = CC_BITS[version]?.[segment.mode]
+    if (count === undefined) return Infinity
+    bits += MODE_BITS[version]! + count
+    if (segment.mode === "numeric") {
+      const digits = segment.charCount
+      bits += Math.floor(digits / 3) * 10 + [0, 4, 7][digits % 3]!
+    } else if (segment.mode === "alphanumeric") {
+      bits += Math.floor(segment.charCount / 2) * 11 + (segment.charCount % 2) * 6
+    } else if (segment.mode === "byte") {
+      bits += segment.charCount * 8
+    } else {
+      return Infinity
+    }
+  }
+  return bits
+}
+
 function selectMicroVersion(
   text: string,
-  mode: string,
   options: MicroQROptions,
-): { version: number; cap: MicroQRCapacity; ecKey: string } {
+): { version: number; cap: MicroQRCapacity; ecKey: string; segments: QRSegment[] } {
   const requestedEc = options.ecLevel
 
-  // Determine the EC key for the given version
   /**
    * The EC key a version will actually use.
    *
@@ -196,6 +233,12 @@ function selectMicroVersion(
     if (v === 1) return "_"
     if (!requestedEc) return "L"
     return CAPACITY[v]![requestedEc] ? requestedEc : undefined
+  }
+
+  /** The cheapest split of the text for a version, and what it costs. */
+  function planFor(v: number): { segments: QRSegment[]; bits: number } {
+    const segments = optimizeSegments(text, v, headBitsFor(v))
+    return { segments, bits: segmentBits(segments, v) }
   }
 
   if (options.version) {
@@ -210,25 +253,28 @@ function selectMicroVersion(
     if (!cap) throw new CapacityError(`Micro QR M${v} does not support EC level ${ecKey}`)
 
     // A pinned version still has to hold the data. M1 is numeric only and M2
-    // adds alphanumeric, so the mode has to be checked as well as the length —
-    // without this the symbol comes out silently truncated.
-    // The table records an unavailable mode as a capacity of 0
-    const limit = cap[mode as keyof MicroQRCapacity]
-    if (typeof limit !== "number" || limit === 0) {
+    // adds alphanumeric, so the modes the text needs have to exist as well as
+    // fit — without this the symbol comes out silently truncated.
+    const plan = planFor(v)
+    if (plan.bits === Infinity) {
       throw new InvalidInputError(
-        `Micro QR M${v} does not support ${mode} mode — M1 is numeric only, M2 adds alphanumeric, M3 and M4 add byte and kanji`,
+        `Micro QR M${v} cannot encode this data — M1 is numeric only, M2 adds alphanumeric, M3 and M4 add byte`,
       )
     }
-    const pinnedLen = mode === "byte" ? new TextEncoder().encode(text).length : text.length
-    if (pinnedLen > limit) {
+    if (plan.bits > usableBits(v, cap)) {
+      const level = ecKey === "_" ? "none" : ecKey
+      // One segment has a character capacity worth quoting; a mixed message
+      // only has a bit budget
+      const only = plan.segments.length === 1 ? plan.segments[0] : undefined
+      const limit = only ? cap[only.mode as keyof MicroQRCapacity] : undefined
       throw new CapacityError(
-        `Data too long for Micro QR M${v} at EC level ${ecKey === "_" ? "none" : ecKey}: ${pinnedLen} ${mode} characters, capacity is ${limit}`,
+        only && typeof limit === "number"
+          ? `Data too long for Micro QR M${v} at EC level ${level}: ${only.charCount} ${only.mode} characters, capacity is ${limit}`
+          : `Data too long for Micro QR M${v} at EC level ${level}: ${plan.bits} bits needed, capacity is ${usableBits(v, cap)}`,
       )
     }
-    return { version: v, cap, ecKey }
+    return { version: v, cap, ecKey, segments: plan.segments }
   }
-
-  const dataLen = mode === "byte" ? new TextEncoder().encode(text).length : text.length
 
   for (let v = 1; v <= 4; v++) {
     const ecKey = getEcKey(v)
@@ -237,71 +283,65 @@ function selectMicroVersion(
     if (!ecKey) continue
     const cap = CAPACITY[v]![ecKey]
     if (!cap) continue
-    const modeKey = mode as keyof MicroQRCapacity
-    if (typeof cap[modeKey] === "number" && dataLen <= (cap[modeKey] as number)) {
-      return { version: v, cap, ecKey }
+    const plan = planFor(v)
+    if (plan.bits <= usableBits(v, cap)) {
+      return { version: v, cap, ecKey, segments: plan.segments }
     }
   }
 
   throw new CapacityError(
-    `Data too long for Micro QR Code with ${mode} mode${requestedEc ? ` at EC level ${requestedEc}` : ""}`,
+    `Data too long for Micro QR Code${requestedEc ? ` at EC level ${requestedEc}` : ""}`,
   )
 }
 
 function buildMicroDataBits(
-  text: string,
-  data: Uint8Array,
-  mode: string,
+  segments: QRSegment[],
   version: number,
   cap: MicroQRCapacity,
 ): number[] {
   const bits: number[] = []
 
-  // Mode indicator (variable length for Micro QR)
-  // M1: no mode indicator (numeric only)
-  // M2: 1 bit (0=numeric, 1=alphanumeric)
-  // M3: 2 bits (00=numeric, 01=alpha, 10=byte)
-  // M4: 3 bits (000=numeric, 001=alpha, 010=byte)
-  if (version === 2) {
-    pushBits(bits, mode === "numeric" ? 0 : 1, 1)
-  } else if (version === 3) {
-    pushBits(bits, mode === "numeric" ? 0 : mode === "alphanumeric" ? 1 : 2, 2)
-  } else if (version === 4) {
-    pushBits(bits, mode === "numeric" ? 0 : mode === "alphanumeric" ? 1 : 2, 3)
+  for (const segment of segments) {
+    // Mode indicator, which is one to three bits wide in Micro QR and absent
+    // from M1 — where numeric is the only mode there is
+    const modeBits = MODE_BITS[version]!
+    if (modeBits > 0) pushBits(bits, MODE_VALUE[segment.mode]!, modeBits)
+
+    pushBits(bits, segment.charCount, CC_BITS[version]![segment.mode]!)
+
+    if (segment.mode === "numeric") bits.push(...encodeNumericData(segment.data as string))
+    else if (segment.mode === "alphanumeric") {
+      bits.push(...encodeAlphanumericData(segment.data as string))
+    } else bits.push(...encodeByteData(segment.data as Uint8Array))
   }
 
-  // Character count indicator (correct bit lengths per ISO spec)
-  const ccBits = CC_BITS[version]![mode]!
-  const count = mode === "byte" ? data.length : text.length
-  pushBits(bits, count, ccBits)
-
-  // Data encoding
-  if (mode === "numeric") bits.push(...encodeNumericData(text))
-  else if (mode === "alphanumeric") bits.push(...encodeAlphanumericData(text))
-  else bits.push(...encodeByteData(data))
-
-  // Terminator + padding
+  // Terminator and padding, ISO/IEC 18004 7.4.10. The bit stream is sized to
+  // whole codewords because the Reed-Solomon step needs bytes; M1 and M3 then
+  // give up the low four bits of their last one when the symbol is written.
   const totalBits = cap.dataCW * 8
-  const termLen = Math.min(
-    version === 1 ? 3 : version === 2 ? 5 : version === 3 ? 7 : 9,
-    totalBits - bits.length,
-  )
-  pushBits(bits, 0, termLen)
+  const usable = usableBits(version, cap)
 
-  // M1 and M3: zero-pad to fill remaining capacity (4-bit final CW)
-  // M2 and M4: pad to byte boundary then add alternating 0xEC/0x11
-  if (version === 1 || version === 3) {
-    while (bits.length < totalBits) bits.push(0)
-  } else {
-    while (bits.length % 8 !== 0) bits.push(0)
-    let toggle = true
-    while (bits.length < totalBits) {
-      pushBits(bits, toggle ? 236 : 17, 8)
-      toggle = !toggle
-    }
+  // Terminator, truncated where what is left of the capacity is shorter
+  pushBits(
+    bits,
+    0,
+    Math.min(version === 1 ? 3 : version === 2 ? 5 : version === 3 ? 7 : 9, usable - bits.length),
+  )
+
+  // Zero fill to the codeword boundary
+  while (bits.length % 8 !== 0 && bits.length < usable) bits.push(0)
+
+  // Whole codewords left over take the alternating pad pattern
+  let toggle = true
+  while (usable - bits.length >= 8) {
+    pushBits(bits, toggle ? 236 : 17, 8)
+    toggle = !toggle
   }
 
-  return bits
+  // The four bit final codeword of M1 and M3 is zero filled, never padded
+  while (bits.length < totalBits) bits.push(0)
+
+  return bits.slice(0, totalBits)
 }
 
 /**

@@ -149,7 +149,7 @@ function encodeSegments(
         codewords.push(MODE_LATCH.BYTE_SHIFT, bytes[segment.start]!)
         break
       case "byte":
-        encodeByteSegment([...bytes.slice(segment.start, segment.end)], codewords)
+        encodeByteSegment(bytes.slice(segment.start, segment.end), codewords)
         inText = false
         break
     }

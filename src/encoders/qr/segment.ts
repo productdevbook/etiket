@@ -70,12 +70,22 @@ function roundToBit(cost: number): number {
  * @param text - The text to segment
  * @param version - Target QR version; it sets the character-count width and
  *   therefore how expensive a mode switch is
+ * @param headBits - What a segment header costs in each mode, in bits, when it
+ *   is not QR's four bit indicator plus a version-dependent count. Micro QR
+ *   passes its own: the indicator is one to three bits wide there, the counts
+ *   are narrower, and a mode a version does not offer costs `Infinity`.
  */
-export function optimizeSegments(text: string, version: number): QRSegment[] {
+export function optimizeSegments(
+  text: string,
+  version: number,
+  headBits?: readonly number[],
+): QRSegment[] {
   const chars = [...text]
   if (chars.length === 0) return []
 
-  const headCost = MODES.map((mode) => (4 + getCharCountBits(version, mode)) * 6)
+  const headCost = headBits
+    ? headBits.map((bits) => bits * 6)
+    : MODES.map((mode) => (4 + getCharCountBits(version, mode)) * 6)
 
   // charModes[i][m] = the mode character i-1 was in, on the cheapest path that
   // puts character i in mode m

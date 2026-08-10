@@ -54,7 +54,9 @@ and no recovery from damage. M2 accepts numeric and alphanumeric data only; byte
 mode starts at M3.
 
 With no `version` the encoder takes the smallest one that holds the data at the
-requested EC level.
+requested EC level. With no `ecLevel` it uses `L`, which is the level that
+reaches the smallest symbol; ask for a stronger one and the symbol grows to
+whichever version can provide it.
 
 ## Options
 
@@ -69,13 +71,22 @@ Plus the [shared matrix rendering options](/2d-codes/#shared-rendering-options).
 Micro QR has four mask patterns, not the eight of full QR; they correspond to
 full QR's masks 1, 4, 6 and 7.
 
-## Mode Detection
+## Modes
 
-The mode is detected from the input — all digits gives numeric, the QR
-alphanumeric set (`0-9 A-Z $%*+-./: ` and space) gives alphanumeric, anything
-else gives byte. There is no `mode` option, and the capacity table above is per
-mode, so a single lowercase letter in an otherwise numeric string drops the
-symbol from 35 characters of capacity to 15.
+Numeric, alphanumeric (`0-9 A-Z $%*+-./:` and space) and byte — chosen per run
+of characters rather than once for the whole message. The encoder splits the
+input wherever switching pays for itself: `A0123456789Z` becomes an
+alphanumeric segment, a numeric one and another alphanumeric one, because ten
+bits per three digits beats eleven bits per two characters by more than the
+segment header costs.
+
+The capacity table above is per mode and assumes one segment. A mixed message
+gets whatever the split works out to, which is never worse than encoding all of
+it in the widest mode it needs — so a single lowercase letter no longer drops an
+otherwise numeric message into byte mode for its whole length.
+
+There is no `mode` option. Kanji mode, which the standard reserves for M4, is
+not implemented.
 
 ## PNG
 
@@ -91,12 +102,11 @@ microqrPNGDataURI("12345")
 - **No ECI, no Structured Append, no kanji mode.** The standard reserves kanji
   mode for M4; etiket does not implement it, and the other two are not part of
   Micro QR at all. Use a full QR code when you need any of them.
-- **An EC level a version cannot provide is silently downgraded to `L`.** `Q`
-  only exists on M4, and M1 has no error correction at all, so
-  `microqr("12345", { version: 2, ecLevel: "Q" })` produces an M2 symbol at
-  level L. With no `version`, the same fallback means a short payload with
-  `ecLevel: "Q"` lands on a small symbol at L rather than on M4 at Q — pin
-  `version: 4` when the level matters more than the size.
+- **A requested EC level is never downgraded.** `Q` exists on M4 alone, so
+  `microqr("12345", { ecLevel: "Q" })` grows to a 17×17 symbol rather than
+  quietly settling for `L` on a smaller one. Pinning a version that cannot
+  provide the level — `{ version: 2, ecLevel: "Q" }` — raises
+  `InvalidInputError` instead.
 - Data past the version's capacity raises `CapacityError`.
 - Empty input raises `InvalidInputError`.
 - The quiet zone is 2 modules, not 4. Passing a larger `margin` is harmless;
