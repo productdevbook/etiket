@@ -253,15 +253,23 @@ export function getLatchSequence(from: Mode, to: Mode): ModeSwitch {
  * - Lower -> Upper shift: code 28
  */
 
-/** Shift to Punct: available from Upper (code 0), Lower (code 0), Mixed (code 0) — all use code 0 */
-export const SHIFT_TO_PUNCT: Record<number, number> = {
-  [Mode.Upper]: 0,
-  [Mode.Lower]: 0,
-  [Mode.Mixed]: 0,
-}
-
-/** Shift to Upper from Lower: code 28 */
-export const SHIFT_LOWER_TO_UPPER = 28
+/**
+ * Single-character shift codewords, indexed `[from][to]`.
+ *
+ * A shift borrows one codeword from another mode and comes straight back.
+ * There are six: every mode but Punctuation can shift into Punctuation, and
+ * Lower and Digit can shift into Upper. Punctuation itself has no spare
+ * codeword to shift with — it can only latch back to Upper.
+ */
+// prettier-ignore
+export const SHIFT_CODES: ReadonlyArray<ReadonlyArray<number | undefined>> = [
+  //  to Upper,  Lower,     Mixed,     Punct,     Digit
+  [   undefined, undefined, undefined, 0,         undefined], // from Upper
+  [   28,        undefined, undefined, 0,         undefined], // from Lower
+  [   undefined, undefined, undefined, 0,         undefined], // from Mixed
+  [   undefined, undefined, undefined, undefined, undefined], // from Punct
+  [   15,        undefined, undefined, 0,         undefined], // from Digit
+]
 
 /**
  * Binary shift code, in the three modes that have one.

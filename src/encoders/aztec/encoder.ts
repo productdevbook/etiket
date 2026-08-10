@@ -20,9 +20,10 @@ import {
   CHAR_TABLE,
   PUNCT_PAIRS,
   getLatchSequence,
-  SHIFT_TO_PUNCT,
+  SHIFT_CODES,
   BINARY_SHIFT,
 } from "./tables"
+import type { ModeSwitch } from "./tables"
 
 // ---------------------------------------------------------------------------
 // Bit manipulation helpers
@@ -85,7 +86,7 @@ function emitECI(bits: number[], eci: number): void {
 
   const digits = String(eci)
 
-  pushBits(bits, SHIFT_TO_PUNCT[Mode.Upper]!, MODE_BITS[Mode.Upper])
+  pushBits(bits, SHIFT_CODES[Mode.Upper]![Mode.Punct]!, MODE_BITS[Mode.Upper])
   pushBits(bits, FLG_CODE, MODE_BITS[Mode.Punct])
   pushBits(bits, digits.length, 3)
   for (let i = 0; i < digits.length; i++) {
@@ -94,37 +95,71 @@ function emitECI(bits: number[], eci: number): void {
 }
 
 // ---------------------------------------------------------------------------
-// Character classification
-// ---------------------------------------------------------------------------
-
-/**
- * Determine which modes can encode a given character.
- * Returns an array of { mode, value } options.
- */
-function charModes(char: string): Array<{ mode: Mode; value: number }> {
-  const result: Array<{ mode: Mode; value: number }> = []
-  for (let m = 0; m <= 4; m++) {
-    const table = CHAR_TABLE[m]!
-    const val = table[char]
-    if (val !== undefined) {
-      result.push({ mode: m as Mode, value: val })
-    }
-  }
-  return result
-}
-
-// ---------------------------------------------------------------------------
 // High-level encoding
 // ---------------------------------------------------------------------------
 
 /**
+ * Bits a binary shift run of `length` bytes costs, its header included.
+ *
+ * Up to 31 bytes the header is the B/S codeword and a 5-bit length. Between 32
+ * and 62 two runs of 31 and the rest cost less than the long form, and from 63
+ * the long form — a zero length field and 11 further bits — wins.
+ */
+function binaryRunBits(length: number): number {
+  if (length === 0) return 0
+  if (length <= 31) return 10 + length * 8
+  if (length <= 62) return 20 + length * 8
+  return 21 + length * 8
+}
+
+/** Bits one more byte adds to a run that already holds `run` of them. */
+function binaryStepBits(run: number): number {
+  return binaryRunBits(run + 1) - binaryRunBits(run)
+}
+
+/**
+ * Run lengths tracked exactly. Past 63 every further byte costs the same eight
+ * bits, so the state saturates there and the real length comes back off the
+ * route. The length field reaches 2078 bytes, more than any Aztec symbol holds.
+ */
+const RUN_STATES = 64
+
+const MODES = [Mode.Upper, Mode.Lower, Mode.Mixed, Mode.Punct, Mode.Digit] as const
+
+/** What a step of the route does. */
+const enum Action {
+  /** Close the open binary run. Costs nothing and consumes nothing. */
+  Close = 0,
+  /** Latch into this state's mode. Consumes nothing. */
+  Latch = 1,
+  /** One character, in the current mode. */
+  Char = 2,
+  /** One character, shifted out of the current mode. */
+  ShiftChar = 3,
+  /** A two-character punctuation sequence, already in Punct. */
+  Pair = 4,
+  /** A two-character punctuation sequence, shifted into Punct. */
+  ShiftPair = 5,
+  /** One more byte of a binary run. */
+  Binary = 6,
+}
+
+/** Index of a (mode, run) state within one position. */
+function stateIndex(mode: Mode, run: number): number {
+  return mode * RUN_STATES + run
+}
+
+/**
  * Encode a string into an Aztec bit stream.
  *
- * Strategy:
- * 1. For each character, check if it can be encoded in the current mode.
- * 2. If yes, emit the codeword directly.
- * 3. If no, try a shift first (cheaper for single characters), else latch.
- * 4. Fall back to binary shift for characters not in any text mode.
+ * ISO/IEC 24778 gives five text modes and a binary shift, and several ways to
+ * move between them: a latch is permanent, a shift borrows one codeword, and a
+ * binary run carries raw bytes at eight bits each behind a header that grows
+ * with the run. Which is cheapest for a character depends on what follows it,
+ * so the route is found rather than guessed — `cost[i][mode][run]` is the
+ * fewest bits that encode the first `i` characters and leave the encoder in
+ * `mode` with `run` bytes of an open binary run, and the bit stream is read
+ * back off the cheapest route to the end.
  *
  * Input containing characters outside ISO-8859-1 is transparently re-encoded
  * as UTF-8 bytes and prefixed with an FLG(n) ECI 000026 declaration, unless
@@ -152,239 +187,210 @@ export function encodeHighLevel(text: string, eci?: number): number[] {
     emitECI(bits, eciValue)
   }
 
-  let currentMode = Mode.Upper
-  let i = 0
-
-  while (i < data.length) {
-    const char = data[i]!
-
-    // --- Check for two-character punctuation pairs ---
-    if (i + 1 < data.length) {
-      const pair = data[i]! + data[i + 1]!
-      const punctPairVal = PUNCT_PAIRS.get(pair)
-      if (punctPairVal !== undefined) {
-        if (currentMode === Mode.Punct) {
-          pushBits(bits, punctPairVal, MODE_BITS[Mode.Punct])
-        } else {
-          // Shift to Punct for the pair
-          const shiftCode = SHIFT_TO_PUNCT[currentMode]
-          if (shiftCode !== undefined) {
-            pushBits(bits, shiftCode, MODE_BITS[currentMode])
-            pushBits(bits, punctPairVal, MODE_BITS[Mode.Punct])
-          } else {
-            // Must latch to a mode that supports shift-to-punct, then shift
-            const latch = getLatchSequence(currentMode, Mode.Upper)
-            emitLatch(bits, latch)
-            currentMode = Mode.Upper
-            pushBits(bits, SHIFT_TO_PUNCT[Mode.Upper]!, MODE_BITS[Mode.Upper])
-            pushBits(bits, punctPairVal, MODE_BITS[Mode.Punct])
-          }
-        }
-        i += 2
-        continue
-      }
-    }
-
-    // --- Try encoding in the current mode ---
-    const currentTable = CHAR_TABLE[currentMode]!
-    const directVal = currentTable[char]
-    if (directVal !== undefined) {
-      pushBits(bits, directVal, MODE_BITS[currentMode])
-      i++
-      continue
-    }
-
-    // --- Character not in current mode — find best alternative ---
-    const options = charModes(char)
-
-    if (options.length > 0) {
-      // Determine: should we shift or latch?
-      const bestOption = selectBestTransition(currentMode, options, data, i)
-
-      if (bestOption.shift) {
-        // Emit shift code, then character in the shifted mode
-        if (bestOption.mode === Mode.Punct) {
-          const shiftCode = SHIFT_TO_PUNCT[currentMode]
-          if (shiftCode !== undefined) {
-            pushBits(bits, shiftCode, MODE_BITS[currentMode])
-            pushBits(bits, bestOption.value, MODE_BITS[Mode.Punct])
-            i++
-            continue
-          }
-        }
-        // Shift from Lower to Upper
-        if (currentMode === Mode.Lower && bestOption.mode === Mode.Upper) {
-          pushBits(bits, 28, MODE_BITS[Mode.Lower]) // shift to upper
-          pushBits(bits, bestOption.value, MODE_BITS[Mode.Upper])
-          i++
-          continue
-        }
-        // No direct shift available — fall through to latch
-      }
-
-      // Latch to the target mode
-      const latch = getLatchSequence(currentMode, bestOption.mode)
-      emitLatch(bits, latch)
-      currentMode = bestOption.mode
-      pushBits(bits, bestOption.value, MODE_BITS[currentMode])
-      i++
-      continue
-    }
-
-    // --- Character not in any text mode — use binary shift ---
-    // `data` is always Latin-1 here: anything wider was converted to UTF-8
-    // bytes above, so every remaining char code fits in 8 bits.
-    const binaryStart = i
-    while (i < data.length) {
-      const c = data[i]!
-      if (charModes(c).length > 0) {
-        // Check if it's only in a mode far from current — might be cheaper to stay binary
-        // For simplicity, break out and let the text encoder handle it
-        break
-      }
-      i++
-    }
-
-    const binaryLen = i - binaryStart
-    currentMode = emitBinaryShift(bits, data, binaryStart, binaryLen, currentMode)
-    continue
-  }
-
+  for (const step of route(data)) step(bits)
   return bits
 }
 
-// ---------------------------------------------------------------------------
-// Transition helpers
-// ---------------------------------------------------------------------------
-
-interface TransitionChoice {
-  mode: Mode
-  value: number
-  shift: boolean
-}
+/** A piece of the finished bit stream. */
+type Emit = (bits: number[]) => void
 
 /**
- * Choose the best mode transition for encoding a character.
- * Prefers shifting for isolated characters and latching when the next
- * several characters are also in the target mode.
+ * The cheapest route through the modes, as the steps that write it out.
+ *
+ * Every position holds one cost per (mode, open run length). The steps that
+ * consume no characters — closing a run, latching — are settled first, then
+ * each state offers what it can do with the character in front of it.
  */
-function selectBestTransition(
-  currentMode: Mode,
-  options: Array<{ mode: Mode; value: number }>,
-  text: string,
-  pos: number,
-): TransitionChoice {
-  // Check if shift to Punct makes sense (single punctuation character)
-  const punctOption = options.find((o) => o.mode === Mode.Punct)
-  if (punctOption && SHIFT_TO_PUNCT[currentMode] !== undefined) {
-    // Look ahead: if next char is NOT in Punct mode, shift is better than latch
-    const nextChar = pos + 1 < text.length ? text[pos + 1]! : undefined
-    const nextInPunct = nextChar !== undefined && CHAR_TABLE[Mode.Punct]![nextChar] !== undefined
-    if (!nextInPunct) {
-      return { mode: Mode.Punct, value: punctOption.value, shift: true }
-    }
+function route(data: string): Emit[] {
+  const length = data.length
+  const width = MODES.length * RUN_STATES
+  const cost = new Float64Array((length + 1) * width).fill(Infinity)
+  // Packed as delta<<16 | previous mode<<13 | previous run<<6 | action<<3 | target
+  const from = new Int32Array((length + 1) * width).fill(-1)
+
+  cost[stateIndex(Mode.Upper, 0)] = 0
+
+  /** Offer a state a cheaper way of being reached. */
+  const relax = (
+    at: number,
+    mode: Mode,
+    run: number,
+    total: number,
+    delta: number,
+    fromMode: Mode,
+    fromRun: number,
+    action: Action,
+    target: Mode,
+  ): void => {
+    const slot = at * width + stateIndex(mode, run)
+    if (total >= cost[slot]!) return
+    cost[slot] = total
+    from[slot] = (delta << 16) | (fromMode << 13) | (fromRun << 6) | (action << 3) | target
   }
 
-  // Check if shift from Lower to Upper makes sense
-  if (currentMode === Mode.Lower) {
-    const upperOption = options.find((o) => o.mode === Mode.Upper)
-    if (upperOption) {
-      const nextChar = pos + 1 < text.length ? text[pos + 1]! : undefined
-      const nextInUpper = nextChar !== undefined && CHAR_TABLE[Mode.Upper]![nextChar] !== undefined
-      const nextInLower = nextChar !== undefined && CHAR_TABLE[Mode.Lower]![nextChar] !== undefined
-      if (!nextInUpper || nextInLower) {
-        return { mode: Mode.Upper, value: upperOption.value, shift: true }
+  for (let at = 0; at <= length; at++) {
+    const base = at * width
+
+    // Giving up on an open run costs nothing
+    for (const mode of MODES) {
+      for (let run = 1; run < RUN_STATES; run++) {
+        const open = cost[base + stateIndex(mode, run)]!
+        if (open < Infinity) relax(at, mode, 0, open, 0, mode, run, Action.Close, mode)
+      }
+    }
+
+    // Latches chain, so they are settled to a fixed point before the character
+    for (let round = 0; round < MODES.length; round++) {
+      for (const mode of MODES) {
+        const here = cost[base + stateIndex(mode, 0)]!
+        if (here === Infinity) continue
+        for (const target of MODES) {
+          if (target === mode) continue
+          const latch = getLatchSequence(mode, target)
+          relax(at, target, 0, here + latch.totalBits, 0, mode, 0, Action.Latch, target)
+        }
+      }
+    }
+
+    if (at === length) break
+
+    const char = data[at]!
+    const pairCode = at + 1 < length ? PUNCT_PAIRS.get(char + data[at + 1]!) : undefined
+
+    for (const mode of MODES) {
+      // One more byte of an open run, or the first byte of a new one. Punct and
+      // Digit have no B/S codeword; the latch above reaches a mode that has one
+      for (let run = 0; run < RUN_STATES; run++) {
+        if (run === 0 && !BINARY_SHIFT[mode]) break
+        const here = cost[base + stateIndex(mode, run)]!
+        if (here === Infinity) continue
+        const next = Math.min(run + 1, RUN_STATES - 1)
+        relax(at + 1, mode, next, here + binaryStepBits(run), 1, mode, run, Action.Binary, mode)
+      }
+
+      const here = cost[base + stateIndex(mode, 0)]!
+      if (here === Infinity) continue
+
+      // The character, in this mode or borrowed from another
+      if (CHAR_TABLE[mode]![char] !== undefined) {
+        relax(at + 1, mode, 0, here + MODE_BITS[mode], 1, mode, 0, Action.Char, mode)
+      }
+      for (const target of MODES) {
+        const shift = SHIFT_CODES[mode]![target]
+        if (shift === undefined || CHAR_TABLE[target]![char] === undefined) continue
+        const total = here + MODE_BITS[mode] + MODE_BITS[target]
+        relax(at + 1, mode, 0, total, 1, mode, 0, Action.ShiftChar, target)
+      }
+
+      // A two-character punctuation sequence in one codeword
+      if (pairCode === undefined) continue
+      if (mode === Mode.Punct) {
+        relax(at + 2, mode, 0, here + MODE_BITS[mode], 2, mode, 0, Action.Pair, mode)
+      } else if (SHIFT_CODES[mode]![Mode.Punct] !== undefined) {
+        const total = here + MODE_BITS[mode] + MODE_BITS[Mode.Punct]
+        relax(at + 2, mode, 0, total, 2, mode, 0, Action.ShiftPair, Mode.Punct)
       }
     }
   }
 
-  // Find the option with the cheapest latch
-  let bestCost = Infinity
-  let best: TransitionChoice = { mode: options[0]!.mode, value: options[0]!.value, shift: false }
-
-  for (const opt of options) {
-    const latch = getLatchSequence(currentMode, opt.mode)
-    if (latch.totalBits < bestCost) {
-      bestCost = latch.totalBits
-      best = { mode: opt.mode, value: opt.value, shift: false }
+  // The cheapest way to have encoded everything, whatever mode it ends in
+  let bestMode = Mode.Upper
+  let best = Infinity
+  for (const mode of MODES) {
+    const total = cost[length * width + stateIndex(mode, 0)]!
+    if (total < best) {
+      best = total
+      bestMode = mode
     }
   }
 
-  return best
-}
+  // Walk the route back, then hand out the steps in order
+  const steps: Emit[] = []
+  const run: number[] = []
+  let at = length
+  let mode = bestMode
+  let openRun = 0
+  for (;;) {
+    const packed = from[at * width + stateIndex(mode, openRun)]!
+    if (packed === -1) break
+    const previousMode = ((packed >> 13) & 7) as Mode
+    const previousRun = (packed >> 6) & 0x7f
+    const action = (packed >> 3) & 7
+    const target = (packed & 7) as Mode
+    const start = at - (packed >>> 16)
 
-/** Emit latch codes into the bit stream */
-function emitLatch(
-  bits: number[],
-  latch: { codes: number[]; modes: Mode[]; totalBits: number },
-): void {
-  for (let j = 0; j < latch.codes.length; j++) {
-    const code = latch.codes[j]!
-    const mode = latch.modes[j]!
-    pushBits(bits, code, MODE_BITS[mode])
+    if (action === Action.Latch) {
+      const latch = getLatchSequence(previousMode, target)
+      steps.push((out) => emitLatch(out, latch))
+    } else if (action === Action.Char) {
+      const value = CHAR_TABLE[previousMode]![data[start]!]!
+      const bits = MODE_BITS[previousMode]
+      steps.push((out) => pushBits(out, value, bits))
+    } else if (action === Action.ShiftChar || action === Action.ShiftPair) {
+      const shift = SHIFT_CODES[previousMode]![target]!
+      const shiftBits = MODE_BITS[previousMode]
+      const value =
+        action === Action.ShiftChar
+          ? CHAR_TABLE[target]![data[start]!]!
+          : PUNCT_PAIRS.get(data[start]! + data[start + 1]!)!
+      const valueBits = MODE_BITS[target]
+      steps.push((out) => {
+        pushBits(out, shift, shiftBits)
+        pushBits(out, value, valueBits)
+      })
+    } else if (action === Action.Pair) {
+      const value = PUNCT_PAIRS.get(data[start]! + data[start + 1]!)!
+      steps.push((out) => pushBits(out, value, MODE_BITS[Mode.Punct]))
+    } else if (action === Action.Binary) {
+      // The run is written when its first byte is reached, which walking
+      // backwards is last
+      run.unshift(data.charCodeAt(start))
+      if (previousRun === 0) {
+        const bytes = [...run]
+        run.length = 0
+        steps.push((out) => emitBinaryRun(out, bytes))
+      }
+    }
+
+    at = start
+    mode = previousMode
+    openRun = previousRun
   }
+
+  return steps.reverse()
 }
 
 /**
- * Emit a binary shift sequence into the bit stream.
+ * Write a binary shift run.
  *
- * Binary shift encoding:
- * 1. Emit BS code in current mode (code 31 for Upper/Lower/Mixed, code 15 for Digit)
- * 2. Length 1-31 goes in the 5-bit field directly; a longer run signals 0
- *    there and carries (length - 31) in a further 11 bits, so one run holds up
- *    to 2078 bytes. Anything longer starts another run.
- * 3. Emit each byte as 8 bits
- *
- * After binary shift, the mode returns to the mode before the shift.
+ * 32 to 62 bytes go out as two runs, of 31 and the rest, which costs a bit less
+ * than the long length form; from 63 the long form wins.
  */
-function emitBinaryShift(
-  bits: number[],
-  text: string,
-  start: number,
-  length: number,
-  currentMode: Mode,
-): Mode {
-  let remaining = length
-  let pos = start
+function emitBinaryRun(bits: number[], bytes: number[]): void {
+  const length = bytes.length
+  const first = length <= 62 ? Math.min(length, 31) : length
 
-  // Punct and Digit have no B/S codeword of their own, so the run starts by
-  // latching to Upper. Emitting Digit's codeword 15 here used to tell a reader
-  // to take the next codeword as an upper case letter, and every byte after it
-  // came back as text.
-  let mode = currentMode
-  if (!BINARY_SHIFT[mode]) {
-    emitLatch(bits, getLatchSequence(mode, Mode.Upper))
-    mode = Mode.Upper
+  pushBits(bits, 31, 5)
+  if (length > 62) {
+    pushBits(bits, 0, 5)
+    pushBits(bits, length - 31, 11)
+  } else {
+    pushBits(bits, first, 5)
   }
+  for (let i = 0; i < first; i++) pushBits(bits, bytes[i]!, 8)
 
-  while (remaining > 0) {
-    // A binary shift run carries at most 2078 bytes: 31 encodable in the
-    // 5-bit length field, or 31 + 2047 via the extended 11-bit field.
-    const chunk = Math.min(remaining, 2078)
-
-    // Emit binary shift intro code
-    const bs = BINARY_SHIFT[mode]!
-    pushBits(bits, bs.code, bs.bits)
-
-    // Emit length: 1-31 fits the 5-bit field directly; longer runs signal 0
-    // there and carry (length - 31) in a further 11 bits (ISO/IEC 24778).
-    if (chunk <= 31) {
-      pushBits(bits, chunk, 5)
-    } else {
-      pushBits(bits, 0, 5)
-      pushBits(bits, chunk - 31, 11)
-    }
-
-    // Emit raw bytes
-    for (let j = 0; j < chunk; j++) {
-      pushBits(bits, text.charCodeAt(pos + j), 8)
-    }
-
-    pos += chunk
-    remaining -= chunk
+  if (first < length) {
+    pushBits(bits, 31, 5)
+    pushBits(bits, length - first, 5)
+    for (let i = first; i < length; i++) pushBits(bits, bytes[i]!, 8)
   }
+}
 
-  return mode
+/** Emit a latch sequence, each code in the bit width of the mode it is read in */
+function emitLatch(bits: number[], latch: ModeSwitch): void {
+  for (const [i, code] of latch.codes.entries()) {
+    pushBits(bits, code, MODE_BITS[latch.modes[i]!])
+  }
 }
 
 /**

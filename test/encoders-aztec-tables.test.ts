@@ -15,7 +15,7 @@ import {
   getBaseMatrixSize,
   getModuleCount,
   getTotalBitCapacity,
-  SHIFT_TO_PUNCT,
+  SHIFT_CODES,
   BINARY_SHIFT,
   GF_POLY,
   PUNCT_PAIRS,
@@ -116,13 +116,24 @@ describe("getLatchSequence", () => {
 })
 
 describe("Aztec shift and binary-shift tables", () => {
-  it("defines a shift-to-Punct code for the modes that have one", () => {
-    for (const mode of [Mode.Upper, Mode.Lower, Mode.Mixed, Mode.Digit]) {
-      const code = SHIFT_TO_PUNCT[mode]
-      if (code !== undefined) {
-        expect(code, MODE_NAMES[mode]).toBeLessThan(1 << MODE_BITS[mode])
+  it("defines every shift within the bit width of the mode it is read in", () => {
+    for (const from of ALL_MODES) {
+      for (const to of ALL_MODES) {
+        const code = SHIFT_CODES[from]![to]
+        if (code !== undefined) {
+          expect(code, `${MODE_NAMES[from]} to ${MODE_NAMES[to]}`).toBeLessThan(
+            1 << MODE_BITS[from],
+          )
+        }
       }
     }
+  })
+
+  it("gives every mode but Punct a shift into Punct", () => {
+    for (const mode of [Mode.Upper, Mode.Lower, Mode.Mixed, Mode.Digit]) {
+      expect(SHIFT_CODES[mode]![Mode.Punct], MODE_NAMES[mode]).toBe(0)
+    }
+    expect(SHIFT_CODES[Mode.Punct]![Mode.Punct]).toBeUndefined()
   })
 
   it("defines a binary shift code within each mode's bit width", () => {

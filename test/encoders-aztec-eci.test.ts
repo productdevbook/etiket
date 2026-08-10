@@ -116,9 +116,12 @@ describe("Aztec output is unchanged for Latin-1 input", () => {
     )
   })
 
+  // One bit shorter than the stream the greedy encoder produced: É and Ï are
+  // two bytes no text mode carries, and the route now spends one binary shift
+  // header on the pair rather than one each
   it("produces the pre-ECI bit stream for high-range Latin-1", () => {
     expect(bitString(encodeHighLevel("CAFÉ NAÏVE"))).toBe(
-      "0010000010001111111100001110010010000101111000101111100001110011111011100110",
+      "001000001000111111110010111001001001000000100111001000001110011111011100110",
     )
   })
 
