@@ -9,13 +9,22 @@
 import { encodePOSTNET, encodePLANET } from "./encoders/postnet"
 import { encodeRM4SCC, encodeKIX, encodeAustraliaPost, encodeJapanPost } from "./encoders/fourstate"
 import { encodeIMb } from "./encoders/imb"
+import { encodePharmacode2 } from "./encoders/pharmacode"
 import { renderPostalSVG } from "./renderers/svg/postal"
 import { svgToDataURI, svgToBase64 } from "./renderers/data-uri"
 import type { PostalBar, PostalSVGOptions } from "./renderers/svg/postal"
 import { InvalidInputError } from "./errors"
 
 /** Height-modulated postal symbologies. */
-export type PostalType = "postnet" | "planet" | "rm4scc" | "kix" | "auspost" | "jppost" | "imb"
+export type PostalType =
+  | "postnet"
+  | "planet"
+  | "rm4scc"
+  | "kix"
+  | "auspost"
+  | "jppost"
+  | "imb"
+  | "pharmacode2"
 
 export interface PostalEncodingOptions {
   /** Postal symbology. Default "postnet". */
@@ -56,6 +65,8 @@ export function encodePostal(text: string, options: PostalEncodingOptions = {}):
       return encodeJapanPost(text, routingCode || undefined)
     case "imb":
       return encodeIMb(text, routingCode)
+    case "pharmacode2":
+      return encodePharmacode2(Number(text))
     default:
       throw new InvalidInputError(`Unsupported postal type: ${String(type)}`)
   }
@@ -74,7 +85,11 @@ export function encodePostal(text: string, options: PostalEncodingOptions = {}):
 export function postal(text: string, options: PostalOptions = {}): string {
   const { type: _type, fcc: _fcc, routingCode: _routing, ...svgOptions } = options
   const bars = encodePostal(text, options)
-  return renderPostalSVG(bars, svgOptions)
+  // Two-track Pharmacode has two tracks where a postal symbology has three, so
+  // its short bars are half the symbol rather than two thirds of it.
+  const trackerRatio =
+    options.type === "pharmacode2" ? (options.trackerRatio ?? 0) : options.trackerRatio
+  return renderPostalSVG(bars, { ...svgOptions, trackerRatio })
 }
 
 /** Generate a postal barcode as a data URI */

@@ -11,6 +11,7 @@ import { encodeISBN, encodeISMN, encodeISSN } from "../encoders/isbn"
 import { encodeAztecRune } from "../encoders/aztec/index"
 import { encodeCode2of5 } from "../encoders/code2of5"
 import { encodeCode32, encodePZN } from "../encoders/pharma-national"
+import { encodePharmacode2 } from "../encoders/pharmacode"
 import { postnetCheckDigit } from "../encoders/postnet"
 
 /**
@@ -345,6 +346,9 @@ export function validateBarcode(text: string, type: string): { valid: boolean; e
 
     case "aztecrune":
       return byEncoding(() => encodeAztecRune(Number(text)))
+
+    case "pharmacode2":
+      return byEncoding(() => encodePharmacode2(Number(text)))
 
     case "qr":
     case "datamatrix":

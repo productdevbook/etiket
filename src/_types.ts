@@ -85,6 +85,7 @@ export const EXTRA_ENCODE_TYPES = [
   "auspost",
   "jppost",
   "imb",
+  "pharmacode2",
   "qr",
   "microqr",
   "rmqr",

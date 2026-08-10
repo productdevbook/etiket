@@ -27,6 +27,7 @@ const POSTAL_TYPES = new Set<EncodeType>([
   "auspost",
   "jppost",
   "imb",
+  "pharmacode2",
 ])
 
 /**

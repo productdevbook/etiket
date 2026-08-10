@@ -27,15 +27,16 @@ encodePostal("12345", { type: "postnet" })
 
 ## Supported Formats
 
-| Format                                    | `type`    | Input                         | Family  |
-| :---------------------------------------- | :-------- | :---------------------------- | :------ |
-| [USPS POSTNET](/postal/postnet-planet)    | `postnet` | 5, 9 or 11 digits             | 2-state |
-| [USPS PLANET](/postal/postnet-planet)     | `planet`  | 11 or 13 digits               | 2-state |
-| [Royal Mail RM4SCC](/postal/rm4scc)       | `rm4scc`  | A-Z, 0-9                      | 4-state |
-| [Dutch KIX](/postal/kix)                  | `kix`     | A-Z, 0-9                      | 4-state |
-| [Australia Post](/postal/auspost)         | `auspost` | 8-digit DPID (+ FCC)          | 4-state |
-| [Japan Post (JP4SCC)](/postal/japan-post) | `jppost`  | 7-digit postcode (+ address)  | 4-state |
-| [USPS Intelligent Mail](/postal/imb)      | `imb`     | 20-digit tracking (+ routing) | 4-state |
+| Format                                                            | `type`        | Input                         | Family  |
+| :---------------------------------------------------------------- | :------------ | :---------------------------- | :------ |
+| [USPS POSTNET](/postal/postnet-planet)                            | `postnet`     | 5, 9 or 11 digits             | 2-state |
+| [USPS PLANET](/postal/postnet-planet)                             | `planet`      | 11 or 13 digits               | 2-state |
+| [Royal Mail RM4SCC](/postal/rm4scc)                               | `rm4scc`      | A-Z, 0-9                      | 4-state |
+| [Dutch KIX](/postal/kix)                                          | `kix`         | A-Z, 0-9                      | 4-state |
+| [Australia Post](/postal/auspost)                                 | `auspost`     | 8-digit DPID (+ FCC)          | 4-state |
+| [Japan Post (JP4SCC)](/postal/japan-post)                         | `jppost`      | 7-digit postcode (+ address)  | 4-state |
+| [USPS Intelligent Mail](/postal/imb)                              | `imb`         | 20-digit tracking (+ routing) | 4-state |
+| [Two-track Pharmacode](/barcodes/pharmacode#two-track-pharmacode) | `pharmacode2` | 4 to 64570080                 | 2-track |
 
 Check digits are calculated automatically for every format that defines one.
 

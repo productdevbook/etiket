@@ -91,6 +91,7 @@ const POSTAL_TYPES: PostalType[] = [
   "auspost",
   "jppost",
   "imb",
+  "pharmacode2",
 ]
 
 /** 2D and stacked symbologies `etiket validate` also understands. */

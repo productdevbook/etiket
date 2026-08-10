@@ -71,6 +71,7 @@ const SAMPLES: Array<[EncodeType, string]> = [
   ["auspost", "12345678"],
   ["jppost", "1234567"],
   ["imb", "01234567094987654321"],
+  ["pharmacode2", "1234"],
   // 2D
   ["qr", "HELLO"],
   ["microqr", "12345"],
@@ -96,6 +97,7 @@ const POSTAL_TYPES = new Set<EncodeType>([
   "auspost",
   "jppost",
   "imb",
+  "pharmacode2",
 ])
 
 const TWO_D_TYPES = new Set<EncodeType>([

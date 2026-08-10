@@ -5,6 +5,7 @@
  */
 
 import { InvalidInputError } from "../errors"
+import type { FourState } from "./fourstate"
 
 // Bar widths: thin bar = 2 modules, thick bar = 4 modules
 const THIN_BAR = 2
@@ -56,5 +57,47 @@ export function encodePharmacode(value: number): number[] {
     }
   }
 
+  return bars
+}
+
+/**
+ * Encode a two-track Pharmacode.
+ *
+ * Where Pharmacode carries its data in bar *width*, the two-track variant
+ * carries it in bar *position*: each base-three digit is a short bar on the
+ * lower track, a short bar on the upper track, or a full height bar across
+ * both. That makes it a height-modulated symbology, so it renders through the
+ * postal renderer at a tracker ratio of zero — two tracks rather than three.
+ *
+ * @param value - Integer 4 to 64570080
+ * @returns Bar states: `"D"` lower track, `"A"` upper, `"F"` full height
+ *
+ * @example
+ * ```ts
+ * encodePharmacode2(1234)
+ * ```
+ */
+export function encodePharmacode2(value: number): FourState[] {
+  if (!Number.isInteger(value)) {
+    throw new InvalidInputError(`Two-track Pharmacode value must be an integer, got ${value}`)
+  }
+  if (value < 4 || value > 64_570_080) {
+    throw new InvalidInputError(
+      `Two-track Pharmacode value must be between 4 and 64570080, got ${value}`,
+    )
+  }
+
+  // Base three with no zero digit: each step takes the remainder, subtracts the
+  // matching offset and divides, so every digit lands on one of three tracks.
+  const SUBTRACT = [3, 1, 2]
+  const TRACK: FourState[] = ["F", "D", "A"]
+
+  const bars: FourState[] = []
+  let remaining = value
+  while (remaining > 0) {
+    const digit = remaining % 3
+    remaining = Math.trunc((remaining - SUBTRACT[digit]!) / 3)
+    bars.unshift(TRACK[digit]!)
+  }
   return bars
 }

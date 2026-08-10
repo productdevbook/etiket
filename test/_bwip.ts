@@ -158,6 +158,25 @@ export function bwipStates(bcid: string, text: string, options: BwipOptions = {}
   })
 }
 
+/**
+ * Bar states of a two-track symbology: lower track, upper track, or both.
+ *
+ * `bwipStates` reads the extremes out of the symbol itself, which cannot tell a
+ * symbol whose bars all sit on one track from one whose bars all span both —
+ * two tracks are only two states apart. This reads the geometry absolutely
+ * instead: BWIPP draws a track `height / 25.4` deep, so a bar half again as
+ * tall as that spans both tracks and one starting above the baseline is on the
+ * upper one.
+ */
+export function bwipTwoTrack(bcid: string, text: string, height = 4): BwipState[] {
+  const part = rawEncode(bcid, text, { height }) as BwipBars
+  if (!part.bhs || !part.bbs) throw new Error(`bwip-js produced no postal data for ${bcid}`)
+  const track = height / 25.4
+  return part.bbs.map((bottom, i) =>
+    part.bhs![i]! > track * 1.5 ? "F" : bottom > track * 0.5 ? "A" : "D",
+  )
+}
+
 /** Tall (1) / short (0) bars for a 2-state postal symbology such as POSTNET. */
 export function bwipTallBars(bcid: string, text: string, options: BwipOptions = {}): number[] {
   return bwipStates(bcid, text, options).map((s) => (s === "F" || s === "A" ? 1 : 0))

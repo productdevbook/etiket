@@ -740,17 +740,26 @@ Standards: [ISO/IEC 15417](https://www.iso.org/standard/43896.html) (Code 128), 
 
 Contributions are welcome! Here are some areas where help is especially appreciated:
 
-**Encoder improvements needed:**
+**Where help would go furthest:**
 
-- **DotCode** — Symbol size selection tables and mask pattern per AIM ISS DotCode 4.0
-- **Han Xin** — Separator bands, data placement, and GB 18030 Chinese character encoding (75% reference match, finders 100%)
-- **JAB Code** — Full LDPC error correction per ISO/IEC 23634
+- **JAB Code** — full LDPC error correction per ISO/IEC 23634. The one
+  symbology here that cannot be verified against anything, because no decoder
+  and no reference encoder implements it.
+- **Han Xin GB 18030 Chinese modes** — byte mode carries Chinese text today.
+  BWIPP's own Han Xin encoder implements Numeric and Byte and no more, so
+  adding the Chinese modes means finding something that can check them first.
+- **Telepen and Channel Code** — neither has a decoder, and neither yields to a
+  rule: Telepen's 128 character table is reproduced by no deterministic
+  tokenizer or small state machine we could find, and Channel Code's
+  construction is an enumeration. Copying the reference's tables and then
+  comparing against the reference is not verification.
+- **Mailmark, Code 49, Code One, Ultracode** — implementable and comparable
+  against BWIPP, just not written yet.
 
-**Other contributions:**
+**Also welcome:**
 
-- Data Matrix DMRE rectangular sizes ([#71](https://github.com/productdevbook/etiket/issues/71))
-- GS1 DataBar stacked variants ([#61](https://github.com/productdevbook/etiket/issues/61))
-- Round-trip scan tests for experimental formats
+- More payloads for `test/encoders-random-differential.test.ts`, which is where
+  a mis-taken branch shows up
 - Documentation improvements
 
 ```bash

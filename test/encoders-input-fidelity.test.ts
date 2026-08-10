@@ -116,4 +116,5 @@ const SAMPLE_2D: Partial<Record<EncodeType, string>> = {
   imb: "01234567094987654321",
   "gs1-datamatrix": "(10)AB",
   aztecrune: "4",
+  pharmacode2: "1234",
 }

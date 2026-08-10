@@ -536,6 +536,7 @@ without etiket's renderer.
 | `encodeCodabar(text, options?)`                     | `number[]`                                             |
 | `encodeMSI(text, options?)`                         | `number[]`                                             |
 | `encodePharmacode(value)`                           | `number[]` — takes a **number**                        |
+| `encodePharmacode2(value)`                          | `FourState[]` — two-track, height-modulated            |
 | `encodeCode11(text)`                                | `number[]`                                             |
 | `encodeGS1128(text, options?)`                      | `number[]` — `options.linkage` sets the composite flag |
 | `encodeIdentcode(text)` / `encodeLeitcode(text)`    | `number[]`                                             |
@@ -560,6 +561,7 @@ import {
   encodeCodabar,
   encodeMSI,
   encodePharmacode,
+  encodePharmacode2,
   encodeCode11,
   encodeGS1128,
   encodeIdentcode,
@@ -585,6 +587,7 @@ encodeITF14("1234567890123")
 encodeCodabar("12345", { start: "A", stop: "B" })
 encodeMSI("1234", { checkDigit: "mod1010" })
 encodePharmacode(1234)
+encodePharmacode2(1234)
 encodeCode11("1234-5")
 encodeGS1128("(01)09501101020917(10)LOT42")
 encodeIdentcode("56312300001")

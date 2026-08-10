@@ -220,6 +220,8 @@ function validSampleFor(type: string): string {
       return "1234567"
     case "aztecrune":
       return "42"
+    case "pharmacode2":
+      return "1234"
     case "industrial2of5":
     case "iata2of5":
     case "matrix2of5":

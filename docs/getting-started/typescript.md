@@ -29,11 +29,11 @@ owns them.
 
 ## Symbology Selectors
 
-| Type          | Definition                                                                     | Used by                  |
-| :------------ | :----------------------------------------------------------------------------- | :----------------------- |
-| `BarcodeType` | The 40 width-modulated linear symbologies                                      | `barcode`, `encodeBars`  |
-| `EncodeType`  | `BarcodeType` plus the postal, 2D and stacked symbologies                      | `encode`                 |
-| `PostalType`  | `"postnet" \| "planet" \| "rm4scc" \| "kix" \| "auspost" \| "jppost" \| "imb"` | `postal`, `encodePostal` |
+| Type          | Definition                                                | Used by                  |
+| :------------ | :-------------------------------------------------------- | :----------------------- |
+| `BarcodeType` | The 40 width-modulated linear symbologies                 | `barcode`, `encodeBars`  |
+| `EncodeType`  | `BarcodeType` plus the postal, 2D and stacked symbologies | `encode`                 |
+| `PostalType`  | The seven postal symbologies plus `"pharmacode2"`         | `postal`, `encodePostal` |
 
 ```ts
 import type { BarcodeType, EncodeType, PostalType } from "etiket"
