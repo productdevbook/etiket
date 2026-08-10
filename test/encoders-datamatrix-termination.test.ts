@@ -18,10 +18,10 @@
  *   12x12.
  *
  * BWIPP is the oracle for the module data, at every message length rather than
- * at a handful. It switches mode mid-message where etiket picks one mode for
- * the whole of it, so a few lengths come out as a different encoding of the
- * same size; those are listed by length rather than asserted away, so that
- * closing the gap shows up here as a failure.
+ * at a handful. Both switch mode mid-message now, but by different rules, so a
+ * few lengths come out as a different encoding of the same size; those are
+ * listed by length rather than asserted away, so that a change in either
+ * direction shows up here.
  */
 
 import { describe, expect, it } from "vitest"
@@ -107,7 +107,7 @@ describe("Data Matrix against BWIPP", () => {
    * encodings tie rather than one being better.
    */
   it.each([
-    ["EDIFACT", EDIFACT_ALPHABET, [10, 11, 26]],
+    ["EDIFACT", EDIFACT_ALPHABET, [10, 11, 25, 26, 54]],
     ["uppercase", "ABCDEFGHIJKLMNOPQRSTUVWXYZ ", [7, 8]],
     ["lowercase", "abcdefghijklmnopqrstuvwxyz ", [7, 8]],
     ["digits", "0123456789", []],

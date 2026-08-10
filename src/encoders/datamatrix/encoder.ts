@@ -426,6 +426,226 @@ export function encodeECI(eci: number): number[] {
   ]
 }
 
+// ---------------------------------------------------------------------------
+// Changing mode part way through the message
+// ---------------------------------------------------------------------------
+
+/**
+ * The modes a mixed encoding moves between, and how they group their values.
+ *
+ * ASCII holds nothing back. C40, Text and X12 pack three values into two
+ * codewords, EDIFACT four into three, so each carries what it has not yet
+ * placed. Every one of them returns to ASCII to leave, which is why there is no
+ * step straight from one to another.
+ */
+const MIXED_MODES = [
+  { latch: 230, group: 3, emitted: 2 },
+  { latch: 239, group: 3, emitted: 2 },
+  { latch: 238, group: 3, emitted: 2 },
+  { latch: 240, group: 4, emitted: 3 },
+] as const
+
+/** State 0 is ASCII; the rest are a mode and the values it is holding. */
+const MIXED_STATES = 1 + 3 + 3 + 3 + 4
+const MIXED_BASE = [1, 4, 7, 10] as const
+
+/** Index of the state for `mode` holding `pending` values. */
+function mixedState(mode: number, pending: number): number {
+  return MIXED_BASE[mode]! + pending
+}
+
+/** The values a character takes in a mode, or undefined where it has none. */
+function mixedValues(mode: number, char: number): number[] | undefined {
+  if (mode === 2) {
+    const { set, value } = x12Value(char)
+    return set === -1 ? undefined : [value]
+  }
+  if (mode === 3) return char >= 32 && char <= 94 ? [char & 0x3f] : undefined
+  const { set, value } = mode === 0 ? c40Value(char) : textValue(char)
+  // C40 and Text reach the lower half through their shifts and no further; the
+  // bytes above it go out in ASCII or Base 256
+  if (set === -1) return undefined
+  return set > 0 ? [set - 1, value] : [value]
+}
+
+/** What the next ASCII step costs, and how many characters it takes. */
+function asciiStep(text: string, at: number): { cost: number; advance: number } {
+  const char = text.charCodeAt(at)
+  const next = at + 1 < text.length ? text.charCodeAt(at + 1) : -1
+  if (char >= 48 && char <= 57 && next >= 48 && next <= 57) return { cost: 1, advance: 2 }
+  return { cost: char >= 128 ? 2 : 1, advance: 1 }
+}
+
+/**
+ * The cheapest encoding that changes mode where it pays to.
+ *
+ * The other candidates each pick one mode and live with it. This one finds the
+ * split: `cost[i][state]` is the fewest codewords that encode the first `i`
+ * characters and leave the encoder in `state`, and the route ends back in
+ * ASCII — the unlatch is paid on the way out, so a message that would rather
+ * end mid-mode is the whole-message candidates' business, not this one's.
+ *
+ * It is what puts `+A123BJC5D6E710G` — an HIBC primary, and every HIBC primary
+ * — in a 16x16: one ASCII character for the `+`, then C40 for the rest. Taking
+ * C40 for all of it spends a shift on the `+`, and ASCII for all of it spends a
+ * codeword a character.
+ */
+function mixedCandidate(text: string): DataMatrixCandidate | undefined {
+  const length = text.length
+  const UNREACHABLE = 1e9
+  const cost = new Float64Array((length + 1) * MIXED_STATES).fill(UNREACHABLE)
+  // Packed as characters consumed << 8 | previous state
+  const from = new Int32Array((length + 1) * MIXED_STATES).fill(-1)
+  cost[0] = 0
+
+  const relax = (
+    at: number,
+    state: number,
+    total: number,
+    advance: number,
+    previous: number,
+  ): void => {
+    const slot = at * MIXED_STATES + state
+    if (total >= cost[slot]!) return
+    cost[slot] = total
+    from[slot] = (advance << 8) | previous
+  }
+
+  for (let at = 0; at <= length; at++) {
+    const base = at * MIXED_STATES
+
+    // Latching in and out costs a codeword and consumes nothing. Two rounds
+    // settle it: nothing reaches a mode except through ASCII.
+    for (let round = 0; round < 2; round++) {
+      const ascii = cost[base]!
+      for (const mode of MIXED_MODES.keys()) {
+        if (ascii < UNREACHABLE) relax(at, mixedState(mode, 0), ascii + 1, 0, 0)
+        const idle = cost[base + mixedState(mode, 0)]!
+        if (idle < UNREACHABLE) relax(at, 0, idle + 1, 0, mixedState(mode, 0))
+      }
+    }
+
+    if (at === length) break
+    const char = text.charCodeAt(at)
+
+    const ascii = cost[base]!
+    if (ascii < UNREACHABLE) {
+      const { cost: step, advance } = asciiStep(text, at)
+      relax(at + advance, 0, ascii + step, advance, 0)
+    }
+
+    for (const [mode, { group, emitted }] of MIXED_MODES.entries()) {
+      const values = mixedValues(mode, char)
+      if (!values) continue
+      for (let pending = 0; pending < group; pending++) {
+        const here = cost[base + mixedState(mode, pending)]!
+        if (here >= UNREACHABLE) continue
+        const held = pending + values.length
+        const total = here + Math.floor(held / group) * emitted
+        relax(at + 1, mixedState(mode, held % group), total, 1, mixedState(mode, pending))
+      }
+    }
+  }
+
+  /**
+   * The route into `endState`, written out, and how long it is before the last
+   * mode's terminator. The last mode keeps its unlatch only when asked.
+   */
+  const build = (
+    endState: number,
+    terminate: boolean,
+  ): { codewords: number[]; head: number; edifact: boolean } | undefined => {
+    if (cost[length * MIXED_STATES + endState]! >= UNREACHABLE) return undefined
+
+    const route = Array.from<number>({ length }).fill(0)
+    let at = length
+    let state = endState
+    while (from[at * MIXED_STATES + state] !== -1) {
+      const packed = from[at * MIXED_STATES + state]!
+      const advance = packed >> 8
+      const previous = packed & 0xff
+      for (let i = at - advance; i < at; i++) route[i] = previous
+      at -= advance
+      state = previous
+    }
+
+    const codewords: number[] = []
+    let head = 0
+    let edifact = false
+    let index = 0
+    while (index < length) {
+      if (route[index] === 0) {
+        const { advance } = asciiStep(text, index)
+        codewords.push(...encodeASCII(text.slice(index, index + advance)))
+        index += advance
+        continue
+      }
+      const mode = MIXED_BASE.findIndex(
+        (start, i) => route[index]! >= start && route[index]! < start + MIXED_MODES[i]!.group,
+      )
+      const spec = MIXED_MODES[mode]!
+      let end = index
+      while (
+        end < length &&
+        route[end]! >= MIXED_BASE[mode]! &&
+        route[end]! < MIXED_BASE[mode]! + spec.group
+      ) {
+        end++
+      }
+
+      const values: number[] = []
+      for (let i = index; i < end; i++) values.push(...mixedValues(mode, text.charCodeAt(i))!)
+      codewords.push(spec.latch)
+      const last = end === length
+      if (spec.group === 3) {
+        for (let i = 0; i < values.length; i += 3) {
+          codewords.push(...triplet(values[i]!, values[i + 1]!, values[i + 2]!))
+        }
+        if (last) head = codewords.length
+        if (!last || terminate) codewords.push(254)
+      } else {
+        codewords.push(...edifactQuads(values))
+        if (last) {
+          head = codewords.length
+          edifact = true
+        }
+        if (!last || terminate) codewords.push(...edifactQuads([31]))
+      }
+      index = end
+    }
+    return { codewords, head, edifact }
+  }
+
+  const forms: { codewords: number[]; fits: (capacity: number) => boolean }[] = []
+
+  // Ending in ASCII always works, unless the last mode was EDIFACT: a reader
+  // leaves that of its own accord once two codewords or fewer are left, and
+  // would read the unlatch as data
+  const ascii = build(0, true)
+  if (ascii) {
+    const room = ascii.head
+    forms.push({
+      codewords: ascii.codewords,
+      fits: (capacity) => !ascii.edifact || capacity - room >= 3,
+    })
+  }
+
+  // Ending inside a mode saves the terminator. C40, Text and X12 may do that
+  // only where the symbol ends exactly there; EDIFACT wherever the reader
+  // would have left anyway
+  for (const mode of MIXED_MODES.keys()) {
+    const open = build(mixedState(mode, 0), false)
+    if (!open) continue
+    const { codewords, head, edifact } = open
+    forms.push({
+      codewords,
+      fits: (capacity) => (edifact ? capacity - head <= 2 : capacity === codewords.length),
+    })
+  }
+  if (forms.length === 0) return undefined
+  return fromForms(forms)
+}
+
 /**
  * One symbol's place in a Structured Append sequence.
  *
@@ -522,6 +742,8 @@ export function encodeCandidates(
   if (x12) candidates.push(x12)
   const edifact = edifactCandidate(text)
   if (edifact) candidates.push(edifact)
+  const mixed = mixedCandidate(text)
+  if (mixed) candidates.push(mixed)
 
   const prefix = [...sequence, ...(options.eci === undefined ? [] : encodeECI(options.eci))]
 
