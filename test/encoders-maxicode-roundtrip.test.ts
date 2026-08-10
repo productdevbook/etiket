@@ -8,7 +8,6 @@
 
 import { describe, expect, it } from "vitest"
 import { readBarcodes } from "zxing-wasm/reader"
-import bwipjs from "bwip-js/generic"
 import { encodeMaxiCode } from "../src/encoders/maxicode"
 import type { MaxiCodeOptions } from "../src/encoders/maxicode"
 import { renderMaxiCodeRaster } from "../src/renderers/png/rasterize"
@@ -177,104 +176,4 @@ describe("MaxiCode round-trip (zxing-wasm)", () => {
       expect(await decode("EEC MODE FIVE", { mode: 5 })).toBe("EEC MODE FIVE")
     })
   })
-})
-
-// ---------------------------------------------------------------------------
-// Codeword-level conformance against BWIPP (bwip-js)
-// ---------------------------------------------------------------------------
-
-/**
- * The bullseye rings and orientation marks, repeated here as an independent
- * expectation. BWIPP draws the rings as vector circles rather than modules, so
- * its `raw()` output carries only the data modules plus the 13 fixed
- * orientation modules; everything else below must come from the data.
- */
-// prettier-ignore
-const FINDER = [
-  28,29,280,281,311,343,344,372,376,400,403,404,407,430,432,436,438,457,461,463,
-  464,466,488,490,493,495,498,500,521,523,524,526,530,550,552,556,558,580,583,
-  584,587,612,616,643,644,670,677,700,707,
-]
-
-function bwipDark(text: string, options: Record<string, unknown>): Set<number> {
-  const raw = (bwipjs as unknown as { raw: (o: Record<string, unknown>) => { pixs: number[] }[] })
-    .raw
-  return new Set(raw({ bcid: "maxicode", text, ...options })[0]!.pixs)
-}
-
-function ourDark(text: string, options?: MaxiCodeOptions): Set<number> {
-  const matrix = encodeMaxiCode(text, options)
-  const dark = new Set<number>()
-  for (const [row, cells] of matrix.entries()) {
-    for (const [col, on] of cells.entries()) if (on) dark.add(row * 30 + col)
-  }
-  return dark
-}
-
-function sorted(set: Iterable<number>): number[] {
-  return [...set].sort((a, b) => a - b)
-}
-
-describe("MaxiCode modules match bwip-js", () => {
-  const cases: [string, string, Record<string, unknown>, string, MaxiCodeOptions][] = [
-    ["mode 4 upper case", "HELLO WORLD", { mode: 4 }, "HELLO WORLD", { mode: 4 }],
-    ["mode 4 mixed case", "Hello World", { mode: 4 }, "Hello World", { mode: 4 }],
-    [
-      "mode 4 numeric run",
-      "ORDER 123456789012345678 END",
-      { mode: 4 },
-      "ORDER 123456789012345678 END",
-      { mode: 4 },
-    ],
-    [
-      "mode 4 latin-1",
-      "CAF^201 CR^200ME",
-      { mode: 4, legacyencoder: true, parse: true },
-      "CAFÉ CRÈME",
-      { mode: 4 },
-    ],
-    ["mode 5", "EEC MODE FIVE", { mode: 5 }, "EEC MODE FIVE", { mode: 5 }],
-    [
-      "mode 2",
-      `123456789${GS}840${GS}001${GS}UPS TEST`,
-      { mode: 2 },
-      "UPS TEST",
-      { mode: 2, postalCode: "123456789", countryCode: 840, serviceClass: 1 },
-    ],
-    [
-      "mode 2 short postcode",
-      `1234${GS}250${GS}042${GS}PKG`,
-      { mode: 2 },
-      "PKG",
-      { mode: 2, postalCode: "1234", countryCode: 250, serviceClass: 42 },
-    ],
-    [
-      "mode 2 zip+4 fill",
-      `12345${GS}840${GS}999${GS}SHIP`,
-      { mode: 2 },
-      "SHIP",
-      { mode: 2, postalCode: "12345", countryCode: 840, serviceClass: 999 },
-    ],
-    [
-      "mode 3",
-      `EC1A1B${GS}826${GS}001${GS}DHL DATA`,
-      { mode: 3 },
-      "DHL DATA",
-      { mode: 3, postalCode: "EC1A1B", countryCode: 826, serviceClass: 1 },
-    ],
-    [
-      "mode 3 short postcode",
-      `AB12${GS}276${GS}007${GS}PARCEL`,
-      { mode: 3 },
-      "PARCEL",
-      { mode: 3, postalCode: "AB12", countryCode: 276, serviceClass: 7 },
-    ],
-  ]
-
-  for (const [name, bwipText, bwipOptions, text, options] of cases) {
-    it(name, () => {
-      const expected = new Set([...bwipDark(bwipText, bwipOptions), ...FINDER])
-      expect(sorted(ourDark(text, options))).toEqual(sorted(expected))
-    })
-  }
 })

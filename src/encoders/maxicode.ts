@@ -223,11 +223,68 @@ interface EncodedMessage {
 }
 
 /**
+ * Latch sequences between code sets, indexed `[target][origin]`.
+ *
+ * Code Sets A and B latch in one codeword. C, D and E have no latch of their
+ * own: the shift into them followed by their own shift codeword locks the
+ * encoder in, which is why those cost two.
+ */
+const LATCH_SEQUENCE: number[][][] = Array.from({ length: 5 }, (_, target) =>
+  Array.from({ length: 5 }, (_, origin) => {
+    if (origin === target) return []
+    if (target === SET_A) return [symbolOf(origin, LA)]
+    if (target === SET_B) return [symbolOf(origin, LB)]
+    const index = target - SET_C
+    return [symbolOf(origin, SHIFT_CODES[index]!), symbolOf(target, LOCK_CODES[index]!)]
+  }),
+)
+
+/**
+ * The order ties are broken in, which is the reference implementation's.
+ *
+ * Two routes through the code sets often cost the same number of codewords;
+ * this decides which one is taken, and it is the only reason etiket and BWIPP
+ * produce the same symbol rather than merely symbols of the same size.
+ */
+const SET_PRIORITY = [SET_A, SET_B, SET_E, SET_C, SET_D]
+
+/** A move the encoder can make: some characters in, some codewords out. */
+interface Move {
+  /** Code sets the move can be made in. */
+  from: readonly number[]
+  /** Characters consumed. */
+  intake: number
+  /** Codewords produced. */
+  output: number
+  /** Whether the move is available for the characters starting at `at`. */
+  can: (at: number) => boolean
+  /** The codewords themselves. */
+  emit: (at: number) => number[]
+}
+
+/** How the cheapest route reached a position in a given code set. */
+interface Step {
+  move: Move
+  /** Where the route came from. */
+  at: number
+  /** The code set it was in before the latch. */
+  origin: number
+}
+
+/** Stands in for "no route yet"; finite so that adding a latch cannot overflow. */
+const UNREACHABLE = 1e9
+
+/**
  * Encode text into MaxiCode message codewords.
  *
- * Starts in Code Set A and switches between all five code sets using the
- * latch, lock and shift codewords of ISO/IEC 16023. Runs of nine or more
- * digits are compacted with the Numeric Sequence (NS) codeword.
+ * ISO/IEC 16023 gives five code sets and a dozen ways to move between them:
+ * one codeword latches into A or B, two lock into C, D or E, a shift carries a
+ * single character out of the current set — or two or three characters into
+ * Code Set A — and the Numeric Sequence codeword carries nine digits in six.
+ * Which of those is cheapest for a character depends on what comes after it, so
+ * the route is found rather than guessed: `cost[i][set]` is the fewest
+ * codewords that encode the first `i` characters and leave the encoder in
+ * `set`, and the message is read back off the winning route.
  *
  * Every byte 0x00-0xFF is representable in exactly one of the five code sets,
  * so only code points above U+00FF are rejected — MaxiCode's default character
@@ -249,120 +306,183 @@ function encodeMaxiCodeText(text: string): EncodedMessage {
   }
 
   const length = chars.length
+  if (length === 0) return { codewords: [], set: SET_A }
 
-  // Number of consecutive digits starting at each position
-  const digitRun = Array.from<number>({ length: length + 1 }).fill(0)
-  for (let i = length - 1; i >= 0; i--) {
-    const c = chars[i]!
-    digitRun[i] = c >= 48 && c <= 57 ? digitRun[i + 1]! + 1 : 0
+  /** Whether `count` characters from `at` all live in `set`. */
+  const run = (set: number, at: number, count: number): boolean => {
+    if (at + count > length) return false
+    for (let k = 0; k < count; k++) {
+      if (!CODE_SETS[set]!.has(chars[at + k]!)) return false
+    }
+    return true
   }
 
-  /** Count leading characters at `from` (max 4) that `set` can represent. */
-  const prefixInSet = (set: number, from: number): number => {
-    const map = CODE_SETS[set]!
-    let n = 0
-    while (n < 4 && from + n < length && map.has(chars[from + n]!)) n++
-    return n
+  /**
+   * The code sets the message actually uses. The search visits only these —
+   * as the reference does, which matters because it is what ties are broken
+   * between.
+   */
+  const used = new Set<number>([SET_A])
+  for (const char of chars) {
+    for (const set of [SET_A, SET_B, SET_C, SET_D, SET_E]) {
+      if (CODE_SETS[set]!.has(char)) used.add(set)
+    }
+  }
+  const states = SET_PRIORITY.filter((set) => used.has(set))
+
+  // The moves, in the order the reference tries them — which is the order ties
+  // are settled in
+  const moves: Move[] = [
+    {
+      // Nine digits in six codewords, available in every code set
+      from: [SET_A, SET_B, SET_C, SET_D, SET_E],
+      intake: 9,
+      output: 6,
+      can: (at) => run(SET_A, at, 9) && chars.slice(at, at + 9).every((c) => c >= 48 && c <= 57),
+      emit: (at) => {
+        let value = 0
+        for (let k = 0; k < 9; k++) value = value * 10 + (chars[at + k]! - 48)
+        return [
+          symbolOf(SET_A, NS),
+          (value >> 24) & 0x3f,
+          (value >> 18) & 0x3f,
+          (value >> 12) & 0x3f,
+          (value >> 6) & 0x3f,
+          value & 0x3f,
+        ]
+      },
+    },
+  ]
+
+  // A character the current code set carries outright
+  for (const set of [SET_A, SET_B, SET_C, SET_D, SET_E]) {
+    if (!used.has(set)) continue
+    moves.push({
+      from: [set],
+      intake: 1,
+      output: 1,
+      can: (at) => run(set, at, 1),
+      emit: (at) => [symbolOf(set, chars[at]!)],
+    })
   }
 
-  const codewords: number[] = []
-  let set = SET_A
-  let i = 0
+  // One, two or three Code Set A characters shifted out of Code Set B
+  for (const count of [1, 2, 3] as const) {
+    const shift = count === 1 ? SA : count === 2 ? SA2 : SA3
+    moves.push({
+      from: [SET_B],
+      intake: count,
+      output: count + 1,
+      can: (at) => run(SET_A, at, count),
+      emit: (at) => [
+        symbolOf(SET_B, shift),
+        ...chars.slice(at, at + count).map((c) => symbolOf(SET_A, c)),
+      ],
+    })
+  }
 
-  while (i < length) {
-    // Numeric Sequence: nine digits in six codewords
-    if (digitRun[i]! >= 9) {
-      let value = 0
-      for (let k = 0; k < 9; k++) value = value * 10 + (chars[i + k]! - 48)
-      codewords.push(
-        symbolOf(set, NS),
-        (value >> 24) & 0x3f,
-        (value >> 18) & 0x3f,
-        (value >> 12) & 0x3f,
-        (value >> 6) & 0x3f,
-        value & 0x3f,
-      )
-      i += 9
-      continue
-    }
-
-    const char = chars[i]!
-
-    // Already in a code set that can represent the character
-    if (CODE_SETS[set]!.has(char)) {
-      codewords.push(symbolOf(set, char))
-      i++
-      continue
-    }
-
-    // A -> B: latch when the next character is also in B, otherwise shift
-    if (set === SET_A && CODE_SETS[SET_B]!.has(char)) {
-      const next = i + 1 < length ? chars[i + 1]! : -1
-      if (next >= 0 && CODE_SETS[SET_B]!.has(next)) {
-        codewords.push(symbolOf(SET_A, LB))
-        set = SET_B
-      } else {
-        codewords.push(symbolOf(SET_A, SB), symbolOf(SET_B, char))
-        i++
-      }
-      continue
-    }
-
-    // B -> A: shift one, two or three characters, or latch for longer runs
-    if (set === SET_B && CODE_SETS[SET_A]!.has(char)) {
-      const run = prefixInSet(SET_A, i)
-      if (run >= 4) {
-        codewords.push(symbolOf(SET_B, LA))
-        set = SET_A
-      } else {
-        codewords.push(symbolOf(SET_B, run === 1 ? SA : run === 2 ? SA2 : SA3))
-        for (let k = 0; k < run; k++) codewords.push(symbolOf(SET_A, chars[i + k]!))
-        i += run
-      }
-      continue
-    }
-
-    // Reachable by a plain latch
-    if (CODE_SETS[SET_A]!.has(char)) {
-      codewords.push(symbolOf(set, LA))
-      set = SET_A
-      continue
-    }
-    if (CODE_SETS[SET_B]!.has(char)) {
-      codewords.push(symbolOf(set, LB))
-      set = SET_B
-      continue
-    }
-
-    // Code sets C, D and E: shift per character, or shift + lock for runs
-    let target = -1
-    for (const candidate of [SET_C, SET_D, SET_E]) {
-      if (CODE_SETS[candidate]!.has(char)) {
-        target = candidate
-        break
-      }
-    }
-    /* v8 ignore next 6 -- every byte 0x00-0xFF lives in one of the five sets */
-    if (target === -1) {
-      throw new InvalidInputError(
-        `MaxiCode: character ${describeChar(char)} cannot be encoded in any MaxiCode code set`,
-      )
-    }
-
+  // A single character shifted out of the current code set into another
+  if (used.has(SET_B)) {
+    moves.push({
+      from: [SET_A],
+      intake: 1,
+      output: 2,
+      can: (at) => run(SET_B, at, 1),
+      emit: (at) => [symbolOf(SET_A, SB), symbolOf(SET_B, chars[at]!)],
+    })
+  }
+  for (const target of [SET_C, SET_D, SET_E]) {
+    if (!used.has(target)) continue
     const shift = SHIFT_CODES[target - SET_C]!
-    const run = prefixInSet(target, i)
-    if (run >= 4) {
-      codewords.push(symbolOf(set, shift), symbolOf(target, LOCK_CODES[target - SET_C]!))
-      set = target
-    } else {
-      for (let k = 0; k < run; k++) {
-        codewords.push(symbolOf(set, shift), symbolOf(target, chars[i + k]!))
+    moves.push({
+      from: [SET_A, SET_B, SET_C, SET_D, SET_E].filter((set) => set !== target),
+      intake: 1,
+      output: 2,
+      can: (at) => run(target, at, 1),
+      emit: (at) => [symbolOf(SET_A, shift), symbolOf(target, chars[at]!)],
+    })
+  }
+
+  // Shortest path over (characters encoded, code set)
+  const cost: number[][] = Array.from({ length: length + 1 }, () =>
+    Array.from<number>({ length: 5 }).fill(UNREACHABLE),
+  )
+  const steps: (Step | undefined)[][] = Array.from({ length: length + 1 }, () =>
+    Array.from<Step | undefined>({ length: 5 }).fill(undefined),
+  )
+  cost[0]![SET_A] = 0
+
+  /** Cheapest way to stand at a position already switched into each set. */
+  const reached: number[][] = Array.from({ length: length + 1 }, () =>
+    Array.from<number>({ length: 5 }).fill(UNREACHABLE),
+  )
+  const reachedFrom: number[][] = Array.from({ length: length + 1 }, () =>
+    Array.from<number>({ length: 5 }).fill(SET_A),
+  )
+
+  /** Fold the latch into the cost of standing at `at`, once the cost is known. */
+  const switchInto = (at: number): void => {
+    for (const set of states) {
+      let best = UNREACHABLE
+      let origin = SET_A
+      for (const candidate of states) {
+        const total = cost[at]![candidate]! + LATCH_SEQUENCE[set]![candidate]!.length
+        if (total < best) {
+          best = total
+          origin = candidate
+        }
       }
-      i += run
+      reached[at]![set] = best
+      reachedFrom[at]![set] = origin
     }
   }
 
-  return { codewords, set }
+  // Each position is settled by trying the moves that could end there, in the
+  // order they are declared: a tie goes to the earlier move, which is what
+  // makes the route the reference's route and not merely one of the same length
+  switchInto(0)
+  for (let end = 1; end <= length; end++) {
+    for (const set of states) {
+      for (const move of moves) {
+        const at = end - move.intake
+        if (at < 0 || !move.from.includes(set) || !move.can(at)) continue
+        if (reached[at]![set]! >= UNREACHABLE) continue
+        const total = reached[at]![set]! + move.output
+        if (total < cost[end]![set]!) {
+          cost[end]![set] = total
+          steps[end]![set] = { move, at, origin: reachedFrom[at]![set]! }
+        }
+      }
+    }
+    switchInto(end)
+  }
+
+  let set = SET_A
+  let best = UNREACHABLE
+  for (const candidate of states) {
+    if (cost[length]![candidate]! < best) {
+      best = cost[length]![candidate]!
+      set = candidate
+    }
+  }
+  /* v8 ignore next 5 -- every byte lives in some code set, so a route exists */
+  if (best >= UNREACHABLE) {
+    throw new InvalidInputError(
+      "MaxiCode: this message cannot be encoded in the five MaxiCode code sets",
+    )
+  }
+  const finalSet = set
+
+  // Read the route back
+  const codewords: number[] = []
+  for (let at = length; at > 0;) {
+    const step = steps[at]![set]!
+    codewords.unshift(...LATCH_SEQUENCE[set]![step.origin]!, ...step.move.emit(step.at))
+    set = step.origin
+    at = step.at
+  }
+
+  return { codewords, set: finalSet }
 }
 
 // ---------------------------------------------------------------------------

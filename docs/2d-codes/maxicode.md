@@ -53,6 +53,21 @@ codewords of payload.
 the symbol's contents. Never put shipping data in it, and never print one on a
 label that will pass a production scanner.
 
+## Character Encoding
+
+MaxiCode holds its message in five code sets — uppercase and digits, lowercase,
+and three that carry the upper half of Latin-1 between them. Moving between them
+costs codewords: one to latch into Code Set A or B, two to lock into C, D or E,
+two to shift a single character out of the current set, and three or four to
+shift two or three characters into Code Set A. Nine consecutive digits go into
+six codewords whichever set is current.
+
+Which of those is cheapest for a given character depends on what follows it, so
+the encoder finds the shortest route through the whole message rather than
+deciding character by character. There is nothing to configure; the input is
+ISO/IEC 8859-1 and anything above U+00FF raises `InvalidInputError`, since this
+encoder emits no ECI designator to say the message is anything else.
+
 ## Options
 
 | Option         | Type                    | Default | Description                        |

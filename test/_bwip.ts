@@ -126,6 +126,25 @@ export function bwipMatrix(bcid: string, text: string, options: BwipOptions = {}
   return matrix
 }
 
+/**
+ * Module grid for MaxiCode, which BWIPP reports differently from every other
+ * matrix symbology.
+ *
+ * MaxiCode's modules are hexagons on a staggered grid, so there is no `pixx` to
+ * divide by: `pixs` is a list of the *indices* of the dark hexagons in the
+ * 33 x 30 grid. The central bullseye is not in that list at all — BWIPP draws
+ * it as three rings rather than as hexagons — so those 36 cells come back
+ * light. `test/encoders-maxicode-bwip.test.ts` names them and asserts the
+ * difference is confined to them.
+ */
+export function bwipMaxiCode(text: string, options: BwipOptions = {}): boolean[][] {
+  const part = rawEncode("maxicode", text, options) as { pixs: number[] }
+  if (!part.pixs) throw new Error("bwip-js produced no matrix data for maxicode")
+  const matrix = Array.from({ length: 33 }, () => Array.from<boolean>({ length: 30 }).fill(false))
+  for (const index of part.pixs) matrix[Math.floor(index / 30)]![index % 30] = true
+  return matrix
+}
+
 // ---------------------------------------------------------------------------
 // Postal
 // ---------------------------------------------------------------------------
