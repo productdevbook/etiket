@@ -3,6 +3,9 @@ import { defineConfig } from "vitest/config"
 export default defineConfig({
   test: {
     include: ["test/**/*.test.ts"],
+    // zxing-wasm fetches its WebAssembly binary on first use unless told
+    // otherwise; this hands it the copy in node_modules instead
+    setupFiles: ["test/_zxing-setup.ts"],
     coverage: {
       provider: "v8",
       include: ["src/**/*.ts"],
