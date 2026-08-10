@@ -132,8 +132,12 @@ export type { FourState } from "./encoders/fourstate"
 export { encodeIMb } from "./encoders/imb"
 export { encodeCodablockF } from "./encoders/codablock-f"
 export { encodeCode16K } from "./encoders/code16k"
-export { encodeMaxiCode } from "./encoders/maxicode"
-export type { MaxiCodeOptions } from "./encoders/maxicode"
+export { encodeMaxiCode, encodeMaxiCodeSequence } from "./encoders/maxicode"
+export type {
+  MaxiCodeOptions,
+  MaxiCodeSequenceOptions,
+  MaxiCodeStructuredAppend,
+} from "./encoders/maxicode"
 export { encodeRMQR } from "./encoders/rmqr"
 export type { RMQROptions } from "./encoders/rmqr"
 export { encodeDotCode } from "./encoders/dotcode"
@@ -142,7 +146,16 @@ export { encodeHanXin } from "./encoders/hanxin"
 export type { HanXinOptions } from "./encoders/hanxin"
 export { encodeJABCode, JAB_COLORS_4, JAB_COLORS_8 } from "./encoders/jabcode"
 export type { JABCodeOptions, JABCodeResult } from "./encoders/jabcode"
-export { encodeDataMatrix, encodeGS1DataMatrix } from "./encoders/datamatrix/index"
+export {
+  encodeDataMatrix,
+  encodeDataMatrixSequence,
+  encodeGS1DataMatrix,
+} from "./encoders/datamatrix/index"
+export type { DataMatrixSequenceOptions } from "./encoders/datamatrix/index"
+export type {
+  DataMatrixEncodeOptions,
+  DataMatrixStructuredAppend,
+} from "./encoders/datamatrix/encoder"
 export type {
   DataMatrixShape,
   DataMatrixSizeOptions,

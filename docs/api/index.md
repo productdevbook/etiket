@@ -701,26 +701,28 @@ or `"numeric"` (2 bars per digit).
 
 ### 2D
 
-| Function                               | Returns                                     |
-| :------------------------------------- | :------------------------------------------ |
-| `encodeQR(text, options?)`             | `boolean[][]`                               |
-| `encodeQRSequence(text, options?)`     | `boolean[][][]`                             |
-| `encodeMicroQR(text, options?)`        | `boolean[][]`                               |
-| `encodeRMQR(text, options?)`           | `boolean[][]`                               |
-| `encodeDataMatrix(text, options?)`     | `boolean[][]`                               |
-| `encodeGS1DataMatrix(text, options?)`  | `boolean[][]`                               |
-| `encodePDF417(text, options?)`         | `{ matrix, rows, cols }`                    |
-| `encodePDF417Sequence(text, options?)` | `{ matrix, rows, cols }[]` — Macro PDF417   |
-| `encodeMicroPDF417(text, options?)`    | `{ matrix, rows, cols }`                    |
-| `encodeAztec(text, options?)`          | `boolean[][]`                               |
-| `encodeAztecRune(value)`               | `boolean[][]` — 11x11, a byte 0 to 255      |
-| `encodeMailmark(text, options?)`       | `boolean[][]` — a Data Matrix of fixed size |
-| `encodeMaxiCode(text, options?)`       | `boolean[][]` — 33×30                       |
-| `encodeDotCode(text, options?)`        | `boolean[][]`                               |
-| `encodeHanXin(text, options?)`         | `boolean[][]`                               |
-| `encodeCodablockF(text, options?)`     | `{ matrix, rows, cols, separatorRows }`     |
-| `encodeCode16K(text)`                  | `{ matrix, rows, cols, separatorRows }`     |
-| `encodeJABCode(text, options?)`        | `JABCodeResult`                             |
+| Function                                | Returns                                     |
+| :-------------------------------------- | :------------------------------------------ |
+| `encodeQR(text, options?)`              | `boolean[][]`                               |
+| `encodeQRSequence(text, options?)`      | `boolean[][][]`                             |
+| `encodeMicroQR(text, options?)`         | `boolean[][]`                               |
+| `encodeRMQR(text, options?)`            | `boolean[][]`                               |
+| `encodeDataMatrix(text, options?)`      | `boolean[][]`                               |
+| `encodeDataMatrixSequence(text, opts?)` | `boolean[][][]` — Structured Append         |
+| `encodeGS1DataMatrix(text, options?)`   | `boolean[][]`                               |
+| `encodePDF417(text, options?)`          | `{ matrix, rows, cols }`                    |
+| `encodePDF417Sequence(text, options?)`  | `{ matrix, rows, cols }[]` — Macro PDF417   |
+| `encodeMicroPDF417(text, options?)`     | `{ matrix, rows, cols }`                    |
+| `encodeAztec(text, options?)`           | `boolean[][]`                               |
+| `encodeAztecRune(value)`                | `boolean[][]` — 11x11, a byte 0 to 255      |
+| `encodeMailmark(text, options?)`        | `boolean[][]` — a Data Matrix of fixed size |
+| `encodeMaxiCode(text, options?)`        | `boolean[][]` — 33×30                       |
+| `encodeMaxiCodeSequence(text, opts?)`   | `boolean[][][]` — Structured Append         |
+| `encodeDotCode(text, options?)`         | `boolean[][]`                               |
+| `encodeHanXin(text, options?)`          | `boolean[][]`                               |
+| `encodeCodablockF(text, options?)`      | `{ matrix, rows, cols, separatorRows }`     |
+| `encodeCode16K(text)`                   | `{ matrix, rows, cols, separatorRows }`     |
+| `encodeJABCode(text, options?)`         | `JABCodeResult`                             |
 
 ```ts
 import {
@@ -729,6 +731,7 @@ import {
   encodeMicroQR,
   encodeRMQR,
   encodeDataMatrix,
+  encodeDataMatrixSequence,
   encodeGS1DataMatrix,
   encodePDF417,
   encodePDF417Sequence,
@@ -737,6 +740,7 @@ import {
   encodeAztecRune,
   encodeMailmark,
   encodeMaxiCode,
+  encodeMaxiCodeSequence,
   encodeDotCode,
   encodeHanXin,
   encodeCodablockF,
@@ -749,6 +753,7 @@ encodeQRSequence("A".repeat(200), { symbols: 3 }).length // 3
 encodeMicroQR("12345", { version: 2, ecLevel: "L" })
 encodeRMQR("Hello", { ecLevel: "M" })
 encodeDataMatrix("Hello", { shape: "auto", dmre: true })
+encodeDataMatrixSequence("A".repeat(200), { symbols: 3 }).length // 3
 encodeGS1DataMatrix("(01)09501101020917")
 encodePDF417("Hello", { columns: 4 }).rows
 encodePDF417Sequence("A".repeat(3000), { symbols: 3 }).length // 3
@@ -757,6 +762,7 @@ encodeAztec("Hello", { ecPercent: 33 })
 encodeAztecRune(42)
 encodeMailmark("JGB 012100123456789AB19XY1A 0                ", { type: 9 })
 encodeMaxiCode("Hello", { mode: 4 }).length // 33
+encodeMaxiCodeSequence("A".repeat(200), { symbols: 3 }).length // 3
 encodeDotCode("Hello")
 encodeHanXin("Hello", { ecLevel: 2 })
 

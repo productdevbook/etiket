@@ -102,7 +102,7 @@ src/
     barcode.ts              # Per-format validation
     qr.ts                   # QR validation with metadata
 test/
-  *.test.ts                 # 133 test files, 3300+ tests
+  *.test.ts                 # 134 test files, 3400+ tests
   _bwip.ts                  # bwip-js (BWIPP) oracle: module data extraction
   bwip-compare.test.ts      # Module-for-module comparison against BWIPP
   qr-roundtrip.test.ts      # QR encode→decode via jsQR (all versions, EC, masks)
@@ -139,8 +139,10 @@ family including the stacked variants. A composite symbol assembles over every
 primary of ISO/IEC 24723 — EAN/UPC, GS1-128 and the seven DataBar variants —
 and only a GS1-128 can carry a CC-C component, whose width sets its columns.
 
-Sequences: `encodeQRSequence()` (Structured Append), `encodePDF417Sequence()`
-(Macro PDF417).
+Sequences: `encodeQRSequence()`, `encodeDataMatrixSequence()` and
+`encodeMaxiCodeSequence()` (Structured Append), `encodePDF417Sequence()`
+(Macro PDF417). Data Matrix and MaxiCode also take a `structuredAppend` option
+for placing one symbol of a sequence by hand.
 
 Batch: `barcodes()`, `qrcodes()`, `barcodeSheet()`, `qrcodeSheet()`.
 
@@ -236,7 +238,7 @@ is known and turns red the moment it is fixed.
 
 v1. The full gate (`pnpm test`) is green:
 
-- **133 test files, 3300+ tests** passing
+- **134 test files, 3400+ tests** passing
 - **Zero** lint warnings, zero typecheck errors
 - **96.7%** statements, **92.9%** branches — thresholds enforced in CI by
   `vitest.config.ts`

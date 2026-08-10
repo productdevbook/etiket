@@ -44,10 +44,11 @@ export function encodeDataMatrix(
 
   // Steps 1 and 2: encode the text every way the standard allows and take the
   // one that reaches the smallest symbol
-  const chosen = smallestSymbol(encodeCandidates(text, { eci: options.eci }), options)
+  const encoding = { eci: options.eci, structuredAppend: options.structuredAppend }
+  const chosen = smallestSymbol(encodeCandidates(text, encoding), options)
   if (!chosen) {
     throw new CapacityError(
-      capacityMessage("Data Matrix", encodeAuto(text, { eci: options.eci }).length, options),
+      capacityMessage("Data Matrix", encodeAuto(text, encoding).length, options),
     )
   }
   const { codewords: dataCodewords, symbol } = chosen
@@ -162,4 +163,100 @@ function capacityMessage(label: string, needed: number, options: DataMatrixSizeO
   const shape = options.shape ?? "square"
   const limit = maxCapacity(options)
   return `Data too long for ${label}: ${needed} codewords needed, maximum is ${limit} for ${shape} symbols${options.dmre ? " (DMRE enabled)" : ""}`
+}
+
+export interface DataMatrixSequenceOptions
+  extends DataMatrixSizeOptions, Omit<DataMatrixEncodeOptions, "structuredAppend"> {
+  /**
+   * How many symbols to split the message into (2-16).
+   * Omit to use the fewest that hold the data.
+   */
+  symbols?: number
+  /**
+   * File identifier shared by the sequence, so a reader can tell one sequence
+   * from another. Two values of 1 to 254; defaults to `[1, 1]`.
+   */
+  fileId?: readonly [number, number]
+}
+
+/**
+ * Encode text as a Structured Append sequence: a set of Data Matrix symbols a
+ * reader reassembles into the original message.
+ *
+ * Each symbol opens with codeword 233, its position, the number of symbols and
+ * the shared file identifier — four codewords ISO/IEC 16022 5.6 takes out of
+ * every symbol's capacity, which is why a sequence holds less than the sum of
+ * its parts.
+ *
+ * @example
+ * ```ts
+ * const symbols = encodeDataMatrixSequence(longText, { symbols: 3 })
+ * // symbols[0], symbols[1], symbols[2] scan back as one message
+ * ```
+ */
+export function encodeDataMatrixSequence(
+  text: string,
+  options: DataMatrixSequenceOptions = {},
+): boolean[][][] {
+  if (text.length === 0) {
+    throw new InvalidInputError("Data Matrix input must not be empty")
+  }
+  const { symbols: requested, fileId, ...symbolOptions } = options
+  if (requested !== undefined && (requested < 2 || requested > 16)) {
+    throw new InvalidInputError(
+      `A Data Matrix Structured Append sequence holds 2 to 16 symbols, got ${requested}`,
+    )
+  }
+
+  const chars = [...text]
+  for (let total = requested ?? 2; total <= (requested ?? 16); total++) {
+    const chunks = splitEvenly(chars, total)
+    if (chunks.length !== total) continue
+
+    const sequence = trySequence(chunks, total, fileId, symbolOptions)
+    if (sequence) return sequence
+    if (requested !== undefined) {
+      throw new CapacityError(
+        `Data does not fit in ${total} Data Matrix symbol${total === 1 ? "" : "s"}`,
+      )
+    }
+  }
+
+  throw new CapacityError(
+    "Data does not fit in a Structured Append sequence of 16 Data Matrix symbols",
+  )
+}
+
+/** Encode every chunk, or return undefined if any of them overflows. */
+function trySequence(
+  chunks: string[],
+  total: number,
+  fileId: readonly [number, number] | undefined,
+  options: DataMatrixSizeOptions & DataMatrixEncodeOptions,
+): boolean[][][] | undefined {
+  const symbols: boolean[][][] = []
+  for (const [index, chunk] of chunks.entries()) {
+    try {
+      symbols.push(
+        encodeDataMatrix(chunk, {
+          ...options,
+          structuredAppend: { index: index + 1, total, fileId },
+        }),
+      )
+    } catch (error) {
+      if (error instanceof CapacityError) return undefined
+      throw error
+    }
+  }
+  return symbols
+}
+
+/** Split code points into `count` chunks of as equal a size as possible. */
+function splitEvenly(chars: string[], count: number): string[] {
+  const chunks: string[] = []
+  const size = Math.ceil(chars.length / count)
+  for (let i = 0; i < chars.length; i += size) {
+    chunks.push(chars.slice(i, i + size).join(""))
+  }
+  return chunks
 }

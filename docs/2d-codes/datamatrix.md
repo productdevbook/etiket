@@ -114,6 +114,30 @@ encodeDataMatrix("日本語") // UTF-8 bytes under ECI 26, automatically
 encodeDataMatrix("Grüße", { eci: 3 })
 ```
 
+## Structured Append
+
+A message too long for one symbol goes across up to sixteen, which a reader
+puts back together in order.
+
+```ts
+import { encodeDataMatrixSequence, encodeDataMatrix } from "etiket"
+
+const symbols = encodeDataMatrixSequence(longText, { symbols: 3 })
+symbols.length // 3
+
+// Or place one symbol of a sequence by hand
+encodeDataMatrix(part, { structuredAppend: { index: 2, total: 3, fileId: [17, 42] } })
+```
+
+Each symbol opens with four codewords — a marker, its position and the count,
+and a two byte file identifier that tells one sequence from another — so a
+sequence holds a little less than the sum of its parts. `fileId` defaults to
+`[1, 1]`; give the same one to every symbol of a sequence and a different one
+to sequences that might be scanned together.
+
+With no `symbols` count the encoder takes the fewest that hold the message, and
+never fewer than two: a sequence of one is not something the standard allows.
+
 ## GS1 DataMatrix
 
 `gs1datamatrix()` takes a parenthesised Application Identifier string and emits

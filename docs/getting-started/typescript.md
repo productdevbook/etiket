@@ -202,27 +202,32 @@ barcode("12345", { unit: print, moduleSize: 0.33, height: 25 })
 
 ### 2D encoders
 
-| Type                       | Fields                                                                |
-| :------------------------- | :-------------------------------------------------------------------- |
-| `DataMatrixShape`          | `"square" \| "rectangle" \| "auto"`                                   |
-| `DataMatrixSizeOptions`    | `shape`, `dmre`, `symbolSize`                                         |
-| `DataMatrixSymbolSize`     | One row of the size table: rows, cols, data regions, codewords        |
-| `PDF417Options`            | `ecLevel`, `columns`, `compact`, `eci`, `macro`, `readerInit`         |
-| `MicroPDF417Options`       | `columns` (1–4)                                                       |
-| `AztecOptions`             | `ecPercent`, `layers`, `compact`, `eci`                               |
-| `MaxiCodeOptions`          | `mode` (2–6), `postalCode`, `countryCode`, `serviceClass`             |
-| `DotCodeOptions`           | `rows`, `columns`, `mask`                                             |
-| `HanXinOptions`            | `ecLevel` (1–4), `version` (1–84), `mask` (1–4)                       |
-| `JABCodeOptions`           | `colors` (4 or 8), `ecPercent`                                        |
-| `JABCodeResult`            | `matrix` of palette indices, `rows`, `cols`, `palette`                |
-| `CompositeType`            | `"CC-A" \| "CC-B" \| "CC-C"`                                          |
-| `CompositeLinearType`      | The linear symbology a composite component sits above                 |
-| `GS1CompositeOptions`      | `type`, `columns`, `linear`, `linearWidth`                            |
-| `GS1CompositeResult`       | `composite`, `type`, `rows`, `cols`, `columns`                        |
-| `GS1CompositeSymbolResult` | The complete symbol: `matrix`, `rowHeights`, `linear`, `separator`, … |
-| `PDF417MacroOptions`       | One symbol's Macro PDF417 control block                               |
-| `PDF417SharedMacroOptions` | The macro fields that stay the same across a sequence                 |
-| `PDF417SequenceOptions`    | `PDF417Options` without `macro`, plus `symbols` and `fileId`          |
+| Type                         | Fields                                                                        |
+| :--------------------------- | :---------------------------------------------------------------------------- |
+| `DataMatrixShape`            | `"square" \| "rectangle" \| "auto"`                                           |
+| `DataMatrixSizeOptions`      | `shape`, `dmre`, `symbolSize`                                                 |
+| `DataMatrixEncodeOptions`    | `eci`, `structuredAppend`                                                     |
+| `DataMatrixStructuredAppend` | `index` (from 1), `total` (2–16), `fileId`                                    |
+| `DataMatrixSequenceOptions`  | The size and encode options, plus `symbols` and `fileId`                      |
+| `DataMatrixSymbolSize`       | One row of the size table: rows, cols, data regions, codewords                |
+| `PDF417Options`              | `ecLevel`, `columns`, `compact`, `eci`, `macro`, `readerInit`                 |
+| `MicroPDF417Options`         | `columns` (1–4)                                                               |
+| `AztecOptions`               | `ecPercent`, `layers`, `compact`, `eci`                                       |
+| `MaxiCodeOptions`            | `mode` (2–6), `postalCode`, `countryCode`, `serviceClass`, `structuredAppend` |
+| `MaxiCodeStructuredAppend`   | `index` (from 1), `total` (2–8)                                               |
+| `MaxiCodeSequenceOptions`    | `MaxiCodeOptions` without `structuredAppend`, plus `symbols`                  |
+| `DotCodeOptions`             | `rows`, `columns`, `mask`                                                     |
+| `HanXinOptions`              | `ecLevel` (1–4), `version` (1–84), `mask` (1–4)                               |
+| `JABCodeOptions`             | `colors` (4 or 8), `ecPercent`                                                |
+| `JABCodeResult`              | `matrix` of palette indices, `rows`, `cols`, `palette`                        |
+| `CompositeType`              | `"CC-A" \| "CC-B" \| "CC-C"`                                                  |
+| `CompositeLinearType`        | The linear symbology a composite component sits above                         |
+| `GS1CompositeOptions`        | `type`, `columns`, `linear`, `linearWidth`                                    |
+| `GS1CompositeResult`         | `composite`, `type`, `rows`, `cols`, `columns`                                |
+| `GS1CompositeSymbolResult`   | The complete symbol: `matrix`, `rowHeights`, `linear`, `separator`, …         |
+| `PDF417MacroOptions`         | One symbol's Macro PDF417 control block                                       |
+| `PDF417SharedMacroOptions`   | The macro fields that stay the same across a sequence                         |
+| `PDF417SequenceOptions`      | `PDF417Options` without `macro`, plus `symbols` and `fileId`                  |
 
 ```ts
 import type {

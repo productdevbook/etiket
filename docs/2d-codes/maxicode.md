@@ -113,6 +113,24 @@ maxicode("PACKAGE", {
 
 `countryCode` and `serviceClass` must each be an integer 0–999.
 
+## Structured Append
+
+Every MaxiCode symbol is the same fixed size whatever it holds, so a message
+longer than one takes has to go across several — up to eight.
+
+```ts
+import { encodeMaxiCodeSequence, encodeMaxiCode } from "etiket"
+
+const symbols = encodeMaxiCodeSequence(longText, { symbols: 3 })
+
+// Or place one symbol of a sequence by hand
+encodeMaxiCode(part, { mode: 4, structuredAppend: { index: 2, total: 3 } })
+```
+
+Each symbol opens with two codewords: a pad and one holding the position and
+the count. With no `symbols` count the encoder takes the fewest that hold the
+message, and never fewer than two.
+
 ## PNG
 
 ```ts

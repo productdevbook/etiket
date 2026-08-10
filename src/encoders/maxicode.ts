@@ -658,15 +658,51 @@ const FINDER_DARK: number[] = [
 // Public API
 // ---------------------------------------------------------------------------
 
+/**
+ * One symbol's place in a Structured Append sequence.
+ *
+ * ISO/IEC 16023 5.5 splits a message across up to eight symbols, each opening
+ * with a pad codeword and one that holds the position and the count.
+ */
+export interface MaxiCodeStructuredAppend {
+  /** Position of this symbol, from 1. */
+  index: number
+  /** Symbols in the sequence, 2 to 8. */
+  total: number
+}
+
 export interface MaxiCodeOptions {
   /** Encoding mode: 2 (US structured), 3 (intl structured), 4 (standard), 5 (full ECC), 6 (reader programming) */
   mode?: 2 | 3 | 4 | 5 | 6
+  /** Place of this symbol in a Structured Append sequence. */
+  structuredAppend?: MaxiCodeStructuredAppend
   /** Postal code (modes 2/3) */
   postalCode?: string
   /** ISO country code number (modes 2/3) */
   countryCode?: number
   /** Service class (modes 2/3, e.g. 840 for UPS) */
   serviceClass?: number
+}
+
+/**
+ * The two codewords that open a symbol belonging to a sequence.
+ *
+ * A pad, then one codeword holding the position in its high three bits and the
+ * count in its low three, both counting from zero (ISO/IEC 16023 5.5).
+ */
+function structuredAppendCodewords(header: MaxiCodeStructuredAppend): number[] {
+  const { index, total } = header
+  if (!Number.isInteger(total) || total < 2 || total > 8) {
+    throw new InvalidInputError(
+      `MaxiCode Structured Append holds 2 to 8 symbols, got ${String(total)}`,
+    )
+  }
+  if (!Number.isInteger(index) || index < 1 || index > total) {
+    throw new InvalidInputError(
+      `MaxiCode Structured Append symbol ${String(index)} is outside a sequence of ${total}`,
+    )
+  }
+  return [symbolOf(SET_A, PAD), (index - 1) * 8 + (total - 1)]
 }
 
 /**
@@ -684,7 +720,9 @@ export function encodeMaxiCode(text: string, options: MaxiCodeOptions = {}): boo
   }
 
   const message = encodeMaxiCodeText(text)
-  let body = message.codewords
+  let body = options.structuredAppend
+    ? [...structuredAppendCodewords(options.structuredAppend), ...message.codewords]
+    : message.codewords
   let padValue = PAD_CODES[message.set]!
 
   // Secondary message length: 68 codewords for mode 5 (enhanced ECC), else 84
@@ -787,4 +825,72 @@ export function encodeMaxiCode(text: string, options: MaxiCodeOptions = {}): boo
   )
 
   return matrix
+}
+
+export interface MaxiCodeSequenceOptions extends Omit<MaxiCodeOptions, "structuredAppend"> {
+  /**
+   * How many symbols to split the message into (2-8).
+   * Omit to use the fewest that hold the data.
+   */
+  symbols?: number
+}
+
+/**
+ * Encode text as a Structured Append sequence: a set of MaxiCode symbols a
+ * reader reassembles into the original message.
+ *
+ * Every symbol is the same fixed size whatever it holds, so a message longer
+ * than one takes has nowhere else to go. Each opens with a pad codeword and one
+ * that holds its position and the count, two codewords ISO/IEC 16023 5.5 takes
+ * out of every symbol.
+ *
+ * @example
+ * ```ts
+ * const symbols = encodeMaxiCodeSequence(longText, { symbols: 3 })
+ * ```
+ */
+export function encodeMaxiCodeSequence(
+  text: string,
+  options: MaxiCodeSequenceOptions = {},
+): boolean[][][] {
+  if (text.length === 0) {
+    throw new InvalidInputError("MaxiCode input must not be empty")
+  }
+  const { symbols: requested, ...symbolOptions } = options
+  if (requested !== undefined && (requested < 2 || requested > 8)) {
+    throw new InvalidInputError(
+      `A MaxiCode Structured Append sequence holds 2 to 8 symbols, got ${requested}`,
+    )
+  }
+
+  const chars = [...text]
+  for (let total = requested ?? 2; total <= (requested ?? 8); total++) {
+    const size = Math.ceil(chars.length / total)
+    const chunks: string[] = []
+    for (let i = 0; i < chars.length; i += size) chunks.push(chars.slice(i, i + size).join(""))
+    if (chunks.length !== total) continue
+
+    const symbols: boolean[][][] = []
+    let overflowed = false
+    for (const [index, chunk] of chunks.entries()) {
+      try {
+        symbols.push(
+          encodeMaxiCode(chunk, {
+            ...symbolOptions,
+            structuredAppend: { index: index + 1, total },
+          }),
+        )
+      } catch (error) {
+        if (!(error instanceof CapacityError)) throw error
+        overflowed = true
+        break
+      }
+    }
+    if (!overflowed) return symbols
+    if (requested !== undefined) {
+      throw new CapacityError(`Data does not fit in ${total} MaxiCode symbols`)
+    }
+  }
+
+  throw new CapacityError("Data does not fit in a Structured Append sequence of 8 MaxiCode symbols")
 }

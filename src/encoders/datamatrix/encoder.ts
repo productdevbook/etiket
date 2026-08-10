@@ -426,6 +426,25 @@ export function encodeECI(eci: number): number[] {
   ]
 }
 
+/**
+ * One symbol's place in a Structured Append sequence.
+ *
+ * ISO/IEC 16022 5.6 splits a message across up to sixteen symbols. Each carries
+ * its position, how many there are in all, and a file identifier the reader
+ * uses to tell one sequence from another.
+ */
+export interface DataMatrixStructuredAppend {
+  /** Position of this symbol, from 1. */
+  index: number
+  /** Symbols in the sequence, 2 to 16. */
+  total: number
+  /**
+   * File identifier, shared by every symbol of the sequence. Two values of
+   * 1 to 254; defaults to `[1, 1]`.
+   */
+  fileId?: readonly [number, number]
+}
+
 export interface DataMatrixEncodeOptions {
   /**
    * ECI assignment number declaring the character set.
@@ -433,6 +452,35 @@ export interface DataMatrixEncodeOptions {
    * contains a character Latin-1 cannot represent.
    */
   eci?: number
+  /** Place of this symbol in a Structured Append sequence. */
+  structuredAppend?: DataMatrixStructuredAppend
+}
+
+/** The four codewords that open a symbol belonging to a sequence. */
+function encodeStructuredAppend(header: DataMatrixStructuredAppend): number[] {
+  const { index, total, fileId = [1, 1] } = header
+  if (!Number.isInteger(total) || total < 2 || total > 16) {
+    throw new InvalidInputError(
+      `Data Matrix Structured Append holds 2 to 16 symbols, got ${String(total)}`,
+    )
+  }
+  if (!Number.isInteger(index) || index < 1 || index > total) {
+    throw new InvalidInputError(
+      `Data Matrix Structured Append symbol ${String(index)} is outside a sequence of ${total}`,
+    )
+  }
+  for (const value of fileId) {
+    if (!Number.isInteger(value) || value < 1 || value > 254) {
+      throw new InvalidInputError(
+        `Data Matrix Structured Append file identifier values run from 1 to 254, got ${String(value)}`,
+      )
+    }
+  }
+  // Codeword 233 has to be the first in the symbol. The one after it holds the
+  // position in its high nibble, counting from zero, and the number of symbols
+  // in the low one — counting *down*, so a sequence of two is 15 and one of
+  // sixteen is 1. Then the file identifier.
+  return [233, ((index - 1) << 4) | (17 - total), fileId[0], fileId[1]]
 }
 
 /**
@@ -454,10 +502,14 @@ export function encodeCandidates(
     encode: (capacity) => (codewords.length <= capacity ? codewords : undefined),
   })
 
+  // Codeword 233 has to come first in the symbol, so a sequence header goes in
+  // front of everything, an ECI declaration after it
+  const sequence = options.structuredAppend ? encodeStructuredAppend(options.structuredAppend) : []
+
   // Anything Latin-1 cannot hold goes out as UTF-8 bytes under an ECI
   // declaration, in Base 256 so no byte is reinterpreted.
   if ([...text].some((ch) => ch.codePointAt(0)! > 0xff)) {
-    const eci = encodeECI(options.eci ?? 26)
+    const eci = [...sequence, ...encodeECI(options.eci ?? 26)]
     return [fixed([...eci, ...encodeBase256(new TextEncoder().encode(text), eci.length + 1)])]
   }
 
@@ -471,10 +523,10 @@ export function encodeCandidates(
   const edifact = edifactCandidate(text)
   if (edifact) candidates.push(edifact)
 
-  const prefix = options.eci === undefined ? [] : encodeECI(options.eci)
+  const prefix = [...sequence, ...(options.eci === undefined ? [] : encodeECI(options.eci))]
 
-  // An ECI declaration goes in front of the message and takes symbol capacity
-  // from it, so the mode is asked what it would do with what is left
+  // What goes in front of the message takes symbol capacity from it, so the
+  // mode is asked what it would do with what is left
   const withPrefix =
     prefix.length === 0
       ? candidates
