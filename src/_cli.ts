@@ -617,6 +617,7 @@ interface BarcodeArgValues extends CommonArgValues {
   "codabar-stop"?: string
   "code128-charset"?: string
   "issn-variant"?: string
+  "code25-check-digit"?: string
 }
 
 /** Barcode flags the PNG renderer cannot honour. */
@@ -668,9 +669,19 @@ const barcodeCommand = defineCommand({
     "codabar-stop": { type: "string", description: "Codabar stop character: A, B, C or D" },
     "code128-charset": { type: "string", description: "Code 128 charset: auto, A, B, C" },
     "issn-variant": { type: "string", description: "ISSN sequence variant, two digits" },
+    "code25-check-digit": {
+      type: "string",
+      description: "Code 25 check digit: add or verify",
+    },
   },
   run({ args }) {
     const values = args as unknown as BarcodeArgValues & RawArgValues
+    const code25Check = choice(
+      values["code25-check-digit"],
+      ["add", "verify"] as const,
+      "code25-check-digit",
+    )
+    if (!code25Check.ok) return
     const encoding = {
       type: values.type as BarcodeType,
       msiCheckDigit: values["msi-check-digit"] as "mod10" | undefined,
@@ -679,6 +690,7 @@ const barcodeCommand = defineCommand({
       codabarStop: values["codabar-stop"],
       code128Charset: values["code128-charset"] as "auto" | undefined,
       issnVariant: values["issn-variant"],
+      code2of5CheckDigit: code25Check.value === "add" ? true : code25Check.value,
     }
     if (wantsPNG(values)) {
       warnIgnoredOnPNG(values, BARCODE_PNG_IGNORED)

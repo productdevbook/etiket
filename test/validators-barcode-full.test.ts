@@ -218,6 +218,12 @@ function validSampleFor(type: string): string {
       return "123456"
     case "pzn8":
       return "1234567"
+    case "industrial2of5":
+    case "iata2of5":
+    case "matrix2of5":
+    case "coop2of5":
+    case "datalogic2of5":
+      return "1234567890"
     default:
       return "TEST123"
   }
@@ -248,6 +254,11 @@ describe("validator agrees with the encoders", () => {
     ["code32", "12345678"],
     ["pzn", "123456"],
     ["pzn8", "1234567"],
+    ["industrial2of5", "1234567890"],
+    ["iata2of5", "1234567890"],
+    ["matrix2of5", "1234567890"],
+    ["coop2of5", "1234567890"],
+    ["datalogic2of5", "1234567890"],
   ]
 
   it("input the validator accepts, the encoder encodes", () => {
@@ -290,6 +301,8 @@ describe("validator agrees with the encoders", () => {
       ["code32", "1234567"],
       ["pzn", "500000"],
       ["pzn8", "123456"],
+      ["industrial2of5", "12A45"],
+      ["matrix2of5", ""],
     ]
     for (const [type, text] of rejected) {
       expect(validateBarcode(text, type).valid, type).toBe(false)

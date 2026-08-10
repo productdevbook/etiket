@@ -31,7 +31,7 @@ owns them.
 
 | Type          | Definition                                                                     | Used by                  |
 | :------------ | :----------------------------------------------------------------------------- | :----------------------- |
-| `BarcodeType` | The 35 width-modulated linear symbologies                                      | `barcode`, `encodeBars`  |
+| `BarcodeType` | The 40 width-modulated linear symbologies                                      | `barcode`, `encodeBars`  |
 | `EncodeType`  | `BarcodeType` plus the postal, 2D and stacked symbologies                      | `encode`                 |
 | `PostalType`  | `"postnet" \| "planet" \| "rm4scc" \| "kix" \| "auspost" \| "jppost" \| "imb"` | `postal`, `encodePostal` |
 
@@ -298,15 +298,17 @@ encodePDF417("segment one", { macro: block }).rows > 0 // true
 
 ### 1D encoders
 
-| Type                | Definition                                                   |
-| :------------------ | :----------------------------------------------------------- |
-| `Code128Charset`    | `"auto" \| "A" \| "B" \| "C"`                                |
-| `Code128Options`    | `{ charset?: Code128Charset }`                               |
-| `MSICheckDigitType` | `"mod10" \| "mod11" \| "mod1010" \| "mod1110" \| "none"`     |
-| `GS1128Linkage`     | `"A" \| "C"` — which composite component the symbol links to |
-| `GS1128Options`     | `{ linkage?: GS1128Linkage }`                                |
-| `ISSNOptions`       | `{ variant?: string }` — the two digit sequence variant      |
-| `PZNOptions`        | `{ pzn8?: boolean }` — the eight digit scheme                |
+| Type                | Definition                                                        |
+| :------------------ | :---------------------------------------------------------------- |
+| `Code128Charset`    | `"auto" \| "A" \| "B" \| "C"`                                     |
+| `Code128Options`    | `{ charset?: Code128Charset }`                                    |
+| `MSICheckDigitType` | `"mod10" \| "mod11" \| "mod1010" \| "mod1110" \| "none"`          |
+| `GS1128Linkage`     | `"A" \| "C"` — which composite component the symbol links to      |
+| `GS1128Options`     | `{ linkage?: GS1128Linkage }`                                     |
+| `ISSNOptions`       | `{ variant?: string }` — the two digit sequence variant           |
+| `PZNOptions`        | `{ pzn8?: boolean }` — the eight digit scheme                     |
+| `Code2of5Version`   | `"industrial" \| "iata" \| "matrix" \| "coop" \| "datalogic"`     |
+| `Code2of5Options`   | `{ version?: Code2of5Version; checkDigit?: boolean \| "verify" }` |
 
 ```ts
 import type {
@@ -314,11 +316,20 @@ import type {
   Code128Options,
   GS1128Linkage,
   GS1128Options,
+  Code2of5Options,
+  Code2of5Version,
   ISSNOptions,
   MSICheckDigitType,
   PZNOptions,
 } from "etiket"
-import { encodeCode128, encodeGS1128, encodeISSN, encodeMSI, encodePZN } from "etiket"
+import {
+  encodeCode128,
+  encodeCode2of5,
+  encodeGS1128,
+  encodeISSN,
+  encodeMSI,
+  encodePZN,
+} from "etiket"
 
 const charset: Code128Charset = "C"
 const opts: Code128Options = { charset }
@@ -327,12 +338,15 @@ const linkage: GS1128Linkage = "A"
 const gs1Opts: GS1128Options = { linkage }
 const issnOpts: ISSNOptions = { variant: "01" }
 const pznOpts: PZNOptions = { pzn8: true }
+const version: Code2of5Version = "matrix"
+const c25Opts: Code2of5Options = { version, checkDigit: true }
 
 encodeCode128("12345678", opts)
 encodeMSI("1234", { checkDigit: check })
 encodeGS1128("(01)09501101020917", gs1Opts)
 encodeISSN("0317-8471", issnOpts)
 encodePZN("1234567", pznOpts)
+encodeCode2of5("1234567890", c25Opts)
 ```
 
 ## Result Types

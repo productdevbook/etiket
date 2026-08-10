@@ -52,6 +52,11 @@ export const BARCODE_TYPES = [
   "code32",
   "pzn",
   "pzn8",
+  "industrial2of5",
+  "iata2of5",
+  "matrix2of5",
+  "coop2of5",
+  "datalogic2of5",
 ] as const
 
 /** Width-modulated linear symbologies rendered by `barcode()`. */
@@ -66,6 +71,8 @@ export interface BarcodeEncodingOptions {
   code128Charset?: "auto" | "A" | "B" | "C"
   /** Two digit ISSN sequence variant. Defaults to `"00"`. */
   issnVariant?: string
+  /** Append a Code 25 check digit, or `"verify"` one already on the end. */
+  code2of5CheckDigit?: boolean | "verify"
 }
 
 export interface BarcodeOptions extends BarcodeEncodingOptions, BarcodeSVGOptions {}

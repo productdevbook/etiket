@@ -21,6 +21,7 @@ import { encodePharmacode } from "./encoders/pharmacode"
 import { encodeCode11 } from "./encoders/code11"
 import { encodeEAN14, encodeGS1128, encodeSSCC18 } from "./encoders/gs1-128"
 import { encodeISBN, encodeISMN, encodeISSN } from "./encoders/isbn"
+import { encodeCode2of5 } from "./encoders/code2of5"
 import { encodeCode32, encodePZN } from "./encoders/pharma-national"
 import { encodeIdentcode, encodeLeitcode } from "./encoders/deutsche-post"
 import { encodePlessey } from "./encoders/plessey"
@@ -46,6 +47,7 @@ export function encodeBars(text: string, options: BarcodeEncodingOptions = {}): 
     codabarStop,
     code128Charset,
     issnVariant,
+    code2of5CheckDigit,
   } = options
 
   switch (type) {
@@ -121,6 +123,15 @@ export function encodeBars(text: string, options: BarcodeEncodingOptions = {}): 
     case "pzn":
     case "pzn8":
       return encodePZN(text, { pzn8: type === "pzn8" })
+    case "industrial2of5":
+    case "iata2of5":
+    case "matrix2of5":
+    case "coop2of5":
+    case "datalogic2of5":
+      return encodeCode2of5(text, {
+        version: type.slice(0, -4) as "industrial",
+        checkDigit: code2of5CheckDigit,
+      })
     default:
       throw new InvalidInputError(`Unsupported barcode type: ${type}`)
   }
@@ -137,6 +148,8 @@ export function barcode(text: string, options: BarcodeOptions = {}): string {
     codabarStart: _cbStart,
     codabarStop: _cbStop,
     code128Charset: _c128,
+    issnVariant: _issn,
+    code2of5CheckDigit: _c25,
     ...svgOptions
   } = options
 

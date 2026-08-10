@@ -1,6 +1,6 @@
 # 1D Barcodes
 
-etiket supports 35 types of 1D barcode. All are generated with the `barcode()` function.
+etiket supports 40 types of 1D barcode. All are generated with the `barcode()` function.
 
 ```ts
 import { barcode } from "etiket"
@@ -45,6 +45,11 @@ const svg = barcode("data", { type: "code128" })
 | [Code 32](/barcodes/pharma-national)           | `code32`                | 0-9 (8-9 digits)       | Auto (Luhn)       |
 | [PZN-7](/barcodes/pharma-national)             | `pzn`                   | 0-9 (6-7 digits)       | Auto (mod 11)     |
 | [PZN-8](/barcodes/pharma-national)             | `pzn8`                  | 0-9 (7-8 digits)       | Auto (mod 11)     |
+| [Industrial 2 of 5](/barcodes/code2of5)        | `industrial2of5`        | 0-9                    | Optional (mod 10) |
+| [IATA 2 of 5](/barcodes/code2of5)              | `iata2of5`              | 0-9                    | Optional (mod 10) |
+| [Matrix 2 of 5](/barcodes/code2of5)            | `matrix2of5`            | 0-9                    | Optional (mod 10) |
+| [COOP 2 of 5](/barcodes/code2of5)              | `coop2of5`              | 0-9                    | Optional (mod 10) |
+| [Datalogic 2 of 5](/barcodes/code2of5)         | `datalogic2of5`         | 0-9                    | Optional (mod 10) |
 | [POSTNET](/postal/postnet-planet)              | `postnet`               | 0-9 (5, 9 or 11)       | Auto (mod 10)     |
 | [PLANET](/postal/postnet-planet)               | `planet`                | 0-9 (11 or 13)         | Auto (mod 10)     |
 

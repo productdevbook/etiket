@@ -97,7 +97,7 @@ Run `etiket list` to print the full set from the [CLI](/getting-started/cli).
   [Deutsche Post](/barcodes/deutsche-post), [HIBC](/barcodes/hibc),
   [ISBT 128](/barcodes/isbt128), [ISBN, ISSN and ISMN](/barcodes/isbn),
   [EAN-14 and SSCC-18](/barcodes/gs1-shipping),
-  [Code 32 and PZN](/barcodes/pharma-national)
+  [Code 32 and PZN](/barcodes/pharma-national), [Code 25](/barcodes/code2of5)
 - [Postal](/postal/) — [POSTNET and PLANET](/postal/postnet-planet),
   [RM4SCC](/postal/rm4scc), [KIX](/postal/kix), [Australia Post](/postal/auspost),
   [Japan Post](/postal/japan-post), [USPS IMb](/postal/imb)

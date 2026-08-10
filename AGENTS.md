@@ -38,6 +38,7 @@ src/
     gs1-128.ts              # GS1-128 (100+ AIs, FNC1, AI parsing), EAN-14, SSCC-18
     isbn.ts                 # ISBN, ISSN, ISMN over EAN-13
     pharma-national.ts      # Code 32 (Italian), PZN-7/PZN-8 (German), over Code 39
+    code2of5.ts             # Code 25: industrial, IATA, matrix, COOP, datalogic
     deutsche-post.ts        # Identcode, Leitcode
     postnet.ts              # USPS POSTNET, PLANET
     plessey.ts              # Plessey (UK library)
@@ -126,9 +127,10 @@ Single entry: `etiket` (everything). Sub-paths: `etiket/barcode`, `etiket/postal
 agree, that no subpath exports something the main entry lacks, and that shared
 symbols are the same object — so the surface cannot drift.
 
-1D + postal: `barcode()`, `encodeBars()`, `postal()`, `encodePostal()`. 35
+1D + postal: `barcode()`, `encodeBars()`, `postal()`, `encodePostal()`. 40
 width-modulated types, including the numbering schemes that ride on another
-symbology — `isbn`, `issn`, `ismn`, `ean14`, `sscc18`, `code32`, `pzn`, `pzn8`.
+symbology — `isbn`, `issn`, `ismn`, `ean14`, `sscc18`, `code32`, `pzn`, `pzn8` —
+and the discrete 2 of 5 family.
 
 2D: `qrcode()`, `microqr()`, `rmqr()`, `datamatrix()`, `gs1datamatrix()`, `pdf417()`, `micropdf417()`, `aztec()`, `maxicode()`, `dotcode()`, `hanxin()`, `codablockf()`, `code16k()`, `jabcode()`.
 

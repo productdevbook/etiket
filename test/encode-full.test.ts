@@ -58,6 +58,11 @@ const SAMPLES: Array<[EncodeType, string]> = [
   ["code32", "12345678"],
   ["pzn", "123456"],
   ["pzn8", "1234567"],
+  ["industrial2of5", "1234567890"],
+  ["iata2of5", "1234567890"],
+  ["matrix2of5", "1234567890"],
+  ["coop2of5", "1234567890"],
+  ["datalogic2of5", "1234567890"],
   // Postal
   ["postnet", "12345"],
   ["planet", "12345678901"],

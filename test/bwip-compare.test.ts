@@ -43,6 +43,7 @@ import {
   encodeCode93,
   encodeDotCode,
   encodeEAN13,
+  encodeCode2of5,
   encodeCode32,
   encodeEAN14,
   encodeGS1128,
@@ -298,6 +299,28 @@ describe("bwip-js cross-verification: 1D", () => {
     etiket: (p) => encodeGS1128(p, { linkage: "C" }),
     bwip: (p) => bwipBars("gs1-128", p, { linkagec: true }),
   })
+
+  for (const [version, bcid] of [
+    ["industrial", "industrial2of5"],
+    ["iata", "iata2of5"],
+    ["matrix", "matrix2of5"],
+    ["coop", "coop2of5"],
+    ["datalogic", "datalogic2of5"],
+  ] as const) {
+    runLinear({
+      format: `code 25 (${version})`,
+      payloads: ["1234567890", "0", "00000", "9999999999", "12345"],
+      etiket: (p) => encodeCode2of5(p, { version }),
+      bwip: (p) => bwipBars(bcid, p),
+    })
+
+    runLinear({
+      format: `code 25 (${version}, check digit)`,
+      payloads: ["1234567890", "0", "12345"],
+      etiket: (p) => encodeCode2of5(p, { version, checkDigit: true }),
+      bwip: (p) => bwipBars(bcid, p, { includecheck: true }),
+    })
+  }
 
   runLinear({
     format: "ean14",

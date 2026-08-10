@@ -68,14 +68,16 @@ encodeBars("12345", { type: "code128" })
 
 ### Encoding options
 
-| Option             | Type                                                     | Default     |
-| :----------------- | :------------------------------------------------------- | :---------- |
-| `type`             | [`BarcodeType`](#barcodetype)                            | `"code128"` |
-| `code128Charset`   | `"auto" \| "A" \| "B" \| "C"`                            | `"auto"`    |
-| `code39CheckDigit` | `boolean`                                                | `false`     |
-| `msiCheckDigit`    | `"mod10" \| "mod11" \| "mod1010" \| "mod1110" \| "none"` | `"none"`    |
-| `codabarStart`     | `string`                                                 | `"A"`       |
-| `codabarStop`      | `string`                                                 | `"A"`       |
+| Option               | Type                                                     | Default     |
+| :------------------- | :------------------------------------------------------- | :---------- |
+| `type`               | [`BarcodeType`](#barcodetype)                            | `"code128"` |
+| `code128Charset`     | `"auto" \| "A" \| "B" \| "C"`                            | `"auto"`    |
+| `code39CheckDigit`   | `boolean`                                                | `false`     |
+| `msiCheckDigit`      | `"mod10" \| "mod11" \| "mod1010" \| "mod1110" \| "none"` | `"none"`    |
+| `codabarStart`       | `string`                                                 | `"A"`       |
+| `codabarStop`        | `string`                                                 | `"A"`       |
+| `issnVariant`        | `string` — two digit ISSN sequence variant               | `"00"`      |
+| `code2of5CheckDigit` | `boolean \| "verify"`                                    | `false`     |
 
 ### SVG options
 
@@ -122,7 +124,8 @@ barcode("1234567890123", {
 `code11`, `gs1-128`, `identcode`, `leitcode`, `postnet`, `planet`, `plessey`,
 `gs1-databar`, `gs1-databar-limited`, `gs1-databar-expanded`,
 `gs1-databar-truncated`, `ean14`, `sscc18`, `isbn`, `issn`, `ismn`, `code32`,
-`pzn`, `pzn8`.
+`pzn`, `pzn8`, `industrial2of5`, `iata2of5`, `matrix2of5`, `coop2of5`,
+`datalogic2of5`.
 
 `postnet` and `planet` are height-modulated: `barcode()` quietly routes them
 through the postal renderer, and `encodeBars()` throws for them.
@@ -539,6 +542,7 @@ without etiket's renderer.
 | `encodeISMN(text)`                                  | `{ bars, guards }` — an EAN-13 with the 9790 prefix    |
 | `encodeCode32(text)`                                | `number[]` — the Italian Pharmacode, over Code 39      |
 | `encodePZN(text, options?)`                         | `number[]` — `options.pzn8` selects PZN-8              |
+| `encodeCode2of5(text, options?)`                    | `number[]` — `options.version` picks the 2 of 5 table  |
 
 ```ts
 import {
@@ -564,6 +568,7 @@ import {
   encodeISMN,
   encodeCode32,
   encodePZN,
+  encodeCode2of5,
 } from "etiket"
 
 encodeCode128("Hello", { charset: "B" })
@@ -589,6 +594,7 @@ encodeISSN("0317-8471", { variant: "01" }).bars
 encodeISMN("M-2306-7118-7").bars
 encodeCode32("12345678")
 encodePZN("1234567", { pzn8: true })
+encodeCode2of5("1234567890", { version: "matrix", checkDigit: true })
 ```
 
 ### GS1 DataBar and Composite
