@@ -26,6 +26,13 @@ barcode("96385074", { type: "ean8" })
 barcode("9638507", { type: "ean8" })
 ```
 
+## What the Input May Contain
+
+Digits, and the spaces and hyphens a number is printed with — `4-006381-333931`
+is the same symbol as `4006381333931`. Anything else raises `InvalidInputError`
+rather than being stripped, because stripping it would encode a number nobody
+asked for: `40063813339O1` would quietly become a symbol for eleven digits.
+
 ## EAN-5 (Addon)
 
 5-digit supplemental barcode for book pricing.

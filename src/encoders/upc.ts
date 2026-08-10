@@ -3,6 +3,7 @@
  */
 
 import { InvalidInputError, CheckDigitError } from "../errors"
+import { eanDigits } from "./ean"
 
 // Encoding patterns for digits (same as EAN, duplicated to avoid inter-encoder dependencies)
 // L = left odd parity, G = left even parity, R = right
@@ -119,7 +120,7 @@ function expandUPCE(numberSystem: number, middleDigits: number[]): number[] {
  * @returns bars (widths) and guard positions
  */
 export function encodeUPCA(text: string): { bars: number[]; guards: number[] } {
-  const digits = text.replace(/\D/g, "").split("").map(Number)
+  const digits = eanDigits(text, "UPC-A")
 
   if (digits.length === 11) {
     digits.push(calculateCheckDigit(digits))
@@ -196,7 +197,7 @@ export function encodeUPCA(text: string): { bars: number[]; guards: number[] } {
  * @returns bars (widths) and guard positions
  */
 export function encodeUPCE(text: string): { bars: number[]; guards: number[] } {
-  const raw = text.replace(/\D/g, "").split("").map(Number)
+  const raw = eanDigits(text, "UPC-E")
 
   let numberSystem: number
   let middleDigits: number[]

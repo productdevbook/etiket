@@ -4,6 +4,28 @@
 
 import { InvalidInputError, CheckDigitError } from "../errors"
 
+/**
+ * The digits of a printed EAN or UPC number.
+ *
+ * Spaces and hyphens are how these numbers are written on a pack, so they are
+ * dropped. Anything else is a typo rather than punctuation, and stripping it
+ * would encode a number the caller did not ask for — `40063813339O1` would
+ * quietly become a valid symbol for eleven digits.
+ */
+export function eanDigits(text: string, symbology: string): number[] {
+  const digits: number[] = []
+  for (const character of text) {
+    if (character === " " || character === "-") continue
+    if (character < "0" || character > "9") {
+      throw new InvalidInputError(
+        `${symbology} accepts digits, spaces and hyphens only (got '${character}')`,
+      )
+    }
+    digits.push(character.charCodeAt(0) - 48)
+  }
+  return digits
+}
+
 // Encoding patterns for digits
 // L = left odd parity, G = left even parity, R = right
 const L_PATTERNS: number[][] = [
@@ -89,7 +111,7 @@ function calculateCheckDigit(digits: number[]): number {
  * Input: 12 or 13 digit string (13th is check digit, auto-calculated if 12)
  */
 export function encodeEAN13(text: string): { bars: number[]; guards: number[] } {
-  const digits = text.replace(/\D/g, "").split("").map(Number)
+  const digits = eanDigits(text, "EAN-13")
 
   if (digits.length === 12) {
     digits.push(calculateCheckDigit(digits))
@@ -160,7 +182,7 @@ export function encodeEAN13(text: string): { bars: number[]; guards: number[] } 
  * Input: 7 or 8 digit string (8th is check digit, auto-calculated if 7)
  */
 export function encodeEAN8(text: string): { bars: number[]; guards: number[] } {
-  const digits = text.replace(/\D/g, "").split("").map(Number)
+  const digits = eanDigits(text, "EAN-8")
 
   if (digits.length === 7) {
     digits.push(calculateCheckDigit(digits))

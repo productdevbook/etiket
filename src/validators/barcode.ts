@@ -13,6 +13,17 @@ import { encodeCode2of5 } from "../encoders/code2of5"
 import { encodeCode32, encodePZN } from "../encoders/pharma-national"
 import { postnetCheckDigit } from "../encoders/postnet"
 
+/**
+ * The digits of a printed EAN or UPC number, or null when the input holds
+ * something that is neither a digit nor the spaces and hyphens such numbers are
+ * printed with. Mirrors what `eanDigits` in the encoder accepts, so the
+ * validator cannot pass input the encoder then refuses.
+ */
+function eanDigitsOrNull(text: string): string | null {
+  const digits = text.replaceAll(/[\s-]/g, "")
+  return /^\d*$/.test(digits) ? digits : null
+}
+
 /** Report whether the encoder accepts the input, and why not when it does not. */
 function byEncoding(encode: () => unknown): { valid: boolean; error?: string } {
   try {
@@ -49,7 +60,10 @@ export function validateBarcode(text: string, type: string): { valid: boolean; e
       return { valid: true }
 
     case "ean13": {
-      const digits = text.replace(/\D/g, "")
+      const digits = eanDigitsOrNull(text)
+      if (digits === null) {
+        return { valid: false, error: "EAN-13 accepts digits, spaces and hyphens only" }
+      }
       if (digits.length !== 12 && digits.length !== 13) {
         return { valid: false, error: "EAN-13 requires 12 or 13 digits" }
       }
@@ -60,7 +74,10 @@ export function validateBarcode(text: string, type: string): { valid: boolean; e
     }
 
     case "ean8": {
-      const digits = text.replace(/\D/g, "")
+      const digits = eanDigitsOrNull(text)
+      if (digits === null) {
+        return { valid: false, error: "EAN-8 accepts digits, spaces and hyphens only" }
+      }
       if (digits.length !== 7 && digits.length !== 8) {
         return { valid: false, error: "EAN-8 requires 7 or 8 digits" }
       }
@@ -98,7 +115,10 @@ export function validateBarcode(text: string, type: string): { valid: boolean; e
     }
 
     case "upca": {
-      const digits = text.replace(/\D/g, "")
+      const digits = eanDigitsOrNull(text)
+      if (digits === null) {
+        return { valid: false, error: "UPC-A accepts digits, spaces and hyphens only" }
+      }
       if (digits.length !== 11 && digits.length !== 12) {
         return { valid: false, error: "UPC-A requires 11 or 12 digits" }
       }
@@ -106,7 +126,10 @@ export function validateBarcode(text: string, type: string): { valid: boolean; e
     }
 
     case "upce": {
-      const digits = text.replace(/\D/g, "")
+      const digits = eanDigitsOrNull(text)
+      if (digits === null) {
+        return { valid: false, error: "UPC-E accepts digits, spaces and hyphens only" }
+      }
       if (digits.length < 6 || digits.length > 8) {
         return { valid: false, error: "UPC-E requires 6-8 digits" }
       }
@@ -393,21 +416,24 @@ export function validateBarcodeInput(
   // Compute check digit for types that support it
   switch (type) {
     case "ean13": {
-      const digits = text.replace(/\D/g, "").split("").map(Number)
+      // validateBarcode above has already refused anything but digits
+      const digits = (eanDigitsOrNull(text) ?? "").split("").map(Number)
       const dataDigits = digits.slice(0, 12)
       const checkDigit = calculateEANCheckDigit(dataDigits)
       return { valid: true, checkDigit }
     }
 
     case "ean8": {
-      const digits = text.replace(/\D/g, "").split("").map(Number)
+      // validateBarcode above has already refused anything but digits
+      const digits = (eanDigitsOrNull(text) ?? "").split("").map(Number)
       const dataDigits = digits.slice(0, 7)
       const checkDigit = calculateEANCheckDigit(dataDigits)
       return { valid: true, checkDigit }
     }
 
     case "upca": {
-      const digits = text.replace(/\D/g, "").split("").map(Number)
+      // validateBarcode above has already refused anything but digits
+      const digits = (eanDigitsOrNull(text) ?? "").split("").map(Number)
       const dataDigits = digits.slice(0, 11)
       const checkDigit = calculateUPCACheckDigit(dataDigits)
       return { valid: true, checkDigit }

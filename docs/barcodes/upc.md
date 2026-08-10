@@ -26,6 +26,12 @@ barcode("01234565", { type: "upce" })
 barcode("123456", { type: "upce" })
 ```
 
+## What the Input May Contain
+
+Digits, and the spaces and hyphens a number is printed with — `0-36000-29145-2`
+is the same symbol as `036000291452`. Anything else raises `InvalidInputError`
+rather than being stripped.
+
 ## Raw Encoders
 
 ```ts
