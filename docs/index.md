@@ -37,14 +37,14 @@ const png = qrcodePNG("https://example.com", { moduleSize: 8 })
 
 ## Format Families
 
-| Family                   | Examples                                                               |
-| :----------------------- | :--------------------------------------------------------------------- |
-| [1D](/barcodes/)         | Code 128, EAN/UPC, Code 39/93, ITF, Codabar, MSI, GS1-128, GS1 DataBar |
-| [Postal](/postal/)       | POSTNET, PLANET, RM4SCC, KIX, Australia Post, Japan Post, IMb          |
-| [QR](/qr-code/)          | QR Code, Micro QR, rMQR                                                |
-| [2D](/2d-codes/)         | Data Matrix, PDF417, MicroPDF417, Aztec, MaxiCode, DotCode, Han Xin    |
-| [Stacked](/2d-codes/)    | Codablock F, Code 16K, GS1 DataBar Stacked                             |
-| [Polychrome](/2d-codes/) | JAB Code (experimental — [not conformant](/2d-codes/jabcode))          |
+| Family                   | Examples                                                                 |
+| :----------------------- | :----------------------------------------------------------------------- |
+| [1D](/barcodes/)         | Code 128, EAN/UPC, ISBN, Code 39/93, ITF, Codabar, MSI, GS1-128, DataBar |
+| [Postal](/postal/)       | POSTNET, PLANET, RM4SCC, KIX, Australia Post, Japan Post, IMb            |
+| [QR](/qr-code/)          | QR Code, Micro QR, rMQR                                                  |
+| [2D](/2d-codes/)         | Data Matrix, PDF417, MicroPDF417, Aztec, MaxiCode, DotCode, Han Xin      |
+| [Stacked](/2d-codes/)    | Codablock F, Code 16K, GS1 DataBar Stacked                               |
+| [Polychrome](/2d-codes/) | JAB Code (experimental — [not conformant](/2d-codes/jabcode))            |
 
 Run `etiket list` to print the full set from the [CLI](/getting-started/cli).
 
@@ -95,7 +95,9 @@ Run `etiket list` to print the full set from the [CLI](/getting-started/cli).
   [Plessey](/barcodes/plessey), [GS1-128](/barcodes/gs1-128),
   [GS1 DataBar](/barcodes/gs1-databar), [GS1 Composite](/barcodes/gs1-composite),
   [Deutsche Post](/barcodes/deutsche-post), [HIBC](/barcodes/hibc),
-  [ISBT 128](/barcodes/isbt128)
+  [ISBT 128](/barcodes/isbt128), [ISBN, ISSN and ISMN](/barcodes/isbn),
+  [EAN-14 and SSCC-18](/barcodes/gs1-shipping),
+  [Code 32 and PZN](/barcodes/pharma-national)
 - [Postal](/postal/) — [POSTNET and PLANET](/postal/postnet-planet),
   [RM4SCC](/postal/rm4scc), [KIX](/postal/kix), [Australia Post](/postal/auspost),
   [Japan Post](/postal/japan-post), [USPS IMb](/postal/imb)

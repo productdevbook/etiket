@@ -202,6 +202,22 @@ function validSampleFor(type: string): string {
     case "gs1-128":
     case "gs1-databar-expanded":
       return "(01)09501101020917"
+    case "ean14":
+      return "1234567890123"
+    case "sscc18":
+      return "10614141192837465"
+    case "isbn":
+      return "978-0-306-40615-7"
+    case "issn":
+      return "0317-8471"
+    case "ismn":
+      return "M-2306-7118-7"
+    case "code32":
+      return "12345678"
+    case "pzn":
+      return "123456"
+    case "pzn8":
+      return "1234567"
     default:
       return "TEST123"
   }
@@ -224,6 +240,14 @@ describe("validator agrees with the encoders", () => {
     ["identcode", "56310243031"],
     ["leitcode", "2131000006418"],
     ["plessey", "1234"],
+    ["ean14", "1234567890123"],
+    ["sscc18", "10614141192837465"],
+    ["isbn", "0-306-40615-2"],
+    ["issn", "0317-8471"],
+    ["ismn", "M-2306-7118-7"],
+    ["code32", "12345678"],
+    ["pzn", "123456"],
+    ["pzn8", "1234567"],
   ]
 
   it("input the validator accepts, the encoder encodes", () => {
@@ -258,6 +282,14 @@ describe("validator agrees with the encoders", () => {
       ["code11", "12A4"],
       ["ean2", "123"],
       ["ean5", "1234"],
+      ["ean14", "123"],
+      ["sscc18", "123"],
+      ["isbn", "0306406153"],
+      ["issn", "0317-8472"],
+      ["ismn", "9791230671187"],
+      ["code32", "1234567"],
+      ["pzn", "500000"],
+      ["pzn8", "123456"],
     ]
     for (const [type, text] of rejected) {
       expect(validateBarcode(text, type).valid, type).toBe(false)

@@ -19,7 +19,9 @@ import { encodeCodabar } from "./encoders/codabar"
 import { encodeMSI } from "./encoders/msi"
 import { encodePharmacode } from "./encoders/pharmacode"
 import { encodeCode11 } from "./encoders/code11"
-import { encodeGS1128 } from "./encoders/gs1-128"
+import { encodeEAN14, encodeGS1128, encodeSSCC18 } from "./encoders/gs1-128"
+import { encodeISBN, encodeISMN, encodeISSN } from "./encoders/isbn"
+import { encodeCode32, encodePZN } from "./encoders/pharma-national"
 import { encodeIdentcode, encodeLeitcode } from "./encoders/deutsche-post"
 import { encodePlessey } from "./encoders/plessey"
 import { renderBarcodeSVG } from "./renderers/svg/barcode"
@@ -43,6 +45,7 @@ export function encodeBars(text: string, options: BarcodeEncodingOptions = {}): 
     codabarStart,
     codabarStop,
     code128Charset,
+    issnVariant,
   } = options
 
   switch (type) {
@@ -103,6 +106,21 @@ export function encodeBars(text: string, options: BarcodeEncodingOptions = {}): 
       return encodeGS1DataBarExpanded(text)
     case "gs1-databar-truncated":
       return encodeGS1DataBarTruncated(text)
+    case "ean14":
+      return encodeEAN14(text)
+    case "sscc18":
+      return encodeSSCC18(text)
+    case "isbn":
+      return encodeISBN(text).bars
+    case "issn":
+      return encodeISSN(text, { variant: issnVariant }).bars
+    case "ismn":
+      return encodeISMN(text).bars
+    case "code32":
+      return encodeCode32(text)
+    case "pzn":
+    case "pzn8":
+      return encodePZN(text, { pzn8: type === "pzn8" })
     default:
       throw new InvalidInputError(`Unsupported barcode type: ${type}`)
   }

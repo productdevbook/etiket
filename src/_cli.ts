@@ -64,6 +64,7 @@ import {
   gs1compositePNG,
   jabcodePNG,
 } from "./index"
+import { BARCODE_TYPES } from "./_types"
 import type { BarcodeType } from "./index"
 import type { PostalType } from "./_postal"
 import type {
@@ -78,37 +79,6 @@ import type { ErrorCorrectionLevel, QRCodeOptions } from "./encoders/qr/types"
 import type { DataMatrixShape } from "./encoders/datamatrix/tables"
 import { COMPOSITE_LINEAR_TYPES } from "./encoders/gs1-composite"
 import type { CompositeLinearType } from "./encoders/gs1-composite"
-
-/** Symbologies reachable through `etiket barcode`. */
-const BARCODE_TYPES: BarcodeType[] = [
-  "code128",
-  "ean13",
-  "ean8",
-  "code39",
-  "code39ext",
-  "code93",
-  "code93ext",
-  "itf",
-  "itf14",
-  "upca",
-  "upce",
-  "ean2",
-  "ean5",
-  "codabar",
-  "msi",
-  "pharmacode",
-  "code11",
-  "gs1-128",
-  "identcode",
-  "leitcode",
-  "postnet",
-  "planet",
-  "plessey",
-  "gs1-databar",
-  "gs1-databar-limited",
-  "gs1-databar-expanded",
-  "gs1-databar-truncated",
-]
 
 /** Symbologies reachable through `etiket postal`. */
 const POSTAL_TYPES: PostalType[] = [
@@ -646,6 +616,7 @@ interface BarcodeArgValues extends CommonArgValues {
   "codabar-start"?: string
   "codabar-stop"?: string
   "code128-charset"?: string
+  "issn-variant"?: string
 }
 
 /** Barcode flags the PNG renderer cannot honour. */
@@ -696,6 +667,7 @@ const barcodeCommand = defineCommand({
     "codabar-start": { type: "string", description: "Codabar start character: A, B, C or D" },
     "codabar-stop": { type: "string", description: "Codabar stop character: A, B, C or D" },
     "code128-charset": { type: "string", description: "Code 128 charset: auto, A, B, C" },
+    "issn-variant": { type: "string", description: "ISSN sequence variant, two digits" },
   },
   run({ args }) {
     const values = args as unknown as BarcodeArgValues & RawArgValues
@@ -706,6 +678,7 @@ const barcodeCommand = defineCommand({
       codabarStart: values["codabar-start"],
       codabarStop: values["codabar-stop"],
       code128Charset: values["code128-charset"] as "auto" | undefined,
+      issnVariant: values["issn-variant"],
     }
     if (wantsPNG(values)) {
       warnIgnoredOnPNG(values, BARCODE_PNG_IGNORED)

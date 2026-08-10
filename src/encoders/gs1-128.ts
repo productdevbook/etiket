@@ -4,7 +4,7 @@
  * and Application Identifier (AI) based data structure
  */
 
-import { InvalidInputError } from "../errors"
+import { CheckDigitError, InvalidInputError } from "../errors"
 
 // Code 128 encoding patterns (bar/space widths)
 // Each pattern is 6 elements: bar, space, bar, space, bar, space
@@ -571,4 +571,67 @@ export function encodeGS1128(text: string, options: GS1128Options = {}): number[
   }
 
   return bars
+}
+
+/** GS1 standard check digit: alternating weights of 3 and 1 from the right. */
+function gs1CheckDigit(digits: string): number {
+  let sum = 0
+  for (let i = 0; i < digits.length; i++) {
+    sum += (digits.charCodeAt(i) - 48) * ((digits.length - i) % 2 === 0 ? 1 : 3)
+  }
+  return (10 - (sum % 10)) % 10
+}
+
+/**
+ * A GS1-128 carrying exactly one fixed-length numeric AI.
+ *
+ * @param ai - Application identifier
+ * @param length - Digits the element carries, check digit included
+ * @param text - The digits, with or without the check digit and the AI
+ */
+function fixedAI(ai: string, length: number, text: string, name: string): number[] {
+  const digits = text.startsWith(`(${ai})`) ? text.slice(ai.length + 2) : text
+  if (!new RegExp(`^\\d{${length - 1},${length}}$`).test(digits)) {
+    throw new InvalidInputError(`${name} requires ${length - 1} or ${length} digits`)
+  }
+
+  const body = digits.slice(0, length - 1)
+  const check = gs1CheckDigit(body)
+  if (digits.length === length && digits.charCodeAt(length - 1) - 48 !== check) {
+    throw new CheckDigitError(
+      `${name} check digit mismatch: expected ${check}, got ${digits.slice(length - 1)}`,
+    )
+  }
+
+  return encodeGS1128(`(${ai})${body}${String(check)}`)
+}
+
+/**
+ * Encode an EAN-14 — a GTIN-14 in a GS1-128 under AI (01).
+ *
+ * @param text - 13 or 14 digits, optionally prefixed with `(01)`
+ * @returns Array of bar widths (alternating bar/space)
+ *
+ * @example
+ * ```ts
+ * encodeEAN14("1234567890123")
+ * ```
+ */
+export function encodeEAN14(text: string): number[] {
+  return fixedAI("01", 14, text, "EAN-14")
+}
+
+/**
+ * Encode an SSCC-18 — a serial shipping container code under AI (00).
+ *
+ * @param text - 17 or 18 digits, optionally prefixed with `(00)`
+ * @returns Array of bar widths (alternating bar/space)
+ *
+ * @example
+ * ```ts
+ * encodeSSCC18("10614141192837465")
+ * ```
+ */
+export function encodeSSCC18(text: string): number[] {
+  return fixedAI("00", 18, text, "SSCC-18")
 }

@@ -1,6 +1,6 @@
 # 1D Barcodes
 
-etiket supports 27 types of 1D barcode. All are generated with the `barcode()` function.
+etiket supports 35 types of 1D barcode. All are generated with the `barcode()` function.
 
 ```ts
 import { barcode } from "etiket"
@@ -37,6 +37,14 @@ const svg = barcode("data", { type: "code128" })
 | [GS1 DataBar Truncated](/barcodes/gs1-databar) | `gs1-databar-truncated` | 0-9 (13-14 digits)     | Auto              |
 | [GS1 DataBar Limited](/barcodes/gs1-databar)   | `gs1-databar-limited`   | 0-9 (indicator 0/1)    | Auto              |
 | [GS1 DataBar Expanded](/barcodes/gs1-databar)  | `gs1-databar-expanded`  | AI-based               | Auto              |
+| [EAN-14](/barcodes/gs1-shipping)               | `ean14`                 | 0-9 (13-14 digits)     | Auto (mod 10)     |
+| [SSCC-18](/barcodes/gs1-shipping)              | `sscc18`                | 0-9 (17-18 digits)     | Auto (mod 10)     |
+| [ISBN](/barcodes/isbn)                         | `isbn`                  | ISBN-10 or ISBN-13     | Auto (mod 10)     |
+| [ISSN](/barcodes/isbn)                         | `issn`                  | ISSN, 8 characters     | Auto (mod 10)     |
+| [ISMN](/barcodes/isbn)                         | `ismn`                  | ISMN, M- or 9790-      | Auto (mod 10)     |
+| [Code 32](/barcodes/pharma-national)           | `code32`                | 0-9 (8-9 digits)       | Auto (Luhn)       |
+| [PZN-7](/barcodes/pharma-national)             | `pzn`                   | 0-9 (6-7 digits)       | Auto (mod 11)     |
+| [PZN-8](/barcodes/pharma-national)             | `pzn8`                  | 0-9 (7-8 digits)       | Auto (mod 11)     |
 | [POSTNET](/postal/postnet-planet)              | `postnet`               | 0-9 (5, 9 or 11)       | Auto (mod 10)     |
 | [PLANET](/postal/postnet-planet)               | `planet`                | 0-9 (11 or 13)         | Auto (mod 10)     |
 

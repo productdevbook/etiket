@@ -6,7 +6,20 @@
  */
 
 import { dpCheckDigit } from "../encoders/deutsche-post"
+import { encodeEAN14, encodeSSCC18 } from "../encoders/gs1-128"
+import { encodeISBN, encodeISMN, encodeISSN } from "../encoders/isbn"
+import { encodeCode32, encodePZN } from "../encoders/pharma-national"
 import { postnetCheckDigit } from "../encoders/postnet"
+
+/** Report whether the encoder accepts the input, and why not when it does not. */
+function byEncoding(encode: () => unknown): { valid: boolean; error?: string } {
+  try {
+    encode()
+    return { valid: true }
+  } catch (error) {
+    return { valid: false, error: error instanceof Error ? error.message : String(error) }
+  }
+}
 
 /** Validate and calculate EAN/UPC check digit (modulo 10 weighted) */
 export function calculateEANCheckDigit(digits: number[]): number {
@@ -280,6 +293,24 @@ export function validateBarcode(text: string, type: string): { valid: boolean; e
       }
       return { valid: true }
     }
+
+    // Numbering schemes: format and check digit rules that live wholly in the
+    // encoder, so running it is the only way the two cannot disagree.
+    case "isbn":
+      return byEncoding(() => encodeISBN(text))
+    case "issn":
+      return byEncoding(() => encodeISSN(text))
+    case "ismn":
+      return byEncoding(() => encodeISMN(text))
+    case "ean14":
+      return byEncoding(() => encodeEAN14(text))
+    case "sscc18":
+      return byEncoding(() => encodeSSCC18(text))
+    case "code32":
+      return byEncoding(() => encodeCode32(text))
+    case "pzn":
+    case "pzn8":
+      return byEncoding(() => encodePZN(text, { pzn8: type === "pzn8" }))
 
     case "qr":
     case "datamatrix":

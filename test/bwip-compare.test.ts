@@ -43,8 +43,15 @@ import {
   encodeCode93,
   encodeDotCode,
   encodeEAN13,
+  encodeCode32,
+  encodeEAN14,
   encodeGS1128,
   encodeGS1Composite,
+  encodeISBN,
+  encodeISMN,
+  encodeISSN,
+  encodePZN,
+  encodeSSCC18,
   encodeHanXin,
   encodeHIBCPrimary,
   encodeIdentcode,
@@ -290,6 +297,65 @@ describe("bwip-js cross-verification: 1D", () => {
     payloads: GS1_128_PAYLOADS,
     etiket: (p) => encodeGS1128(p, { linkage: "C" }),
     bwip: (p) => bwipBars("gs1-128", p, { linkagec: true }),
+  })
+
+  runLinear({
+    format: "ean14",
+    payloads: ["1234567890123", "0000000000000", "9876543210987"],
+    etiket: (p) => encodeEAN14(p),
+    bwip: (p) => bwipBars("ean14", `(01)${p}`),
+  })
+
+  runLinear({
+    format: "sscc18",
+    payloads: ["10614141192837465", "00000000000000000"],
+    etiket: (p) => encodeSSCC18(p),
+    bwip: (p) => bwipBars("sscc18", `(00)${p}`),
+  })
+
+  runLinear({
+    format: "isbn",
+    payloads: ["0-306-40615-2", "978-0-306-40615-7", "1-84356-028-3"],
+    etiket: (p) => encodeISBN(p).bars,
+    bwip: (p) => bwipBars("isbn", p),
+  })
+
+  runLinear({
+    format: "issn",
+    payloads: ["0317-8471", "1234-5679", "0035-7596"],
+    etiket: (p) => encodeISSN(p).bars,
+    bwip: (p) => bwipBars("issn", p),
+  })
+
+  runLinear({
+    format: "ismn",
+    payloads: ["M-2306-7118-7", "979-0-2306-7118-7"],
+    etiket: (p) => encodeISMN(p).bars,
+    bwip: (p) => bwipBars("ismn", p),
+  })
+
+  runLinear({
+    format: "code32",
+    payloads: ["12345678", "00000000", "99999999", "01234567"],
+    ratioAgnostic: true,
+    etiket: (p) => encodeCode32(p),
+    bwip: (p) => bwipBars("code32", p),
+  })
+
+  runLinear({
+    format: "pzn (PZN-7)",
+    payloads: ["123456", "000000", "111111", "234567"],
+    ratioAgnostic: true,
+    etiket: (p) => encodePZN(p),
+    bwip: (p) => bwipBars("pzn", p),
+  })
+
+  runLinear({
+    format: "pzn (PZN-8)",
+    payloads: ["1234567", "0000000", "2345678"],
+    ratioAgnostic: true,
+    etiket: (p) => encodePZN(p, { pzn8: true }),
+    bwip: (p) => bwipBars("pzn", p, { pzn8: true }),
   })
 
   runLinear({

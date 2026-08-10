@@ -121,7 +121,8 @@ barcode("1234567890123", {
 `itf14`, `upca`, `upce`, `ean2`, `ean5`, `codabar`, `msi`, `pharmacode`,
 `code11`, `gs1-128`, `identcode`, `leitcode`, `postnet`, `planet`, `plessey`,
 `gs1-databar`, `gs1-databar-limited`, `gs1-databar-expanded`,
-`gs1-databar-truncated`.
+`gs1-databar-truncated`, `ean14`, `sscc18`, `isbn`, `issn`, `ismn`, `code32`,
+`pzn`, `pzn8`.
 
 `postnet` and `planet` are height-modulated: `barcode()` quietly routes them
 through the postal renderer, and `encodeBars()` throws for them.
@@ -532,6 +533,12 @@ without etiket's renderer.
 | `encodeGS1128(text, options?)`                      | `number[]` — `options.linkage` sets the composite flag |
 | `encodeIdentcode(text)` / `encodeLeitcode(text)`    | `number[]`                                             |
 | `encodePlessey(text)`                               | `number[]`                                             |
+| `encodeEAN14(text)` / `encodeSSCC18(text)`          | `number[]` — a GS1-128 under AI (01) / (00)            |
+| `encodeISBN(text)`                                  | `{ bars, guards }` — an EAN-13 with the 978 prefix     |
+| `encodeISSN(text, options?)`                        | `{ bars, guards }` — `options.variant` is the sequence |
+| `encodeISMN(text)`                                  | `{ bars, guards }` — an EAN-13 with the 9790 prefix    |
+| `encodeCode32(text)`                                | `number[]` — the Italian Pharmacode, over Code 39      |
+| `encodePZN(text, options?)`                         | `number[]` — `options.pzn8` selects PZN-8              |
 
 ```ts
 import {
@@ -550,6 +557,13 @@ import {
   encodeIdentcode,
   encodeLeitcode,
   encodePlessey,
+  encodeEAN14,
+  encodeSSCC18,
+  encodeISBN,
+  encodeISSN,
+  encodeISMN,
+  encodeCode32,
+  encodePZN,
 } from "etiket"
 
 encodeCode128("Hello", { charset: "B" })
@@ -567,6 +581,14 @@ encodeGS1128("(01)09501101020917(10)LOT42")
 encodeIdentcode("56312300001")
 encodeLeitcode("2131500001234")
 encodePlessey("12345")
+
+encodeEAN14("1234567890123")
+encodeSSCC18("10614141192837465")
+encodeISBN("0-306-40615-2").bars
+encodeISSN("0317-8471", { variant: "01" }).bars
+encodeISMN("M-2306-7118-7").bars
+encodeCode32("12345678")
+encodePZN("1234567", { pzn8: true })
 ```
 
 ### GS1 DataBar and Composite

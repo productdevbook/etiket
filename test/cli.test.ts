@@ -202,6 +202,28 @@ describe("CLI — barcode options", () => {
     const heights = new Set([...svg.matchAll(/v([\d.]+)h-/g)].map((m) => m[1]))
     expect(heights.size).toBe(2)
   })
+
+  it.each([
+    ["ean14", "1234567890123"],
+    ["sscc18", "10614141192837465"],
+    ["isbn", "978-0-306-40615-7"],
+    ["issn", "0317-8471"],
+    ["ismn", "M-2306-7118-7"],
+    ["code32", "12345678"],
+    ["pzn", "123456"],
+    ["pzn8", "1234567"],
+  ])("renders a %s", async (type, data) => {
+    expectSVG(await runToFile(["barcode", data, "--type", type], `${type}.svg`), type)
+  })
+
+  it("supports the ISSN sequence variant", async () => {
+    const plain = await runToFile(["barcode", "0317-8471", "--type", "issn"], "issn0.svg")
+    const variant = await runToFile(
+      ["barcode", "0317-8471", "--type", "issn", "--issn-variant", "01"],
+      "issn1.svg",
+    )
+    expect(plain).not.toBe(variant)
+  })
 })
 
 describe("CLI — postal options", () => {

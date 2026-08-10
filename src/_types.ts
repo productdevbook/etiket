@@ -44,6 +44,14 @@ export const BARCODE_TYPES = [
   "gs1-databar-limited",
   "gs1-databar-expanded",
   "gs1-databar-truncated",
+  "ean14",
+  "sscc18",
+  "isbn",
+  "issn",
+  "ismn",
+  "code32",
+  "pzn",
+  "pzn8",
 ] as const
 
 /** Width-modulated linear symbologies rendered by `barcode()`. */
@@ -56,6 +64,8 @@ export interface BarcodeEncodingOptions {
   codabarStart?: string
   codabarStop?: string
   code128Charset?: "auto" | "A" | "B" | "C"
+  /** Two digit ISSN sequence variant. Defaults to `"00"`. */
+  issnVariant?: string
 }
 
 export interface BarcodeOptions extends BarcodeEncodingOptions, BarcodeSVGOptions {}
