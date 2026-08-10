@@ -102,7 +102,7 @@ src/
     barcode.ts              # Per-format validation
     qr.ts                   # QR validation with metadata
 test/
-  *.test.ts                 # 123 test files, 3200+ tests
+  *.test.ts                 # 124 test files, 3200+ tests
   _bwip.ts                  # bwip-js (BWIPP) oracle: module data extraction
   bwip-compare.test.ts      # Module-for-module comparison against BWIPP
   qr-roundtrip.test.ts      # QR encode→decode via jsQR (all versions, EC, masks)
@@ -236,7 +236,7 @@ is known and turns red the moment it is fixed.
 
 v1. The full gate (`pnpm test`) is green:
 
-- **123 test files, 3200+ tests** passing
+- **124 test files, 3200+ tests** passing
 - **Zero** lint warnings, zero typecheck errors
 - **96.7%** statements, **92.9%** branches — thresholds enforced in CI by
   `vitest.config.ts`

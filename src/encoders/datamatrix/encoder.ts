@@ -122,7 +122,7 @@ function textValue(ch: number): { set: number; value: number } {
  * Latch: codeword 230
  */
 export function encodeC40(text: string): number[] {
-  return encodeC40Text(text, 230, c40Value)
+  return encodeC40Text(text, 230, c40Value).encode(Infinity)!
 }
 
 /**
@@ -131,15 +131,51 @@ export function encodeC40(text: string): number[] {
  * Latch: codeword 239
  */
 export function encodeTextMode(text: string): number[] {
-  return encodeC40Text(text, 239, textValue)
+  return encodeC40Text(text, 239, textValue).encode(Infinity)!
+}
+
+/**
+ * A candidate encoding of the whole message in one mode.
+ *
+ * Where a mode may stop matters as much as how it packs: an unlatch exists so
+ * that whatever follows it is read as ASCII, so whether one is needed — and
+ * whether a reader will still be in the mode when it arrives — depends on how
+ * much room is left in the symbol. The symbol size is chosen after encoding,
+ * so a candidate answers for a given capacity rather than committing to one
+ * stream.
+ */
+export interface DataMatrixCandidate {
+  /** The stream this mode produces for a symbol holding `capacity` codewords. */
+  encode: (capacity: number) => number[] | undefined
+  /** The fewest codewords the mode could take, for reporting and comparison. */
+  shortest: number
+}
+
+/** A C40/Text/X12 triplet, packed into two codewords. */
+function triplet(a: number, b: number, c: number): number[] {
+  const v = a * 1600 + b * 40 + c + 1
+  return [Math.floor(v / 256), v % 256]
+}
+
+/** Every form this mode can take, shortest first. Each is tried in turn. */
+function fromForms(forms: { codewords: number[]; fits: (capacity: number) => boolean }[]) {
+  const ordered = [...forms].sort((a, b) => a.codewords.length - b.codewords.length)
+  return {
+    shortest: ordered[0]?.codewords.length ?? Infinity,
+    encode: (capacity: number) => {
+      for (const form of ordered) {
+        if (form.codewords.length <= capacity && form.fits(capacity)) return form.codewords
+      }
+      return undefined
+    },
+  }
 }
 
 function encodeC40Text(
   text: string,
   latchCW: number,
   valueFn: (ch: number) => { set: number; value: number },
-): number[] {
-  const codewords: number[] = [latchCW] // Latch to C40/Text
+): DataMatrixCandidate {
   const values: number[] = []
   // Track which source character index each value came from
   const valueCharIndex: number[] = []
@@ -166,30 +202,49 @@ function encodeC40Text(
     }
   }
 
-  // Pack triplets into codeword pairs
-  let i = 0
-  while (i + 2 < values.length) {
-    const v = values[i]! * 1600 + values[i + 1]! * 40 + values[i + 2]! + 1
-    codewords.push(Math.floor(v / 256))
-    codewords.push(v % 256)
-    i += 3
+  // Pack whole triplets into codeword pairs
+  const split = values.length - (values.length % 3)
+  const head = [latchCW]
+  for (let i = 0; i < split; i += 3) {
+    head.push(...triplet(values[i]!, values[i + 1]!, values[i + 2]!))
+  }
+  const rest = values.slice(split)
+
+  // Everything the triplets did not cover: any leftover values plus the
+  // non-encodable tail. Taking the earliest of the two start points ensures no
+  // character is dropped.
+  const asciiFrom = rest.length > 0 ? Math.min(valueCharIndex[split]!, fallbackFrom) : fallbackFrom
+  const forms: { codewords: number[]; fits: (capacity: number) => boolean }[] = [
+    {
+      // Always available: unlatch, then whatever is left in ASCII
+      codewords: [
+        ...head,
+        254,
+        ...(asciiFrom < text.length ? encodeASCII(text.slice(asciiFrom)) : []),
+      ],
+      fits: () => true,
+    },
+  ]
+
+  // The forms that leave the unlatch out. A reader stays in C40 until it meets
+  // one or runs down to a single codeword, so each of these is legal only in a
+  // symbol that ends exactly where it does.
+  if (fallbackFrom >= text.length) {
+    if (rest.length === 0) {
+      forms.push({ codewords: head, fits: (capacity) => capacity === head.length })
+    } else if (rest.length === 2) {
+      // Two values left: a SHIFT1 completes the triplet and carries both
+      const padded = [...head, ...triplet(rest[0]!, rest[1]!, 0)]
+      forms.push({ codewords: padded, fits: (capacity) => capacity === padded.length })
+    } else if (asciiFrom === text.length - 1 && valueCharIndex[values.length - 2] !== asciiFrom) {
+      // One value left, and it is the whole of the last character: with one
+      // codeword to spare that character goes out in ASCII instead
+      const trailing = [...head, ...encodeASCII(text.slice(asciiFrom))]
+      forms.push({ codewords: trailing, fits: (capacity) => capacity === trailing.length })
+    }
   }
 
-  // Unlatch, then encode in ASCII everything the triplets did not cover: any
-  // 1-2 leftover values plus the non-encodable tail. Taking the earliest of the
-  // two start points ensures no character is dropped.
-  //
-  // The unlatch is emitted even when nothing follows, so that padding codewords
-  // are interpreted in ASCII mode. Per ISO 16022 an exact fit makes the unlatch
-  // redundant, but the symbol size is not known here; encodeAuto() discards
-  // C40/Text whenever the extra codeword makes it longer than plain ASCII.
-  const asciiFrom = i < values.length ? valueCharIndex[i]! : fallbackFrom
-  codewords.push(254) // Unlatch to ASCII
-  if (asciiFrom < text.length) {
-    codewords.push(...encodeASCII(text.substring(asciiFrom)))
-  }
-
-  return codewords
+  return fromForms(forms)
 }
 
 // X12 character set: CR=0, *=1, >=2, space=3, 0-9=4-13, A-Z=14-39
@@ -211,24 +266,40 @@ function x12Value(ch: number): { set: number; value: number } {
  * character count must be a multiple of 3; anything else falls back to ASCII.
  */
 export function encodeX12(text: string): number[] | undefined {
-  if (text.length === 0 || text.length % 3 !== 0) return undefined
+  const values = x12Values(text)
+  if (!values) return undefined
+  return [...x12Head(values), 254]
+}
 
+function x12Values(text: string): number[] | undefined {
+  if (text.length === 0 || text.length % 3 !== 0) return undefined
   const values: number[] = []
   for (const ch of text) {
     const { set, value } = x12Value(ch.charCodeAt(0))
     if (set === -1) return undefined
     values.push(value)
   }
+  return values
+}
 
-  const codewords: number[] = [238]
+function x12Head(values: number[]): number[] {
+  const head = [238]
   for (let i = 0; i < values.length; i += 3) {
-    const v = values[i]! * 1600 + values[i + 1]! * 40 + values[i + 2]! + 1
-    codewords.push(Math.floor(v / 256), v % 256)
+    head.push(...triplet(values[i]!, values[i + 1]!, values[i + 2]!))
   }
-  // An exact multiple of 3 needs no unlatch when the symbol ends here, but the
-  // symbol size is not known yet, so unlatch and let encodeAuto compare lengths.
-  codewords.push(254)
-  return codewords
+  return head
+}
+
+function x12Candidate(text: string): DataMatrixCandidate | undefined {
+  const values = x12Values(text)
+  if (!values) return undefined
+  const head = x12Head(values)
+  // The unlatch exists so the padding is read in ASCII mode; a symbol that ends
+  // exactly here has no padding and does not need it
+  return fromForms([
+    { codewords: [...head, 254], fits: () => true },
+    { codewords: head, fits: (capacity) => capacity === head.length },
+  ])
 }
 
 /**
@@ -236,25 +307,69 @@ export function encodeX12(text: string): number[] | undefined {
  * 4 characters → 3 codewords. Latch 240, unlatch is the 6-bit value 31.
  */
 export function encodeEDIFACT(text: string): number[] | undefined {
-  if (text.length === 0) return undefined
+  const values = edifactValues(text)
+  if (!values) return undefined
+  return [240, ...edifactQuads([...values, 31])]
+}
 
+/** Six-bit values for a message EDIFACT can carry, or undefined if it cannot. */
+function edifactValues(text: string): number[] | undefined {
+  if (text.length === 0) return undefined
   const values: number[] = []
   for (const ch of text) {
     const code = ch.charCodeAt(0)
     if (code < 32 || code > 94) return undefined
     values.push(code & 0x3f)
   }
+  return values
+}
 
-  // Unlatch so that padding after the segment is read as ASCII
-  values.push(31)
-
-  const codewords: number[] = [240]
+/**
+ * Pack six-bit values four at a time into three codewords each.
+ *
+ * A last group of fewer than four values is zero filled to 24 bits but only the
+ * codewords those values actually reach are emitted: one value fills one
+ * codeword, two fill two, three or four fill three. A reader stops at the
+ * unlatch and resumes ASCII at the next codeword boundary, so a whole codeword
+ * of zero bits after it is not padding it skips — it is a codeword 0, which
+ * ASCII has no meaning for, and the symbol does not decode at all.
+ */
+function edifactQuads(values: number[]): number[] {
+  const codewords: number[] = []
   for (let i = 0; i < values.length; i += 4) {
-    const quad = [values[i] ?? 0, values[i + 1] ?? 0, values[i + 2] ?? 0, values[i + 3] ?? 0]
-    const packed = (quad[0]! << 18) | (quad[1]! << 12) | (quad[2]! << 6) | quad[3]!
-    codewords.push((packed >> 16) & 0xff, (packed >> 8) & 0xff, packed & 0xff)
+    const count = Math.min(4, values.length - i)
+    const packed =
+      ((values[i] ?? 0) << 18) |
+      ((values[i + 1] ?? 0) << 12) |
+      ((values[i + 2] ?? 0) << 6) |
+      (values[i + 3] ?? 0)
+    codewords.push((packed >> 16) & 0xff)
+    if (count >= 2) codewords.push((packed >> 8) & 0xff)
+    if (count >= 3) codewords.push(packed & 0xff)
   }
   return codewords
+}
+
+function edifactCandidate(text: string): DataMatrixCandidate | undefined {
+  const values = edifactValues(text)
+  if (!values) return undefined
+
+  // Whole quadruples, then either an unlatch or an ASCII tail. Which of the two
+  // is right is not a choice: a reader leaves EDIFACT of its own accord as soon
+  // as two codewords or fewer are left, so an unlatch written there would be
+  // read as data, and with three or more left it will not leave without one.
+  const tail = values.length % 4
+  const head = [240, ...edifactQuads(values.slice(0, values.length - tail))]
+  const withUnlatch = [240, ...edifactQuads([...values, 31])]
+  const trailing =
+    tail <= 2 ? [...head, ...(tail > 0 ? encodeASCII(text.slice(text.length - tail)) : [])] : []
+
+  return fromForms([
+    { codewords: withUnlatch, fits: (capacity) => capacity - head.length >= 3 },
+    ...(trailing.length > 0
+      ? [{ codewords: trailing, fits: (capacity: number) => capacity - head.length <= 2 }]
+      : []),
+  ])
 }
 
 /**
@@ -321,43 +436,72 @@ export interface DataMatrixEncodeOptions {
 }
 
 /**
- * Auto-select the best encoding mode for the given text.
+ * Every encoding of the message worth considering, in preference order.
  *
- * Every applicable mode is tried and the shortest codeword stream wins, which
- * is both simpler and better than the old heuristic — it cannot pick a mode
- * that turns out longer.
+ * Each mode is tried over the whole message. Which one produces the smallest
+ * *symbol* is not the same question as which produces the fewest codewords: a
+ * mode may stop differently — or not need to say it stopped at all — depending
+ * on how much of the symbol is left, so each candidate is asked for a stream
+ * given a capacity rather than committing to one up front.
  */
-export function encodeAuto(text: string, options: DataMatrixEncodeOptions = {}): number[] {
+export function encodeCandidates(
+  text: string,
+  options: DataMatrixEncodeOptions = {},
+): DataMatrixCandidate[] {
+  /** A stream that is what it is, whatever the symbol size. */
+  const fixed = (codewords: number[]): DataMatrixCandidate => ({
+    shortest: codewords.length,
+    encode: (capacity) => (codewords.length <= capacity ? codewords : undefined),
+  })
+
   // Anything Latin-1 cannot hold goes out as UTF-8 bytes under an ECI
   // declaration, in Base 256 so no byte is reinterpreted.
   if ([...text].some((ch) => ch.codePointAt(0)! > 0xff)) {
     const eci = encodeECI(options.eci ?? 26)
-    return [...eci, ...encodeBase256(new TextEncoder().encode(text), eci.length + 1)]
+    return [fixed([...eci, ...encodeBase256(new TextEncoder().encode(text), eci.length + 1)])]
   }
 
-  const prefix = options.eci === undefined ? [] : encodeECI(options.eci)
-
-  const candidates: number[][] = [encodeASCII(text)]
-  const c40 = encodeC40(text)
-  if (isLossless(c40)) candidates.push(c40)
-  const textMode = encodeTextMode(text)
-  if (isLossless(textMode)) candidates.push(textMode)
-  const x12 = encodeX12(text)
+  const candidates: DataMatrixCandidate[] = [
+    fixed(encodeASCII(text)),
+    encodeC40Text(text, 230, c40Value),
+    encodeC40Text(text, 239, textValue),
+  ]
+  const x12 = x12Candidate(text)
   if (x12) candidates.push(x12)
-  const edifact = encodeEDIFACT(text)
+  const edifact = edifactCandidate(text)
   if (edifact) candidates.push(edifact)
 
-  let best = candidates[0]!
-  for (const candidate of candidates) {
-    if (candidate.length < best.length) best = candidate
-  }
-  return prefix.length > 0 ? [...prefix, ...best] : best
+  const prefix = options.eci === undefined ? [] : encodeECI(options.eci)
+  if (prefix.length === 0) return candidates
+
+  // An ECI declaration goes in front of the message and takes symbol capacity
+  // from it, so the mode is asked what it would do with what is left
+  return candidates.map(({ encode, shortest }) => ({
+    shortest: shortest + prefix.length,
+    encode: (capacity) => {
+      const codewords = encode(capacity - prefix.length)
+      return codewords && [...prefix, ...codewords]
+    },
+  }))
 }
 
 /**
- * C40/Text encoders fall back to ASCII for characters they cannot represent, so
- * their output is always valid — this only guards against an empty result.
+ * The shortest encoding of the text, in whichever mode manages it.
+ *
+ * A mode can only be asked what it would do for a given symbol, so this asks
+ * every one of them for a symbol large enough to hold anything: the answer is
+ * the fewest codewords the message can take, which is what a capacity check
+ * wants to know. `encodeDataMatrix` asks the same candidates the sharper
+ * question — what fits in each symbol, smallest first.
  */
-function isLossless(codewords: number[]): boolean {
-  return codewords.length > 0
+export function encodeAuto(text: string, options: DataMatrixEncodeOptions = {}): number[] {
+  const candidates = encodeCandidates(text, options)
+  const room = Math.max(...candidates.map((candidate) => candidate.shortest)) + 3
+  let best: number[] | undefined
+  for (const candidate of candidates) {
+    const codewords = candidate.encode(room)
+    if (codewords && (!best || codewords.length < best.length)) best = codewords
+  }
+  /* v8 ignore next -- ASCII always answers, so there is always a shortest */
+  return best ?? encodeASCII(text)
 }

@@ -6,10 +6,10 @@
  */
 
 import { InvalidInputError, CapacityError } from "../../errors"
-import { encodeAuto, padCodewords } from "./encoder"
+import { encodeAuto, encodeCandidates, padCodewords } from "./encoder"
 import { maxCapacity, selectSymbolSize } from "./tables"
-import type { DataMatrixSizeOptions } from "./tables"
-import type { DataMatrixEncodeOptions } from "./encoder"
+import type { DataMatrixSizeOptions, SymbolSize } from "./tables"
+import type { DataMatrixCandidate, DataMatrixEncodeOptions } from "./encoder"
 import { generateInterleavedEC } from "./reed-solomon"
 import { placeModules } from "./placement"
 import { parseAIString, isVariableLength } from "../gs1-128"
@@ -42,14 +42,15 @@ export function encodeDataMatrix(
     throw new InvalidInputError("Data Matrix input must not be empty")
   }
 
-  // Step 1: Encode text to data codewords (auto-select best mode)
-  const dataCodewords = encodeAuto(text, { eci: options.eci })
-
-  // Step 2: Select the smallest symbol size that fits the data
-  const symbol = selectSymbolSize(dataCodewords.length, options)
-  if (!symbol) {
-    throw new CapacityError(capacityMessage("Data Matrix", dataCodewords.length, options))
+  // Steps 1 and 2: encode the text every way the standard allows and take the
+  // one that reaches the smallest symbol
+  const chosen = smallestSymbol(encodeCandidates(text, { eci: options.eci }), options)
+  if (!chosen) {
+    throw new CapacityError(
+      capacityMessage("Data Matrix", encodeAuto(text, { eci: options.eci }).length, options),
+    )
   }
+  const { codewords: dataCodewords, symbol } = chosen
 
   // Step 3: Pad data codewords to fill symbol capacity
   const paddedData = padCodewords(dataCodewords, symbol.totalDataCodewords)
@@ -119,6 +120,34 @@ export function encodeGS1DataMatrix(
   )
   const allCodewords = [...paddedData, ...ecCodewords]
   return placeModules(allCodewords, symbol)
+}
+
+/**
+ * The smallest symbol any mode can finish cleanly in, and the stream it takes.
+ *
+ * Symbols are tried smallest first because whether a mode needs its unlatch —
+ * and so how long its stream is — depends on how much of the symbol is left
+ * after it. Within a symbol the shortest stream wins, and then the earlier
+ * mode, so the choice does not turn on a size two candidates share.
+ */
+function smallestSymbol(
+  candidates: DataMatrixCandidate[],
+  options: DataMatrixSizeOptions,
+): { codewords: number[]; symbol: SymbolSize } | undefined {
+  let symbol = selectSymbolSize(1, options)
+  while (symbol) {
+    let best: number[] | undefined
+    for (const candidate of candidates) {
+      const codewords = candidate.encode(symbol.totalDataCodewords)
+      if (codewords && (!best || codewords.length < best.length)) best = codewords
+    }
+    if (best) return { codewords: best, symbol }
+
+    const next = selectSymbolSize(symbol.totalDataCodewords + 1, options)
+    if (!next || next.totalDataCodewords <= symbol.totalDataCodewords) return undefined
+    symbol = next
+  }
+  return undefined
 }
 
 /** Build a capacity error message that names the limit actually in force */
