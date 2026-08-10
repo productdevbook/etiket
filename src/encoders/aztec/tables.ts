@@ -65,14 +65,15 @@ const LOWER_TABLE: Record<string, number> = {
 
 /**
  * Mixed mode (5-bit codewords)
- * Code 0 = NUL (or PS in encoder), 1 = SP, 2-14 = ctrl chars, 15-19 = ESC+FS/GS/RS/US,
+ * Code 0 = P/S, 1 = SP, 2-14 = ctrl chars, 15-19 = ESC+FS/GS/RS/US,
  * 20-27 = @\^_`|~DEL, 28-31 = LL/UL/PL/BS
  *
- * Matches ZXing mixedTable character-to-code mapping.
+ * There is no codeword for NUL in any Aztec mode — it goes out through the
+ * binary shift. Mapping it to codeword 0 emitted a shift into Punctuation
+ * instead, and the character after it came back as punctuation.
  */
 // prettier-ignore
 const MIXED_TABLE: Record<string, number> = {
-  '\x00': 0,
   ' ': 1,
   '\x01': 2,  '\x02': 3,  '\x03': 4,  '\x04': 5,  '\x05': 6,
   '\x06': 7,  '\x07': 8,  '\x08': 9,  '\x09': 10, '\x0a': 11,
@@ -262,12 +263,17 @@ export const SHIFT_TO_PUNCT: Record<number, number> = {
 /** Shift to Upper from Lower: code 28 */
 export const SHIFT_LOWER_TO_UPPER = 28
 
-/** Binary shift code value (from Upper/Lower/Mixed: code 31, from Digit: code 15) */
-export const BINARY_SHIFT: Record<number, { code: number; bits: number }> = {
+/**
+ * Binary shift code, in the three modes that have one.
+ *
+ * Upper, Lower and Mixed spend codeword 31 on B/S. Punct has no spare codeword
+ * and Digit spends 15 on Upper Shift, so a binary run starting in either has to
+ * latch to Upper first — there is no B/S to emit.
+ */
+export const BINARY_SHIFT: Record<number, { code: number; bits: number } | undefined> = {
   [Mode.Upper]: { code: 31, bits: 5 },
   [Mode.Lower]: { code: 31, bits: 5 },
   [Mode.Mixed]: { code: 31, bits: 5 },
-  [Mode.Digit]: { code: 15, bits: 4 },
 }
 
 // ---------------------------------------------------------------------------

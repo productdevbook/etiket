@@ -246,7 +246,7 @@ export function encodeHighLevel(text: string, eci?: number): number[] {
     }
 
     const binaryLen = i - binaryStart
-    emitBinaryShift(bits, data, binaryStart, binaryLen, currentMode)
+    currentMode = emitBinaryShift(bits, data, binaryStart, binaryLen, currentMode)
     continue
   }
 
@@ -343,9 +343,19 @@ function emitBinaryShift(
   start: number,
   length: number,
   currentMode: Mode,
-): void {
+): Mode {
   let remaining = length
   let pos = start
+
+  // Punct and Digit have no B/S codeword of their own, so the run starts by
+  // latching to Upper. Emitting Digit's codeword 15 here used to tell a reader
+  // to take the next codeword as an upper case letter, and every byte after it
+  // came back as text.
+  let mode = currentMode
+  if (!BINARY_SHIFT[mode]) {
+    emitLatch(bits, getLatchSequence(mode, Mode.Upper))
+    mode = Mode.Upper
+  }
 
   while (remaining > 0) {
     // A binary shift run carries at most 2078 bytes: 31 encodable in the
@@ -353,14 +363,8 @@ function emitBinaryShift(
     const chunk = Math.min(remaining, 2078)
 
     // Emit binary shift intro code
-    const bs = BINARY_SHIFT[currentMode]
-    if (bs) {
-      pushBits(bits, bs.code, bs.bits)
-    } else {
-      // Digit mode: need to latch to Upper first (shouldn't happen in practice
-      // since we handle Digit's BS code in the table)
-      pushBits(bits, 15, 4)
-    }
+    const bs = BINARY_SHIFT[mode]!
+    pushBits(bits, bs.code, bs.bits)
 
     // Emit length: 1-31 fits the 5-bit field directly; longer runs signal 0
     // there and carry (length - 31) in a further 11 bits (ISO/IEC 24778).
@@ -379,6 +383,8 @@ function emitBinaryShift(
     pos += chunk
     remaining -= chunk
   }
+
+  return mode
 }
 
 /**
