@@ -221,14 +221,24 @@ is known and turns red the moment it is fixed.
   Latin-1. `decodeBytes` in `encoders-modes-roundtrip.test.ts` does this.
 - The PNG encoder emits stored (uncompressed) DEFLATE, so tests can decode PNG
   output and assert on real pixels; `ico-formats.test.ts` shows the pattern.
+- A fixed sample list catches a broken table and misses a mis-taken branch.
+  `encoders-random-differential.test.ts` throws a few hundred seeded random
+  payloads at each no-decoder format and compares every module against BWIPP,
+  which is what took Code 16K from 75% to 95% covered with every new line
+  verified rather than merely executed.
+- Nothing an encoder is given may disappear. `encoders-input-fidelity.test.ts`
+  appends a character to a payload every symbology accepts and requires the
+  symbol to change or the input to be refused — the general form of the Code 128
+  defect that dropped every character above 126 while producing a well formed
+  symbol for different data.
 
 ## Project Status
 
 v1. The full gate (`pnpm test`) is green:
 
-- **116 test files, 3080+ tests** passing
+- **119 test files, 3140+ tests** passing
 - **Zero** lint warnings, zero typecheck errors
-- **95.6%** statements, **91.6%** branches — thresholds enforced in CI by
+- **96.7%** statements, **92.9%** branches — thresholds enforced in CI by
   `vitest.config.ts`
 - Every symbology reachable from the public API, the CLI, PNG output and
   validation
