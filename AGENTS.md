@@ -102,7 +102,7 @@ src/
     barcode.ts              # Per-format validation
     qr.ts                   # QR validation with metadata
 test/
-  *.test.ts                 # 138 test files, 3400+ tests
+  *.test.ts                 # 138 test files, 3470+ tests
   _bwip.ts                  # bwip-js (BWIPP) oracle: module data extraction
   bwip-compare.test.ts      # Module-for-module comparison against BWIPP
   qr-roundtrip.test.ts      # QR encode→decode via jsQR (all versions, EC, masks)
@@ -110,6 +110,11 @@ test/
   1d-roundtrip.test.ts      # 1D decode verification via zxing-wasm
   encoders-modes-roundtrip.test.ts # Encoder mode coverage, decoded with zxing
   barcode-roundtrip.test.ts # Structural checks for formats with no decoder
+  encoders-*-bwip.test.ts   # Per-symbology comparisons: QR, rMQR, Aztec, MaxiCode
+  encoders-*-random*.test.ts # Randomised sweeps: 1D, GS1, postal, differential
+  encoders-large-symbols.test.ts # Every 2D format at the sizes a long payload reaches
+  encoders-input-limits.test.ts  # What each encoder does with more than fits
+  encoders-qr-mask-choice.test.ts # The mask each symbol picks, pinned
   api-subpaths.test.ts      # package.json#exports vs the source entries
   docs-coverage.test.ts     # Every export has an API reference entry
   cli.test.ts               # Every CLI subcommand, driven through citty
@@ -238,9 +243,9 @@ is known and turns red the moment it is fixed.
 
 v1. The full gate (`pnpm test`) is green:
 
-- **138 test files, 3400+ tests** passing
+- **138 test files, 3470+ tests** passing
 - **Zero** lint warnings, zero typecheck errors
-- **96.7%** statements, **92.9%** branches — thresholds enforced in CI by
+- **96.8%** statements, **93.2%** branches — thresholds enforced in CI by
   `vitest.config.ts`
 - Every symbology reachable from the public API, the CLI, PNG output and
   validation
@@ -249,7 +254,21 @@ v1. The full gate (`pnpm test`) is green:
 
 **Verification status.** Every symbology is checked against an implementation
 that is not this one — decoded back with zxing-wasm or jsQR, or compared
-module-for-module with bwip-js. Two exceptions, both explicit:
+module-for-module with bwip-js — and not only at the payloads someone thought
+to write down. Randomised sweeps run over each encoder's whole character set,
+at lengths that climb until it says no: `encoders-1d-random-roundtrip`,
+`encoders-gs1-random`, `encoders-postal-random`, `encoders-large-symbols`,
+`encoders-random-differential`, and the per-symbology BWIPP comparisons.
+
+Those sweeps are what found the defects a green suite had been hiding: Data
+Matrix computing error correction over the wrong codewords for every symbol
+above 174 of them, Aztec turning NUL into a mode shift and a binary run after
+digits into an upper-case shift, Code 128 reading a control character 128 too
+high after a run of accented ones, Micro QR zero filling where the standard
+pads. Every one produced a symbol that scanned. Write the sweep before
+trusting the encoder.
+
+Two exceptions, both explicit:
 
 - **JAB Code** is not ISO/IEC 23634 conformant and cannot be verified: no
   JavaScript or WebAssembly decoder exists and neither zxing nor BWIPP implements
@@ -262,8 +281,23 @@ module-for-module with bwip-js. Two exceptions, both explicit:
   comparison keeps it visible instead of asserting it away, and
   `encoders-micropdf417.test.ts` pins the direction — never larger.
 
-**Deliberate limitations**, documented where they apply: Han Xin has no GB 18030
-Chinese mode. Nothing available can verify one — BWIPP's own Han Xin encoder
-implements Numeric and Byte and no more, and no decoder exists — so adding the
-Chinese modes would trade a fully verified encoder for one nothing can check.
-Byte mode carries Chinese text meanwhile.
+**Deliberate limitations**, documented where they apply:
+
+- Han Xin has no GB 18030 Chinese mode. Nothing available can verify one —
+  BWIPP's own Han Xin encoder implements Numeric and Byte and no more, and no
+  decoder exists — so adding the Chinese modes would trade a fully verified
+  encoder for one nothing can check. Byte mode carries Chinese text meanwhile.
+- Aztec has no Structured Append. It is a text prefix rather than a codeword,
+  BWIPP has no option for it, and zxing does not recognise the prefix on its
+  own; nothing available can verify it. Data Matrix and MaxiCode have theirs.
+- Code 49, Code One, Ultracode, Telepen and Channel Code are not implemented.
+  Each needs a pattern table that only the specification or another
+  implementation has, and taking one from BWIPP would make the comparison
+  against BWIPP circular.
+- GS1 application identifier combinations are not checked against the General
+  Specifications. BWIPP refuses `(01)` beside `(37)`; etiket encodes what it is
+  given.
+- Data Matrix reaches a symbol one size larger than BWIPP for three
+  punctuation-heavy messages in two hundred. Every other character class, and
+  every realistic payload tried, matches or beats it —
+  `encoders-datamatrix-mixed.test.ts` holds both ends of that.
