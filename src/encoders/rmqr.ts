@@ -180,12 +180,22 @@ function encodeRMQRData(
 }
 
 /**
+ * R17x139 at level M in numeric mode holds 361 characters; nothing holds more.
+ */
+const MAX_RMQR_CHARACTERS = 400
+
+/**
  * Encode text as rMQR (Rectangular Micro QR Code)
  * Returns a rectangular boolean matrix
  */
 export function encodeRMQR(text: string, options: RMQROptions = {}): boolean[][] {
   if (text.length === 0) {
     throw new InvalidInputError("rMQR input must not be empty")
+  }
+  if (text.length > MAX_RMQR_CHARACTERS) {
+    throw new CapacityError(
+      `Data too long for rMQR: ${text.length} characters is past what any symbol holds`,
+    )
   }
 
   const ecLevel = options.ecLevel ?? "M"

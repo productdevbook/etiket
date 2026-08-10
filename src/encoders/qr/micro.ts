@@ -96,12 +96,24 @@ const MICRO_MASK_FNS: ((r: number, c: number) => boolean)[] = [
 ]
 
 /**
+ * M4 at level L holds 35 numeric characters. This is not that limit but a
+ * bound on the work: past it there is nothing to search, and the message is
+ * answered instead of segmented four times over.
+ */
+const MAX_MICRO_QR_CHARACTERS = 200
+
+/**
  * Encode text as a Micro QR code
  * Returns a 2D boolean matrix (true = dark module)
  */
 export function encodeMicroQR(text: string, options: MicroQROptions = {}): boolean[][] {
   if (text.length === 0) {
     throw new InvalidInputError("Micro QR input must not be empty")
+  }
+  if (text.length > MAX_MICRO_QR_CHARACTERS) {
+    throw new CapacityError(
+      `Data too long for Micro QR: ${text.length} characters is past what any symbol holds`,
+    )
   }
 
   const { version, cap, ecKey, segments } = selectMicroVersion(text, options)

@@ -15,6 +15,12 @@ import { placeModules } from "./placement"
 import { parseAIString, isVariableLength } from "../gs1-128"
 
 /**
+ * A 144x144 symbol holds 3116 numeric characters. This is not that limit but a
+ * bound on the work: past it there is nothing to search.
+ */
+const MAX_DATAMATRIX_CHARACTERS = 3500
+
+/**
  * Encode text as a Data Matrix ECC 200 symbol.
  * Returns a 2D boolean array (true = dark module).
  *
@@ -40,6 +46,11 @@ export function encodeDataMatrix(
 ): boolean[][] {
   if (text.length === 0) {
     throw new InvalidInputError("Data Matrix input must not be empty")
+  }
+  if (text.length > MAX_DATAMATRIX_CHARACTERS) {
+    throw new CapacityError(
+      `Data too long for Data Matrix: ${text.length} characters is past what any symbol holds`,
+    )
   }
 
   // Steps 1 and 2: encode the text every way the standard allows and take the

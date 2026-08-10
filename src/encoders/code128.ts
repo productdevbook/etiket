@@ -186,7 +186,34 @@ export function encodeCode128(text: string, options?: Code128Options): number[] 
   return bars
 }
 
+/**
+ * How far a run of digits, and a run on one side of the 128 boundary, reaches
+ * from each position.
+ *
+ * Both are needed at every character, and scanning forward for each of them
+ * turns a long message into quadratic work — half a million characters took
+ * over two minutes. One pass backwards answers both for every position.
+ */
+function runsFrom(text: string): { numeric: Int32Array; sameHalf: Int32Array } {
+  const length = text.length
+  const numeric = new Int32Array(length + 1)
+  const sameHalf = new Int32Array(length + 1)
+  for (let i = length - 1; i >= 0; i--) {
+    const code = text.charCodeAt(i)
+    numeric[i] = code >= 48 && code <= 57 ? numeric[i + 1]! + 1 : 0
+    if (code > 255) {
+      sameHalf[i] = 0
+      continue
+    }
+    const next = i + 1 < length ? text.charCodeAt(i + 1) : -1
+    const together = next >= 0 && next <= 255 && next >= 128 === code >= 128
+    sameHalf[i] = together ? sameHalf[i + 1]! + 1 : 1
+  }
+  return { numeric, sameHalf }
+}
+
 function autoEncode(text: string): number[] {
+  const { numeric, sameHalf } = runsFrom(text)
   // Determine optimal start code
   const codes: number[] = []
   let pos = 0
@@ -195,7 +222,7 @@ function autoEncode(text: string): number[] {
   // ISO/IEC 15417 Annex B: start in C for four or more leading digits (or for a
   // two-digit payload, where C is a straight win), and switch into it later
   // only for six or more, or four or more that run to the end of the data.
-  const numericRun = countNumericFromPos(text, 0)
+  const numericRun = numeric[0]!
 
   if (numericRun >= 4 || (numericRun === 2 && text.length === 2)) {
     codes.push(START_C)
@@ -211,7 +238,7 @@ function autoEncode(text: string): number[] {
   while (pos < text.length) {
     if (currentSet === "C") {
       // In Code C, check if we should switch
-      const remaining = countNumericFromPos(text, pos)
+      const remaining = numeric[pos]!
       if (remaining >= 2) {
         pos = encodeCodeC(text, pos, codes)
       } else {
@@ -220,7 +247,7 @@ function autoEncode(text: string): number[] {
       }
     } else {
       // In Code B (or A), check if switching to C is beneficial
-      const numRun = countNumericFromPos(text, pos)
+      const numRun = numeric[pos]!
       const runsToEnd = pos + numRun >= text.length
       const worthSwitching = numRun >= 6 || (numRun >= 4 && runsToEnd)
       // An odd run leaves a digit over; encoding that first keeps the Code C
@@ -244,8 +271,8 @@ function autoEncode(text: string): number[] {
         // data, one shift for a single character the other side, two to latch.
         const upper = charCode >= 128
         const value = upper ? charCode - 128 : charCode
-        const run = countSameHalf(text, pos)
-        const exit = pos + run >= text.length ? 0 : Math.min(2, countSameHalf(text, pos + run))
+        const run = sameHalf[pos]!
+        const exit = pos + run >= text.length ? 0 : Math.min(2, sameHalf[pos + run]!)
         const latch = upper !== extended && run > 2 + exit
         const emitFNC4 = (): void => {
           if (upper === extended) return
@@ -316,28 +343,6 @@ function encodeCodeC(text: string, pos: number, codes: number[]): number {
     pos += 2
   }
   return pos
-}
-
-/** Characters from `pos` on the same side of the Latin-1 128 boundary. */
-function countSameHalf(text: string, pos: number): number {
-  const upper = text.charCodeAt(pos) >= 128
-  let count = 0
-  while (pos + count < text.length) {
-    const code = text.charCodeAt(pos + count)
-    if (code > 255 || code >= 128 !== upper) break
-    count++
-  }
-  return count
-}
-
-function countNumericFromPos(text: string, pos: number): number {
-  let count = 0
-  while (pos + count < text.length) {
-    const c = text.charCodeAt(pos + count)
-    if (c < 48 || c > 57) break
-    count++
-  }
-  return count
 }
 
 /**

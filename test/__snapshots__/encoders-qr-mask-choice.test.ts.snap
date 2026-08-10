@@ -1,0 +1,13 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Micro QR mask selection > picks a mask 1`] = `"210203211130301321000100300031"`;
+
+exports[`QR mask selection > picks a mask at level H 1`] = `"203652046650343424522522603223"`;
+
+exports[`QR mask selection > picks a mask at level L 1`] = `"225420604200663276442221242220"`;
+
+exports[`QR mask selection > picks a mask at level M 1`] = `"754427571240672272165277244174"`;
+
+exports[`QR mask selection > picks a mask at level Q 1`] = `"726425674423722055630277675022"`;
+
+exports[`QR mask selection > picks a mask for long messages, where the eight candidates cost the most 1`] = `"22247426"`;

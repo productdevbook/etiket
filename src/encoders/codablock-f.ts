@@ -237,6 +237,11 @@ function modulesFor(codewords: readonly number[]): boolean[] {
 }
 
 /**
+ * Forty-four rows of sixty-two characters, the most any Codablock F symbol holds.
+ */
+const MAX_CODABLOCK_F_CHARACTERS = 2800
+
+/**
  * Encode text as Codablock F (stacked Code 128)
  *
  * @param text - Text to encode
@@ -245,6 +250,11 @@ function modulesFor(codewords: readonly number[]): boolean[] {
 export function encodeCodablockF(text: string, options?: { columns?: number }): CodablockFResult {
   if (text.length === 0) {
     throw new InvalidInputError("Codablock F input must not be empty")
+  }
+  if (text.length > MAX_CODABLOCK_F_CHARACTERS) {
+    throw new CapacityError(
+      `Data too long for Codablock F: ${text.length} characters is past what any symbol holds`,
+    )
   }
 
   const columns = options?.columns ?? DEFAULT_COLUMNS

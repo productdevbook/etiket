@@ -233,12 +233,23 @@ function placeJABFinder(
 // ---------------------------------------------------------------------------
 
 /**
+ * Comfortably past what any JAB Code symbol holds, so that a caller passing a
+ * megabyte of text is answered rather than waited on.
+ */
+const MAX_JAB_CODE_CHARACTERS = 8000
+
+/**
  * Encode text as JAB Code
  * Returns a color index matrix (not boolean — each cell is a color index)
  */
 export function encodeJABCode(text: string, options: JABCodeOptions = {}): JABCodeResult {
   if (text.length === 0) {
     throw new InvalidInputError("JAB Code input must not be empty")
+  }
+  if (text.length > MAX_JAB_CODE_CHARACTERS) {
+    throw new CapacityError(
+      `Data too long for JAB Code: ${text.length} characters is past what any symbol holds`,
+    )
   }
 
   const numColors = options.colors ?? 4

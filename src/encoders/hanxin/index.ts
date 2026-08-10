@@ -111,6 +111,12 @@ function functionInfoBits(version: number, ecLevel: number, mask: number): numbe
 }
 
 /**
+ * Version 84 at the lightest error correction, in numeric mode. Anything
+ * longer is already answered, and finding that out by encoding it is slow.
+ */
+const MAX_HAN_XIN_CHARACTERS = 8000
+
+/**
  * Encode text as a Han Xin Code symbol.
  *
  * Returns a square boolean matrix, row-major, `true` for a dark module.
@@ -118,6 +124,11 @@ function functionInfoBits(version: number, ecLevel: number, mask: number): numbe
 export function encodeHanXin(text: string, options: HanXinOptions = {}): boolean[][] {
   if (text.length === 0) {
     throw new InvalidInputError("Han Xin Code input must not be empty")
+  }
+  if (text.length > MAX_HAN_XIN_CHARACTERS) {
+    throw new CapacityError(
+      `Data too long for Han Xin Code: ${text.length} characters is past what any symbol holds`,
+    )
   }
 
   const ecLevel = options.ecLevel ?? 2

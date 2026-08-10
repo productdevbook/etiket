@@ -72,6 +72,9 @@ interface EncodingPlan {
  * So the split is recomputed for each candidate version rather than once up
  * front.
  */
+/** Version 40 at level L in numeric mode, the most any QR symbol holds. */
+const MAX_QR_CHARACTERS = 7200
+
 export function planEncoding(
   text: string,
   ecLevel: ErrorCorrectionLevel,
@@ -81,6 +84,15 @@ export function planEncoding(
   // GS1 symbols carry AI element strings, not the parenthesised form the
   // caller wrote
   const payload = options.gs1 ? gs1Payload(text) : text
+
+  // Version 40 at level L holds 7089 numeric characters and nothing holds more,
+  // so anything longer than that is already answered. Finding that out by
+  // segmenting a megabyte of text forty times over is a slow way to say no.
+  if (payload.length > MAX_QR_CHARACTERS) {
+    throw new CapacityError(
+      `Data too long for any QR code version: ${payload.length} characters is past what any symbol holds`,
+    )
+  }
 
   if (options.version !== undefined) {
     const segments = segmentsFor(payload, options.version, forcedMode)
@@ -94,8 +106,16 @@ export function planEncoding(
     return { version: options.version, segments }
   }
 
+  // The character count indicator, and so the cost of switching mode, changes
+  // only at versions 10 and 27: three segmentations to find rather than forty
+  const byGroup = new Map<number, QRSegment[]>()
   for (let version = 1; version <= 40; version++) {
-    const segments = segmentsFor(payload, version, forcedMode)
+    const group = version < 10 ? 0 : version < 27 ? 1 : 2
+    let segments = byGroup.get(group)
+    if (!segments) {
+      segments = segmentsFor(payload, version, forcedMode)
+      byGroup.set(group, segments)
+    }
     if (
       headerBits(options) + totalBits(segments, version) <=
       getDataCapacityBits(version, ecLevel)

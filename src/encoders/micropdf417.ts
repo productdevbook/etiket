@@ -409,6 +409,11 @@ export interface MicroPDF417Result {
 }
 
 /**
+ * The 4x44 variant in numeric compaction holds 366 characters; nothing holds more.
+ */
+const MAX_MICRO_PDF417_CHARACTERS = 400
+
+/**
  * Encode text as MicroPDF417
  */
 export function encodeMicroPDF417(
@@ -417,6 +422,11 @@ export function encodeMicroPDF417(
 ): MicroPDF417Result {
   if (text.length === 0) {
     throw new InvalidInputError("MicroPDF417 input must not be empty")
+  }
+  if (text.length > MAX_MICRO_PDF417_CHARACTERS) {
+    throw new CapacityError(
+      `Data too long for MicroPDF417: ${text.length} characters is past what any symbol holds`,
+    )
   }
 
   // Encode data to codewords using PDF417 compaction

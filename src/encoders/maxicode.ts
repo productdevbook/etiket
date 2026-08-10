@@ -706,12 +706,24 @@ function structuredAppendCodewords(header: MaxiCodeStructuredAppend): number[] {
 }
 
 /**
+ * A MaxiCode symbol holds 138 digits. This is not that limit but a bound on the
+ * work: past it there is nothing to search.
+ */
+const MAX_MAXICODE_CHARACTERS = 200
+
+/**
  * Encode text as MaxiCode
  * Returns a 33x30 boolean matrix (hexagonal grid representation)
  */
 export function encodeMaxiCode(text: string, options: MaxiCodeOptions = {}): boolean[][] {
   if (text.length === 0) {
     throw new InvalidInputError("MaxiCode input must not be empty")
+  }
+
+  if (text.length > MAX_MAXICODE_CHARACTERS) {
+    throw new CapacityError(
+      `MaxiCode: ${text.length} characters, the symbol holds at most ${MAX_MAXICODE_CHARACTERS}`,
+    )
   }
 
   const mode = options.mode ?? 4

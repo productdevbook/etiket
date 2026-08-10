@@ -358,6 +358,11 @@ function encodeData(msg: number[]): { cws: number[]; mode: number } {
 }
 
 /**
+ * Sixteen rows of numeric pairs holds 154 characters; nothing holds more.
+ */
+const MAX_CODE_16K_CHARACTERS = 200
+
+/**
  * Encode text as Code 16K
  *
  * @param text - ASCII text (codes 0-127)
@@ -366,6 +371,11 @@ function encodeData(msg: number[]): { cws: number[]; mode: number } {
 export function encodeCode16K(text: string): Code16KResult {
   if (text.length === 0) {
     throw new InvalidInputError("Code 16K input must not be empty")
+  }
+  if (text.length > MAX_CODE_16K_CHARACTERS) {
+    throw new CapacityError(
+      `Data too long for Code 16K: ${text.length} characters is past what any symbol holds`,
+    )
   }
 
   const msg: number[] = []

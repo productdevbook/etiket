@@ -58,13 +58,34 @@ export function selectBestMask(
     return requestedMask
   }
 
+  // Scoring eight candidates is most of the work of encoding a QR code, so the
+  // symbol is flattened once — one byte a module, and which modules are data
+  // worked out once rather than eight times — and each mask is written into the
+  // same buffer rather than into a copy of the matrix.
+  const modules = new Uint8Array(size * size)
+  const data = new Uint8Array(size * size)
+  for (let r = 0; r < size; r++) {
+    const row = matrix[r]!
+    for (let c = 0; c < size; c++) {
+      modules[r * size + c] = row[c] ? 1 : 0
+      data[r * size + c] = isDataModule(r, c, size, version) ? 1 : 0
+    }
+  }
+
+  const masked = new Uint8Array(size * size)
   let bestMask = 0
   let bestScore = Infinity
 
   for (let mask = 0; mask < 8; mask++) {
-    const copy = matrix.map((row) => [...row])
-    applyMask(copy, mask, size, version)
-    const score = evaluatePenalty(copy, size)
+    const fn = getMaskFn(mask)
+    for (let r = 0; r < size; r++) {
+      const offset = r * size
+      for (let c = 0; c < size; c++) {
+        const i = offset + c
+        masked[i] = data[i] && fn(r, c) ? modules[i]! ^ 1 : modules[i]!
+      }
+    }
+    const score = penalty(masked, size)
     if (score < bestScore) {
       bestScore = score
       bestMask = mask
@@ -72,6 +93,68 @@ export function selectBestMask(
   }
 
   return bestMask
+}
+
+/**
+ * The four penalty rules of ISO/IEC 18004 7.8.3.1, over a flattened symbol.
+ *
+ * Rules 1 and 3 read a row and a column in the same pass; rule 2 reads the
+ * square below and to the right of each module; rule 4 counts the dark ones.
+ */
+function penalty(modules: Uint8Array, size: number): number {
+  let score = 0
+  let dark = 0
+
+  for (let i = 0; i < size; i++) {
+    let rowRun = 1
+    let colRun = 1
+    // The five element window rules 3 looks for, as a rolling value
+    let rowWindow = 0
+    let colWindow = 0
+    for (let j = 0; j < size; j++) {
+      const row = modules[i * size + j]!
+      const col = modules[j * size + i]!
+      dark += row
+
+      if (j > 0) {
+        if (row === modules[i * size + j - 1]!) {
+          rowRun++
+          if (rowRun === 5) score += 3
+          else if (rowRun > 5) score++
+        } else rowRun = 1
+
+        if (col === modules[(j - 1) * size + i]!) {
+          colRun++
+          if (colRun === 5) score += 3
+          else if (colRun > 5) score++
+        } else colRun = 1
+      }
+
+      rowWindow = ((rowWindow << 1) | row) & 0x7ff
+      colWindow = ((colWindow << 1) | col) & 0x7ff
+      if (j >= 10) {
+        if (rowWindow === 0x5d0 || rowWindow === 0x05d) score += 40
+        if (colWindow === 0x5d0 || colWindow === 0x05d) score += 40
+      }
+    }
+  }
+
+  for (let r = 0; r < size - 1; r++) {
+    for (let c = 0; c < size - 1; c++) {
+      const value = modules[r * size + c]!
+      if (
+        value === modules[r * size + c + 1]! &&
+        value === modules[(r + 1) * size + c]! &&
+        value === modules[(r + 1) * size + c + 1]!
+      ) {
+        score += 3
+      }
+    }
+  }
+
+  const percent = (dark * 100) / (size * size)
+  const previous = Math.floor(percent / 5) * 5
+  return score + Math.min(Math.abs(previous - 50), Math.abs(previous + 5 - 50)) * 2
 }
 
 /**

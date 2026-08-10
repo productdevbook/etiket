@@ -53,9 +53,18 @@ export interface AztecOptions {
  * @param options - Encoding options
  * @returns 2D boolean array where `true` = dark module
  */
+/**
+ * 32 layers of full-range Aztec hold 3832 numeric characters. This is not that
+ * limit but a bound on the work: past it there is nothing to search.
+ */
+const MAX_AZTEC_CHARACTERS = 4200
+
 export function encodeAztec(text: string, options: AztecOptions = {}): boolean[][] {
   if (text.length === 0) {
     throw new InvalidInputError("Aztec Code: input text must not be empty")
+  }
+  if (text.length > MAX_AZTEC_CHARACTERS) {
+    throw new CapacityError(`Aztec Code: ${text.length} characters is past what any symbol holds`)
   }
 
   const ecPercent = options.ecPercent ?? 23

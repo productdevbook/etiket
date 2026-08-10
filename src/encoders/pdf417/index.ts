@@ -69,6 +69,11 @@ const MAX_CODEWORD_VALUE = 928
 const PAD_CODEWORD = 900
 
 /**
+ * 928 codewords of numeric compaction, the most any PDF417 symbol holds.
+ */
+const MAX_PDF417_CHARACTERS = 2900
+
+/**
  * Encode text as a PDF417 barcode.
  *
  * @param text - The text to encode
@@ -85,6 +90,11 @@ const PAD_CODEWORD = 900
 export function encodePDF417(text: string, options: PDF417Options = {}): PDF417Result {
   if (text.length === 0) {
     throw new InvalidInputError("PDF417 input must not be empty")
+  }
+  if (text.length > MAX_PDF417_CHARACTERS) {
+    throw new CapacityError(
+      `Data too long for PDF417: ${text.length} characters is past what any symbol holds`,
+    )
   }
 
   const compact = options.compact ?? false
