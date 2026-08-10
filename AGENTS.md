@@ -129,7 +129,9 @@ symbols are the same object — so the surface cannot drift.
 2D: `qrcode()`, `microqr()`, `rmqr()`, `datamatrix()`, `gs1datamatrix()`, `pdf417()`, `micropdf417()`, `aztec()`, `maxicode()`, `dotcode()`, `hanxin()`, `codablockf()`, `code16k()`, `jabcode()`.
 
 GS1: `gs1qr()`, `gs1composite()`, `encodeGS1CompositeSymbol()`, the DataBar
-family including the stacked variants.
+family including the stacked variants. A composite symbol assembles over every
+primary of ISO/IEC 24723 — EAN/UPC, GS1-128 and the seven DataBar variants —
+and only a GS1-128 can carry a CC-C component, whose width sets its columns.
 
 Sequences: `encodeQRSequence()` (Structured Append), `encodePDF417Sequence()`
 (Macro PDF417).
@@ -218,7 +220,7 @@ is known and turns red the moment it is fixed.
 
 v1. The full gate (`pnpm test`) is green:
 
-- **112 test files, 2800+ tests** passing
+- **112 test files, 2900+ tests** passing
 - **Zero** lint warnings, zero typecheck errors
 - **95.6%** statements, **91.6%** branches — thresholds enforced in CI by
   `vitest.config.ts`
@@ -235,11 +237,15 @@ module-for-module with bwip-js. Two exceptions, both explicit:
   JavaScript or WebAssembly decoder exists and neither zxing nor BWIPP implements
   the symbology. It is marked `@experimental` and says so in its own JSDoc.
 - **MicroPDF417** picks a smaller symbol variant than the reference for some
-  payloads. The smaller symbol decodes correctly and carries the specified error
+  payloads: BWIPP opens a symbol with a mode latch the default text compaction
+  mode makes redundant, and waits for five characters before entering text
+  compaction at all. The smaller symbol decodes and carries the specified error
   correction, so this is a shape choice rather than a defect (#136); the
-  comparison keeps it visible instead of asserting it away.
+  comparison keeps it visible instead of asserting it away, and
+  `encoders-micropdf417.test.ts` pins the direction — never larger.
 
 **Deliberate limitations**, documented where they apply: Han Xin has no GB 18030
-Chinese mode (nothing available can verify one; byte mode carries Chinese text
-meanwhile), and GS1-128 composites and the Limited/Stacked complete composite
-symbols are not assembled, though their 2D components work.
+Chinese mode. Nothing available can verify one — BWIPP's own Han Xin encoder
+implements Numeric and Byte and no more, and no decoder exists — so adding the
+Chinese modes would trade a fully verified encoder for one nothing can check.
+Byte mode carries Chinese text meanwhile.
