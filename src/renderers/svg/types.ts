@@ -127,4 +127,19 @@ export interface BarcodeSVGOptions extends SVGAccessibilityOptions {
   rotation?: 0 | 90 | 180 | 270
   bearerBars?: boolean
   bearerBarWidth?: number
+  /**
+   * Element indices of bars that run past the others into the text band. The
+   * guard patterns of an EAN or UPC symbol do this, which is what makes the
+   * digits sit in the gaps between them.
+   */
+  guardBars?: number[]
+  /** How far a guard bar runs past the others, in modules. Default 5. */
+  guardExtension?: number
+  /**
+   * Human readable text placed by module position rather than as one centred
+   * string — an EAN-13 prints its lead digit in the left quiet zone and its two
+   * halves under their own six digits. Takes precedence over `text`, and always
+   * sits below the symbol.
+   */
+  textSegments?: { text: string; center: number }[]
 }

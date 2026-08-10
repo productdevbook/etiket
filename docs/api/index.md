@@ -99,6 +99,8 @@ encodeBars("12345", { type: "code128" })
 | `rotation`                              | `0 \| 90 \| 180 \| 270`         | `0`             |
 | `margin`, `marginTop/Bottom/Left/Right` | `number`                        | `10`            |
 | `bearerBars` / `bearerBarWidth`         | `boolean` / `number`            | `false` / `4`   |
+| `guardBars` / `guardExtension`          | `number[]` / `number`           | — / `5`         |
+| `textSegments`                          | `{ text, center }[]`            | —               |
 | `ariaLabel`, `role`, `title`, `desc`    | `string`                        | —               |
 
 ```ts

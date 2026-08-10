@@ -26,6 +26,23 @@ barcode("01234565", { type: "upce" })
 barcode("123456", { type: "upce" })
 ```
 
+## Human Readable Text
+
+`showText` gives a UPC symbol its retail layout: the number system digit to the
+left of the bars, five digits under each half, and the check digit to the right,
+with the guard bars running down between the groups.
+
+```ts
+import { barcode } from "etiket"
+
+barcode("036000291452", { type: "upca", showText: true })
+// 0  36000  29145  2
+barcode("01234565", { type: "upce", showText: true })
+// 0  123456  5
+```
+
+Passing `text` yourself turns that off and centres your string instead.
+
 ## What the Input May Contain
 
 Digits, and the spaces and hyphens a number is printed with — `0-36000-29145-2`

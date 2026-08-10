@@ -30,6 +30,9 @@ export function renderBarcodeSVG(bars: number[], options: BarcodeSVGOptions = {}
     role = "img",
     title,
     desc,
+    guardBars,
+    guardExtension = 5,
+    textSegments,
   } = options
   const u = unit === "px" ? "" : unit
 
@@ -51,7 +54,11 @@ export function renderBarcodeSVG(bars: number[], options: BarcodeSVGOptions = {}
       : barWidth
 
   const barcodeWidth = totalUnits * moduleWidth
-  const textHeight = showText ? fontSize + 8 : 0
+  // Guard bars run past the others into the band the digits sit in, so that
+  // band has to be at least as deep as they reach.
+  const guards = new Set(guardBars)
+  const guardDrop = guards.size > 0 ? guardExtension * moduleWidth : 0
+  const textHeight = Math.max(showText ? fontSize + 8 : 0, guardDrop === 0 ? 0 : guardDrop + 4)
   const bearerHeight = bearerBars ? bearerBarWidth * 2 : 0
 
   const contentWidth = barcodeWidth + mLeft + mRight
@@ -117,13 +124,14 @@ export function renderBarcodeSVG(bars: number[], options: BarcodeSVGOptions = {}
   let x = mLeft
   let isBar = true
   const halfGap = barGap / 2
-  for (const w of bars) {
+  for (const [index, w] of bars.entries()) {
     const barPixelWidth = w * moduleWidth
     if (isBar) {
       const gappedWidth = barPixelWidth - barGap
       if (gappedWidth > 0) {
+        const drawnHeight = guards.has(index) ? barHeight + guardDrop : barHeight
         parts.push(
-          `<rect x="${x + halfGap}" y="${barTop}" width="${gappedWidth}" height="${barHeight}" fill="${escapeAttr(color)}"/>`,
+          `<rect x="${x + halfGap}" y="${barTop}" width="${gappedWidth}" height="${drawnHeight}" fill="${escapeAttr(color)}"/>`,
         )
       }
     }
@@ -131,8 +139,16 @@ export function renderBarcodeSVG(bars: number[], options: BarcodeSVGOptions = {}
     isBar = !isBar
   }
 
-  // Text
-  if (showText && text) {
+  // Text placed by module position: the EAN and UPC layout, where the digits
+  // sit in the gaps the extended guard bars leave.
+  if (showText && textSegments && textSegments.length > 0) {
+    const baseline = barTop + barHeight + guardDrop
+    for (const segment of textSegments) {
+      parts.push(
+        `<text x="${mLeft + segment.center * moduleWidth}" y="${baseline}" text-anchor="middle" font-family="${escapeAttr(fontFamily)}" font-size="${fontSize}" fill="${escapeAttr(color)}">${escapeXml(segment.text)}</text>`,
+      )
+    }
+  } else if (showText && text) {
     let textY: number
     if (textIsTop) {
       textY = mTop + fontSize

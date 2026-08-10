@@ -26,6 +26,7 @@ import { encodeCode32, encodePZN } from "./encoders/pharma-national"
 import { encodeIdentcode, encodeLeitcode } from "./encoders/deutsche-post"
 import { encodePlessey } from "./encoders/plessey"
 import { renderBarcodeSVG } from "./renderers/svg/barcode"
+import { eanLayout } from "./renderers/svg/ean-layout"
 import { renderPostalSVG } from "./renderers/svg/postal"
 import { svgToDataURI, svgToBase64 } from "./renderers/data-uri"
 import { encodePostal } from "./_postal"
@@ -164,6 +165,27 @@ export function barcode(text: string, options: BarcodeOptions = {}): string {
     })
   }
 
+  // A retail symbol prints its digits in the gaps its guard bars leave, with
+  // the ones that fall outside the symbol in the quiet zones. Only worth doing
+  // when the caller wants the standard text: `text` means they want their own.
+  const retail = RETAIL_TYPES[options.type ?? ""]
+  if (retail && svgOptions.showText === true && svgOptions.text === undefined) {
+    const symbol = retail(text)
+    const layout = eanLayout(options.type as "ean13", symbol.digits, symbol.guards)
+    if (layout) {
+      // The quiet zones of ISO/IEC 15420, which are also where the outside
+      // digits go: eleven modules to the left, seven to the right.
+      const moduleSize = svgOptions.moduleSize ?? svgOptions.barWidth ?? 2
+      return renderBarcodeSVG(symbol.bars, {
+        ...svgOptions,
+        marginLeft: svgOptions.marginLeft ?? Math.max(svgOptions.margin ?? 10, 11 * moduleSize),
+        marginRight: svgOptions.marginRight ?? Math.max(svgOptions.margin ?? 10, 7 * moduleSize),
+        ...layout,
+        showText: true,
+      })
+    }
+  }
+
   const bars = encodeBars(text, options)
 
   return renderBarcodeSVG(bars, {
@@ -171,6 +193,17 @@ export function barcode(text: string, options: BarcodeOptions = {}): string {
     text: svgOptions.showText !== false ? (svgOptions.text ?? text) : undefined,
     showText: svgOptions.showText ?? false,
   })
+}
+
+/** The symbologies whose human readable text follows the retail layout. */
+const RETAIL_TYPES: Record<
+  string,
+  ((text: string) => { bars: number[]; guards: number[]; digits: string }) | undefined
+> = {
+  ean13: encodeEAN13,
+  ean8: encodeEAN8,
+  upca: encodeUPCA,
+  upce: encodeUPCE,
 }
 
 /**

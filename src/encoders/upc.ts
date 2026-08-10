@@ -119,7 +119,11 @@ function expandUPCE(numberSystem: number, middleDigits: number[]): number[] {
  * @param text - 11 or 12 digit string (12th is check digit, auto-calculated if 11)
  * @returns bars (widths) and guard positions
  */
-export function encodeUPCA(text: string): { bars: number[]; guards: number[] } {
+export function encodeUPCA(text: string): {
+  bars: number[]
+  guards: number[]
+  digits: string
+} {
   const digits = eanDigits(text, "UPC-A")
 
   if (digits.length === 11) {
@@ -180,7 +184,7 @@ export function encodeUPCA(text: string): { bars: number[]; guards: number[] } {
     pos++
   }
 
-  return { bars, guards }
+  return { bars, guards, digits: digits.join("") }
 }
 
 /**
@@ -196,7 +200,11 @@ export function encodeUPCA(text: string): { bars: number[]; guards: number[] } {
  * @param text - 6, 7, or 8 digit string
  * @returns bars (widths) and guard positions
  */
-export function encodeUPCE(text: string): { bars: number[]; guards: number[] } {
+export function encodeUPCE(text: string): {
+  bars: number[]
+  guards: number[]
+  digits: string
+} {
   const raw = eanDigits(text, "UPC-E")
 
   let numberSystem: number
@@ -286,5 +294,9 @@ export function encodeUPCE(text: string): { bars: number[]; guards: number[] } {
     pos++
   }
 
-  return { bars, guards }
+  return {
+    bars,
+    guards,
+    digits: `${numberSystem}${middleDigits.join("")}${checkDigit}`,
+  }
 }

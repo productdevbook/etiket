@@ -110,7 +110,11 @@ function calculateCheckDigit(digits: number[]): number {
  * Encode EAN-13 barcode
  * Input: 12 or 13 digit string (13th is check digit, auto-calculated if 12)
  */
-export function encodeEAN13(text: string): { bars: number[]; guards: number[] } {
+export function encodeEAN13(text: string): {
+  bars: number[]
+  guards: number[]
+  digits: string
+} {
   const digits = eanDigits(text, "EAN-13")
 
   if (digits.length === 12) {
@@ -174,14 +178,18 @@ export function encodeEAN13(text: string): { bars: number[]; guards: number[] } 
     pos++
   }
 
-  return { bars, guards }
+  return { bars, guards, digits: digits.join("") }
 }
 
 /**
  * Encode EAN-8 barcode
  * Input: 7 or 8 digit string (8th is check digit, auto-calculated if 7)
  */
-export function encodeEAN8(text: string): { bars: number[]; guards: number[] } {
+export function encodeEAN8(text: string): {
+  bars: number[]
+  guards: number[]
+  digits: string
+} {
   const digits = eanDigits(text, "EAN-8")
 
   if (digits.length === 7) {
@@ -242,5 +250,5 @@ export function encodeEAN8(text: string): { bars: number[]; guards: number[] } {
     pos++
   }
 
-  return { bars, guards }
+  return { bars, guards, digits: digits.join("") }
 }

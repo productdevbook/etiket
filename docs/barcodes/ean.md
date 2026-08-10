@@ -26,6 +26,24 @@ barcode("96385074", { type: "ean8" })
 barcode("9638507", { type: "ean8" })
 ```
 
+## Human Readable Text
+
+`showText` gives an EAN symbol the layout a retail barcode has: the guard
+patterns run past the other bars, the digits sit in the gaps they leave, and the
+lead digit of an EAN-13 goes in the left quiet zone. The symbol also gets the
+quiet zones ISO/IEC 15420 asks for — eleven modules to the left, seven to the
+right — because that is where the outside digit has to go.
+
+```ts
+import { barcode } from "etiket"
+
+barcode("4006381333931", { type: "ean13", showText: true })
+// 4  006381  333931, with the guard bars running down between them
+```
+
+Passing `text` yourself turns that off and centres your string under the symbol
+in the ordinary way.
+
 ## What the Input May Contain
 
 Digits, and the spaces and hyphens a number is printed with — `4-006381-333931`

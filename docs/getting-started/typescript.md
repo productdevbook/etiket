@@ -74,7 +74,8 @@ barcode("1234", both)
 deprecated alias), `barGap`, `unit`, `color`, `background`, `showText`, `text`,
 `fontSize`, `fontFamily`, `margin`, `marginTop`, `marginBottom`, `marginLeft`,
 `marginRight`, `textAlign`, `textPosition`, `rotation`, `bearerBars`,
-`bearerBarWidth`, plus everything in `SVGAccessibilityOptions`.
+`bearerBarWidth`, `guardBars`, `guardExtension`, `textSegments`, plus everything
+in `SVGAccessibilityOptions`.
 
 ### Postal
 
