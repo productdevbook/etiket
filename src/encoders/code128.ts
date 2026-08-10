@@ -271,7 +271,13 @@ function autoEncode(text: string): number[] {
           // character latches instead of shifting.
           if (currentSet !== "A") {
             const nextCharCode = pos + 1 < text.length ? text.charCodeAt(pos + 1) : -1
-            if (!upper && nextCharCode >= 32 && nextCharCode <= 126) {
+            // A SHIFT borrows one Code A character without leaving Code B,
+            // which beats latching there and back. It cannot carry an FNC4
+            // with it — the FNC4 would land in the wrong code set — so it is
+            // only available while the reader is on the side of 128 the
+            // character is. Shifting out of a latched upper half without
+            // cancelling it returned the character 128 higher than it was.
+            if (!upper && !extended && nextCharCode >= 32 && nextCharCode <= 126) {
               // Single control char surrounded by printable text — use SHIFT
               codes.push(SHIFT)
               codes.push(value + 64)
