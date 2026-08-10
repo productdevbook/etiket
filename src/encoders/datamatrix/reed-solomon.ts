@@ -65,7 +65,11 @@ export function generateECCodewords(data: number[], ecCount: number): number[] {
 
 /**
  * Generate error correction codewords for a complete Data Matrix symbol.
- * Handles block interleaving for larger symbols.
+ *
+ * ISO/IEC 16022 8.5 splits the larger symbols into Reed-Solomon blocks by
+ * taking every nth codeword rather than a contiguous run of them, so that a
+ * burst of damage is spread across the blocks instead of landing in one. The
+ * error codewords are woven back the same way, after the data.
  *
  * @param dataCodewords - All data codewords (already padded to capacity)
  * @param ecCodewordsTotal - Total number of EC codewords for the symbol
@@ -78,34 +82,15 @@ export function generateInterleavedEC(
   interleavedBlocks: number,
 ): number[] {
   const ecPerBlock = ecCodewordsTotal / interleavedBlocks
-  const dataLength = dataCodewords.length
-  const baseBlockSize = Math.floor(dataLength / interleavedBlocks)
-  const largerBlocks = dataLength % interleavedBlocks
+  const result = Array.from<number>({ length: ecCodewordsTotal }).fill(0)
 
-  // Split data into interleaved blocks
-  const blocks: number[][] = []
-  let pos = 0
-
-  for (let b = 0; b < interleavedBlocks; b++) {
-    // First (interleavedBlocks - largerBlocks) blocks get baseBlockSize codewords,
-    // remaining largerBlocks blocks get baseBlockSize + 1
-    const blockSize = b < interleavedBlocks - largerBlocks ? baseBlockSize : baseBlockSize + 1
-    blocks.push(dataCodewords.slice(pos, pos + blockSize))
-    pos += blockSize
-  }
-
-  // Generate EC for each block
-  const ecBlocks: number[][] = []
-  for (const block of blocks) {
-    ecBlocks.push(generateECCodewords(block, ecPerBlock))
-  }
-
-  // Interleave EC codewords
-  const result: number[] = []
-  for (let i = 0; i < ecPerBlock; i++) {
-    for (let b = 0; b < interleavedBlocks; b++) {
-      result.push(ecBlocks[b]![i]!)
+  for (let block = 0; block < interleavedBlocks; block++) {
+    const data: number[] = []
+    for (let i = block; i < dataCodewords.length; i += interleavedBlocks) {
+      data.push(dataCodewords[i]!)
     }
+    const ec = generateECCodewords(data, ecPerBlock)
+    for (let i = 0; i < ecPerBlock; i++) result[i * interleavedBlocks + block] = ec[i]!
   }
 
   return result

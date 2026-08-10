@@ -472,17 +472,29 @@ export function encodeCandidates(
   if (edifact) candidates.push(edifact)
 
   const prefix = options.eci === undefined ? [] : encodeECI(options.eci)
-  if (prefix.length === 0) return candidates
 
   // An ECI declaration goes in front of the message and takes symbol capacity
   // from it, so the mode is asked what it would do with what is left
-  return candidates.map(({ encode, shortest }) => ({
-    shortest: shortest + prefix.length,
-    encode: (capacity) => {
-      const codewords = encode(capacity - prefix.length)
-      return codewords && [...prefix, ...codewords]
-    },
-  }))
+  const withPrefix =
+    prefix.length === 0
+      ? candidates
+      : candidates.map(({ encode, shortest }) => ({
+          shortest: shortest + prefix.length,
+          encode: (capacity: number) => {
+            const codewords = encode(capacity - prefix.length)
+            return codewords && [...prefix, ...codewords]
+          },
+        }))
+
+  // Base 256 carries every byte in one codeword behind a two codeword header.
+  // ASCII spends two codewords on each byte above 127 and C40 four, so text
+  // with accents in it comes out a size class or two smaller this way. It is
+  // built last because it needs to know where in the symbol its bytes land:
+  // the length field and every byte are randomised by position.
+  const bytes = [...text].map((ch) => ch.codePointAt(0)!)
+  withPrefix.push(fixed([...prefix, ...encodeBase256(bytes, prefix.length + 1)]))
+
+  return withPrefix
 }
 
 /**
