@@ -75,10 +75,13 @@ import {
  */
 const DIVERGENT: Record<string, string> = {
   micropdf417:
-    "not a defect — etiket picks a smaller variant than BWIPP for the same data (1x11 vs " +
-    "1x14), and zxing decodes every one of these payloads from the smaller symbol; where " +
-    "both pick the same variant the module pattern is identical. Kept here so the " +
-    "difference stays visible rather than being silently asserted away (#136)",
+    "not a defect — BWIPP opens every symbol with an explicit mode latch, which the " +
+    "default text compaction mode makes redundant, and waits for five characters before " +
+    "entering text compaction at all. Both cost it codewords, and enough of them to reach " +
+    "for a larger variant (1x14 where etiket uses 1x11). zxing reads every one of these " +
+    "payloads back from the smaller symbol, and `encoders-micropdf417.test.ts` pins the " +
+    "direction — never larger than the reference. Kept here so the difference stays " +
+    "visible rather than being silently asserted away (#136)",
 }
 
 // ---------------------------------------------------------------------------

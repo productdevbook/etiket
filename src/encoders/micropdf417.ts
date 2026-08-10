@@ -431,10 +431,13 @@ export function encodeMicroPDF417(
   const [cols, rows, ecCW, rapl, rapc, rapr] = metric
   const maxDataCW = rows * cols - ecCW
 
-  // Pad data codewords: MicroPDF417 prepends 900 (text latch) as padding
-  // This matches Zint/bwip-js behavior where padding goes BEFORE data
+  // Fill the symbol with pad codewords. 900 is the text compaction latch, so a
+  // reader that runs into one after the data simply re-enters the mode it is
+  // already in. They follow the data, which is where the reference
+  // implementation puts them and where this library's CC-B composite component
+  // — the same symbology underneath — already put them.
   while (dataCW.length < maxDataCW) {
-    dataCW.unshift(900)
+    dataCW.push(900)
   }
 
   // Generate EC codewords using RS over GF(929)

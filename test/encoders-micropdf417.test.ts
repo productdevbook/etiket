@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { encodeMicroPDF417 } from "../src/encoders/micropdf417"
+import { encodeMicroPDF417, microPDF417CodewordModules } from "../src/encoders/micropdf417"
+import { bwipMatrix } from "./_bwip"
 
 describe("MicroPDF417", () => {
   it("encodes short text", () => {
@@ -43,4 +44,49 @@ describe("MicroPDF417", () => {
     const bStr = b.matrix.map((r) => r.map((c) => (c ? "1" : "0")).join("")).join("")
     expect(aStr).not.toBe(bStr)
   })
+
+  it("fills the symbol with pad codewords after the data", () => {
+    // "Hello" is three codewords in the 1x11 variant, which holds four data
+    // codewords before its seven error correction ones. The fourth is the pad:
+    // 900, the text compaction latch, which a reader in text mode ignores.
+    const rows = encodeMicroPDF417("Hello").matrix
+    // One column: left RAP, one codeword, right RAP. Row n is in cluster n % 3.
+    const data = (row: number) => rows[row]!.slice(10, 27)
+    expect(data(3)).toEqual(microPDF417CodewordModules(900, 0))
+    expect(data(0)).not.toEqual(microPDF417CodewordModules(900, 0))
+  })
+})
+
+/**
+ * Symbol size against the reference.
+ *
+ * etiket picks a smaller variant than BWIPP for some payloads (#136), because
+ * BWIPP spends a codeword on a text compaction latch the default mode makes
+ * redundant and waits for five characters before entering text compaction at
+ * all. Neither costs conformance — every symbol below reads back through zxing
+ * — so what is pinned is the direction: never larger than the reference.
+ */
+describe("MicroPDF417 symbol size vs bwip-js", () => {
+  const PAYLOADS = [
+    "A",
+    "AB",
+    "ABC",
+    "ABCD",
+    "ABC123",
+    "Hello",
+    "Hello World",
+    "12345678",
+    "abcdefghijklmnopqrstuvwxyz",
+    "The quick brown fox jumps",
+    "https://example.com/a/b/c",
+  ]
+
+  for (const payload of PAYLOADS) {
+    it(`is no larger than bwip-js for ${JSON.stringify(payload)}`, () => {
+      const mine = encodeMicroPDF417(payload).matrix
+      const theirs = bwipMatrix("micropdf417", payload)
+      expect(mine.length).toBeLessThanOrEqual(theirs.length)
+      expect(mine[0]!.length).toBeLessThanOrEqual(theirs[0]!.length)
+    })
+  }
 })
