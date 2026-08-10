@@ -8,6 +8,7 @@
 import { dpCheckDigit } from "../encoders/deutsche-post"
 import { encodeEAN14, encodeSSCC18 } from "../encoders/gs1-128"
 import { encodeISBN, encodeISMN, encodeISSN } from "../encoders/isbn"
+import { encodeAztecRune } from "../encoders/aztec/index"
 import { encodeCode2of5 } from "../encoders/code2of5"
 import { encodeCode32, encodePZN } from "../encoders/pharma-national"
 import { postnetCheckDigit } from "../encoders/postnet"
@@ -318,6 +319,9 @@ export function validateBarcode(text: string, type: string): { valid: boolean; e
     case "coop2of5":
     case "datalogic2of5":
       return byEncoding(() => encodeCode2of5(text, { version: type.slice(0, -4) as "industrial" }))
+
+    case "aztecrune":
+      return byEncoding(() => encodeAztecRune(Number(text)))
 
     case "qr":
     case "datamatrix":

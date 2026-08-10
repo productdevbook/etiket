@@ -20,6 +20,8 @@ export {
   pdf417PNGDataURI,
   aztecPNG,
   aztecPNGDataURI,
+  aztecrunePNG,
+  aztecrunePNGDataURI,
   postalPNG,
   postalPNGDataURI,
   microqrPNG,

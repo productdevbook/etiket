@@ -28,6 +28,24 @@ etiket automatically selects the optimal charset (Auto mode):
 - Switches to Code A only for control characters
 - Dynamically switches between sets for optimal encoding
 
+## Latin-1
+
+Characters above 126 are carried behind FNC4: one shifts a single character
+across the 128 boundary, two latch across it until two more come back. The
+encoder picks whichever is shorter for the run in front of it, so accented text
+costs one extra symbol character where it is scattered and two per run where it
+is not.
+
+```ts
+import { barcode } from "etiket"
+
+barcode("Grüße")
+barcode("naïve résumé")
+```
+
+Anything outside Latin-1 raises `InvalidInputError` — Code 128 has no ECI, so
+there is no way to declare another character set.
+
 ## Raw Encoder
 
 ```ts

@@ -133,6 +133,9 @@ const CODE_A = 101
 const CODE_B = 100
 const CODE_C = 99
 const SHIFT = 98
+/** FNC4 shares its symbol value with a code set switch: 101 in A, 100 in B. */
+const FNC4_A = 101
+const FNC4_B = 100
 
 /**
  * Encode text as Code 128 barcode
@@ -202,6 +205,8 @@ function autoEncode(text: string): number[] {
   }
 
   let currentSet: "A" | "B" | "C" = codes[0] === START_C ? "C" : "B"
+  // True once FNC4 FNC4 has latched the reader into the upper half of Latin-1.
+  let extended = false
 
   while (pos < text.length) {
     if (currentSet === "C") {
@@ -226,33 +231,60 @@ function autoEncode(text: string): number[] {
         pos = encodeCodeC(text, pos, codes)
       } else {
         const charCode = text.charCodeAt(pos)
-        if (charCode >= 32 && charCode <= 126) {
+        if (charCode > 255) {
+          throw new InvalidInputError(
+            `Character at position ${pos} (code ${charCode}) is not encodable in Code 128`,
+          )
+        }
+
+        // Latin-1 lives behind FNC4: one shifts a single character across the
+        // 128 boundary, two latch across it until two more come back
+        // (ISO/IEC 15417 Annex B). Shifting a run of n costs 2n; latching costs
+        // n + 2, plus whatever it takes to get back — nothing at the end of the
+        // data, one shift for a single character the other side, two to latch.
+        const upper = charCode >= 128
+        const value = upper ? charCode - 128 : charCode
+        const run = countSameHalf(text, pos)
+        const exit = pos + run >= text.length ? 0 : Math.min(2, countSameHalf(text, pos + run))
+        const latch = upper !== extended && run > 2 + exit
+        const emitFNC4 = (): void => {
+          if (upper === extended) return
+          const fnc4 = currentSet === "A" ? FNC4_A : FNC4_B
+          codes.push(fnc4)
+          if (latch) {
+            codes.push(fnc4)
+            extended = upper
+          }
+        }
+
+        if (value >= 32) {
           // Printable character — needs Code B
           if (currentSet === "A") {
             codes.push(CODE_B)
             currentSet = "B"
           }
-          codes.push(charCode - 32)
-        } else if (charCode >= 0 && charCode < 32) {
-          // Control character — needs Code A
+          emitFNC4()
+          codes.push(value - 32)
+        } else {
+          // Control character — needs Code A. A SHIFT would put the FNC4 that
+          // follows it in the wrong code set, so an upper half control
+          // character latches instead of shifting.
           if (currentSet !== "A") {
-            // Check if this is a single control char followed by printable text
-            // If so, use SHIFT to temporarily access Code A for one character
             const nextCharCode = pos + 1 < text.length ? text.charCodeAt(pos + 1) : -1
-            if (nextCharCode >= 32 && nextCharCode <= 126) {
+            if (!upper && nextCharCode >= 32 && nextCharCode <= 126) {
               // Single control char surrounded by printable text — use SHIFT
               codes.push(SHIFT)
-              codes.push(charCode + 64)
+              codes.push(value + 64)
               // currentSet stays as "B" since SHIFT is temporary
-            } else {
-              // Multiple control chars or end of string — switch to Code A
-              codes.push(CODE_A)
-              currentSet = "A"
-              codes.push(charCode + 64)
+              pos++
+              continue
             }
-          } else {
-            codes.push(charCode + 64)
+            // Multiple control chars or end of string — switch to Code A
+            codes.push(CODE_A)
+            currentSet = "A"
           }
+          emitFNC4()
+          codes.push(value + 64)
         }
         pos++
       }
@@ -278,6 +310,18 @@ function encodeCodeC(text: string, pos: number, codes: number[]): number {
     pos += 2
   }
   return pos
+}
+
+/** Characters from `pos` on the same side of the Latin-1 128 boundary. */
+function countSameHalf(text: string, pos: number): number {
+  const upper = text.charCodeAt(pos) >= 128
+  let count = 0
+  while (pos + count < text.length) {
+    const code = text.charCodeAt(pos + count)
+    if (code > 255 || code >= 128 !== upper) break
+    count++
+  }
+  return count
 }
 
 function countNumericFromPos(text: string, pos: number): number {

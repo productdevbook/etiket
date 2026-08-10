@@ -34,6 +34,7 @@ import {
 import type { BwipState } from "./_bwip"
 import {
   encodeAustraliaPost,
+  encodeAztecRune,
   encodeCodabar,
   encodeCodablockF,
   encodeCode11,
@@ -572,6 +573,22 @@ describe("bwip-js cross-verification: stacked and 2D", () => {
     // this comparison is about the module patterns, not the shape choice
     etiket: (p) => encodePDF417(p, { columns: 2, ecLevel: 2 }).matrix,
     bwip: (p) => bwipMatrix("pdf417", p, { columns: 2, eclevel: 2 }),
+  })
+
+  runMatrix({
+    // The right row indicator and the 18 module stop pattern give way to a
+    // single dark module, which nothing checked until now
+    format: "pdf417 (compact)",
+    payloads: ["HELLO", "PDF417 TEST", "123456789012"],
+    etiket: (p) => encodePDF417(p, { columns: 2, ecLevel: 2, compact: true }).matrix,
+    bwip: (p) => bwipMatrix("pdf417compact", p, { columns: 2, eclevel: 2 }),
+  })
+
+  runMatrix({
+    format: "aztec rune",
+    payloads: ["0", "1", "42", "128", "255"],
+    etiket: (p) => encodeAztecRune(Number(p)),
+    bwip: (p) => bwipMatrix("aztecrune", p),
   })
 
   runMatrix({

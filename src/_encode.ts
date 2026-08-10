@@ -10,7 +10,7 @@ import { encodeRMQR } from "./encoders/rmqr"
 import { encodeDataMatrix, encodeGS1DataMatrix } from "./encoders/datamatrix/index"
 import { encodePDF417 } from "./encoders/pdf417/index"
 import { encodeMicroPDF417 } from "./encoders/micropdf417"
-import { encodeAztec } from "./encoders/aztec/index"
+import { encodeAztec, encodeAztecRune } from "./encoders/aztec/index"
 import { encodeMaxiCode } from "./encoders/maxicode"
 import { encodeDotCode } from "./encoders/dotcode"
 import { encodeHanXin } from "./encoders/hanxin"
@@ -59,6 +59,8 @@ export function encode(text: string, options: EncodeOptions = {}): EncodeResult 
       return { type: "2d", matrix: encodeMicroPDF417(text, options.micropdf417).matrix }
     case "aztec":
       return { type: "2d", matrix: encodeAztec(text, options.aztec) }
+    case "aztecrune":
+      return { type: "2d", matrix: encodeAztecRune(Number(text)) }
     case "maxicode":
       return { type: "2d", matrix: encodeMaxiCode(text, options.maxicode) }
     case "dotcode":

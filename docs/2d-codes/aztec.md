@@ -94,6 +94,25 @@ aztecPNGDataURI("Hello", { moduleSize: 6 })
 `renderMatrixPNG` defaults `margin` to 4 modules, so pass `margin: 0` if you
 want the borderless symbol the format allows.
 
+## Aztec Rune
+
+A rune carries a single byte — 0 to 255 — in eleven modules square. It is a
+compact Aztec with no data layers at all: the value goes in the mode message,
+inverted against 1010 so a reader cannot mistake it for the compact symbol it
+otherwise looks exactly like. Runes mark shelves, bins and fixtures, where the
+number means something to the system reading it and nothing to anyone else.
+
+```ts
+import { aztecrune, aztecrunePNG, encodeAztecRune } from "etiket"
+
+aztecrune(42)
+aztecrunePNG(42, { moduleSize: 12 })
+encodeAztecRune(42).length // 11
+```
+
+A value outside 0 to 255, or one that is not a whole number, raises
+`InvalidInputError`.
+
 ## Caveats
 
 - `ecPercent` is a floor, not an exact figure: the chosen symbol usually has a
@@ -110,4 +129,5 @@ want the borderless symbol the format allows.
 etiket aztec "Hello" -o aztec.svg
 etiket aztec "Hello" --ec-percent 33 --compact -o aztec.png
 etiket aztec "Hello" --layers 4 --eci 26 -o pinned.svg
+etiket aztecrune 42 -o rune.svg
 ```

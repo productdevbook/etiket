@@ -18,6 +18,7 @@ export {
   gs1datamatrix,
   pdf417,
   aztec,
+  aztecrune,
   microqr,
   rmqr,
   maxicode,
@@ -156,7 +157,7 @@ export type {
 export type { PDF417Options } from "./encoders/pdf417/index"
 export { encodeMicroPDF417 } from "./encoders/micropdf417"
 export type { MicroPDF417Options } from "./encoders/micropdf417"
-export { encodeAztec } from "./encoders/aztec/index"
+export { encodeAztec, encodeAztecRune } from "./encoders/aztec/index"
 export type { AztecOptions } from "./encoders/aztec/index"
 export { encodeHIBCPrimary, encodeHIBCSecondary, encodeHIBCConcatenated } from "./encoders/hibc"
 export {
@@ -181,6 +182,8 @@ export {
   pdf417PNGDataURI,
   aztecPNG,
   aztecPNGDataURI,
+  aztecrunePNG,
+  aztecrunePNGDataURI,
   postalPNG,
   postalPNGDataURI,
   microqrPNG,

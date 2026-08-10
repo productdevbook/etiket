@@ -226,6 +226,7 @@ accessibility fields — on top of its own encoder options.
 | `pdf417(text, options?)`                    | `ecLevel`, `columns`, `compact`, `eci`, plus `width` / `height` |
 | `micropdf417(text, options?)`               | `columns`                                                       |
 | `aztec(text, options?)`                     | `ecPercent`, `layers`, `compact`, `eci`                         |
+| `aztecrune(value, options?)`                | none — the value is a byte, 0 to 255                            |
 | `microqr(text, options?)`                   | `version`, `ecLevel`, `mask`                                    |
 | `rmqr(text, options?)`                      | `version`, `ecLevel`                                            |
 | `maxicode(text, options?)`                  | `mode`, `postalCode`, `countryCode`, `serviceClass`             |
@@ -418,6 +419,7 @@ Every family has a `*PNG` function returning a `Uint8Array` and a matching
 | QR          | `qrcodePNG`, `microqrPNG`, `rmqrPNG`                                               | `qrcodePNGDataURI`, `microqrPNGDataURI`, `rmqrPNGDataURI`                                               |
 | Data Matrix | `datamatrixPNG`, `gs1datamatrixPNG`                                                | `datamatrixPNGDataURI`, `gs1datamatrixPNGDataURI`                                                       |
 | PDF417      | `pdf417PNG`, `micropdf417PNG`                                                      | `pdf417PNGDataURI`, `micropdf417PNGDataURI`                                                             |
+| Aztec Rune  | `aztecrunePNG`                                                                     | `aztecrunePNGDataURI`                                                                                   |
 | Aztec       | `aztecPNG`                                                                         | `aztecPNGDataURI`                                                                                       |
 | Stacked     | `codablockfPNG`, `code16kPNG`                                                      | `codablockfPNGDataURI`, `code16kPNGDataURI`                                                             |
 | Other       | `maxicodePNG`, `dotcodePNG`, `hanxinPNG`, `jabcodePNG`                             | `maxicodePNGDataURI`, `dotcodePNGDataURI`, `hanxinPNGDataURI`, `jabcodePNGDataURI`                      |
@@ -704,6 +706,7 @@ or `"numeric"` (2 bars per digit).
 | `encodePDF417Sequence(text, options?)` | `{ matrix, rows, cols }[]` — Macro PDF417 |
 | `encodeMicroPDF417(text, options?)`    | `{ matrix, rows, cols }`                  |
 | `encodeAztec(text, options?)`          | `boolean[][]`                             |
+| `encodeAztecRune(value)`               | `boolean[][]` — 11x11, a byte 0 to 255    |
 | `encodeMaxiCode(text, options?)`       | `boolean[][]` — 33×30                     |
 | `encodeDotCode(text, options?)`        | `boolean[][]`                             |
 | `encodeHanXin(text, options?)`         | `boolean[][]`                             |
@@ -723,6 +726,7 @@ import {
   encodePDF417Sequence,
   encodeMicroPDF417,
   encodeAztec,
+  encodeAztecRune,
   encodeMaxiCode,
   encodeDotCode,
   encodeHanXin,
@@ -741,6 +745,7 @@ encodePDF417("Hello", { columns: 4 }).rows
 encodePDF417Sequence("A".repeat(3000), { symbols: 3 }).length // 3
 encodeMicroPDF417("Hello", { columns: 2 }).cols
 encodeAztec("Hello", { ecPercent: 33 })
+encodeAztecRune(42)
 encodeMaxiCode("Hello", { mode: 4 }).length // 33
 encodeDotCode("Hello")
 encodeHanXin("Hello", { ecLevel: 2 })

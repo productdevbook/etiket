@@ -10,7 +10,7 @@ import type { DataMatrixEncodeOptions } from "./encoders/datamatrix/encoder"
 import type { PDF417Options } from "./encoders/pdf417/index"
 import type { AztecOptions } from "./encoders/aztec/index"
 import { encodePDF417 } from "./encoders/pdf417/index"
-import { encodeAztec } from "./encoders/aztec/index"
+import { encodeAztec, encodeAztecRune } from "./encoders/aztec/index"
 import { encodeMicroQR } from "./encoders/qr/micro"
 import { encodeRMQR } from "./encoders/rmqr"
 import { encodeHanXin } from "./encoders/hanxin"
@@ -190,6 +190,20 @@ export function aztecPNG(text: string, options?: AztecOptions & MatrixPNGOptions
  */
 export function aztecPNGDataURI(text: string, options?: AztecOptions & MatrixPNGOptions): string {
   return toPNGDataURI(aztecPNG(text, options))
+}
+
+/**
+ * Generate an Aztec Rune as PNG
+ */
+export function aztecrunePNG(value: number, options?: MatrixPNGOptions): Uint8Array {
+  return renderMatrixPNG(encodeAztecRune(value), { margin: 0, ...options })
+}
+
+/**
+ * Generate an Aztec Rune as PNG data URI
+ */
+export function aztecrunePNGDataURI(value: number, options?: MatrixPNGOptions): string {
+  return toPNGDataURI(aztecrunePNG(value, options))
 }
 
 /**

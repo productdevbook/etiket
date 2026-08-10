@@ -11,6 +11,7 @@ returning the module matrix, and PNG output.
 | [PDF417](/2d-codes/pdf417)                            | `pdf417()`        | `encodePDF417`        | `pdf417PNG()`        |
 | [MicroPDF417](/2d-codes/micropdf417)                  | `micropdf417()`   | `encodeMicroPDF417`   | `micropdf417PNG()`   |
 | [Aztec](/2d-codes/aztec)                              | `aztec()`         | `encodeAztec`         | `aztecPNG()`         |
+| [Aztec Rune](/2d-codes/aztec#aztec-rune)              | `aztecrune()`     | `encodeAztecRune`     | `aztecrunePNG()`     |
 | [Micro QR](/qr-code/micro-qr)                         | `microqr()`       | `encodeMicroQR`       | `microqrPNG()`       |
 | [rMQR](/qr-code/rmqr)                                 | `rmqr()`          | `encodeRMQR`          | `rmqrPNG()`          |
 | [MaxiCode](/2d-codes/maxicode)                        | `maxicode()`      | `encodeMaxiCode`      | `maxicodePNG()`      |

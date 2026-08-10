@@ -16,7 +16,12 @@
 import { CapacityError, InvalidInputError } from "../../errors"
 import { getWordSize, getModuleCount, getTotalBitCapacity, getBaseMatrixSize } from "./tables"
 import { encodeHighLevel, stuffBits } from "./encoder"
-import { generateCheckWords, encodeCompactModeMessage, encodeFullModeMessage } from "./reed-solomon"
+import {
+  generateCheckWords,
+  encodeCompactModeMessage,
+  encodeFullModeMessage,
+  rsEncode,
+} from "./reed-solomon"
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -106,6 +111,44 @@ export function encodeAztec(text: string, options: AztecOptions = {}): boolean[]
 
   return matrix
 }
+
+/**
+ * Encode an Aztec Rune: a value of 0 to 255 in an 11x11 symbol.
+ *
+ * A rune is a compact Aztec with no data layers at all. The byte goes in the
+ * mode message, as two 4-bit words with five Reed-Solomon check words after
+ * them, and every word is then inverted against 1010 — which is what stops a
+ * reader mistaking a rune for the compact symbol it otherwise looks exactly
+ * like.
+ *
+ * @param value - 0 to 255
+ * @returns 2D boolean array where `true` = dark module
+ *
+ * @example
+ * ```ts
+ * encodeAztecRune(42)
+ * ```
+ */
+export function encodeAztecRune(value: number): boolean[][] {
+  if (!Number.isInteger(value) || value < 0 || value > 255) {
+    throw new InvalidInputError(`Aztec Rune value must be an integer 0-255 (got ${String(value)})`)
+  }
+
+  const words = [(value >> 4) & 0x0f, value & 0x0f]
+  const modeMessage: number[] = []
+  for (const word of [...words, ...rsEncode(words, 5, 4)]) {
+    const inverted = word ^ 0b1010
+    for (let bit = 3; bit >= 0; bit--) modeMessage.push((inverted >> bit) & 1)
+  }
+
+  const matrix = createBoolMatrix(RUNE_SIZE)
+  drawModeMessage(matrix, modeMessage, true, RUNE_SIZE)
+  drawBullsEye(matrix, Math.floor(RUNE_SIZE / 2), 5)
+  return matrix
+}
+
+/** A rune is a compact symbol with no layers: 4 * 0 + 11 modules across. */
+const RUNE_SIZE = 11
 
 // ---------------------------------------------------------------------------
 // Size selection — matches ZXing's approach

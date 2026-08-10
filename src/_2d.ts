@@ -6,7 +6,7 @@
 import { encodeDataMatrix, encodeGS1DataMatrix } from "./encoders/datamatrix/index"
 import { encodePDF417 } from "./encoders/pdf417/index"
 import { encodeMicroPDF417 } from "./encoders/micropdf417"
-import { encodeAztec } from "./encoders/aztec/index"
+import { encodeAztec, encodeAztecRune } from "./encoders/aztec/index"
 import { encodeMicroQR } from "./encoders/qr/micro"
 import { encodeRMQR } from "./encoders/rmqr"
 import { encodeMaxiCode } from "./encoders/maxicode"
@@ -86,6 +86,18 @@ export function aztec(text: string, options?: AztecOptions & MatrixSVGOptions): 
   const { ecPercent, layers, compact, eci, ...svgOpts } = options ?? {}
   const matrix = encodeAztec(text, { ecPercent, layers, compact, eci })
   return renderMatrixSVG(matrix, { margin: 0, ...svgOpts })
+}
+
+/**
+ * Generate an Aztec Rune — a value of 0 to 255 in an 11x11 symbol — as SVG.
+ *
+ * @example
+ * ```ts
+ * const svg = aztecrune(42)
+ * ```
+ */
+export function aztecrune(value: number, options: MatrixSVGOptions = {}): string {
+  return renderMatrixSVG(encodeAztecRune(value), { margin: 0, ...options })
 }
 
 /**

@@ -93,6 +93,7 @@ export const EXTRA_ENCODE_TYPES = [
   "pdf417",
   "micropdf417",
   "aztec",
+  "aztecrune",
   "maxicode",
   "dotcode",
   "hanxin",
