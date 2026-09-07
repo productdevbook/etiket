@@ -105,10 +105,11 @@ export const EXTRA_ENCODE_TYPES = [
 ] as const
 
 /** Every symbology `encode()` can produce raw output for. */
-export const ENCODE_TYPES = [...BARCODE_TYPES, ...EXTRA_ENCODE_TYPES] as const
+export type ExtraEncodeType = (typeof EXTRA_ENCODE_TYPES)[number]
+export type EncodeType = BarcodeType | ExtraEncodeType
 
 /** Every symbology `encode()` can produce raw output for. */
-export type EncodeType = (typeof ENCODE_TYPES)[number]
+export const ENCODE_TYPES: readonly EncodeType[] = [...BARCODE_TYPES, ...EXTRA_ENCODE_TYPES]
 
 export interface EncodeOptions extends Omit<BarcodeEncodingOptions, "type"> {
   type?: EncodeType
