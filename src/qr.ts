@@ -15,10 +15,13 @@ export type {
   ErrorCorrectionLevel,
   EncodingMode,
   KanjiCodec,
+  QRSymbol,
+  QRSymbolOptions,
 } from "./encoders/qr/types"
 export type { DotType, GradientOptions, CornerOptions, LogoOptions } from "./renderers/svg/types"
 
 export { encodeQR, encodeQRCore, encodeQRSequence } from "./encoders/qr/index"
+export { encodeQRSymbol, tryEncodeQRSymbol } from "./encoders/qr/symbol"
 export { kanjiCodec } from "./encoders/qr/kanji"
 export type { QRSequenceOptions } from "./encoders/qr/index"
 export { encodeMicroQR } from "./encoders/qr/micro"
