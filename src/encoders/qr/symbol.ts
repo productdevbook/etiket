@@ -33,7 +33,7 @@ export function buildQRSymbol(text: string, options: QRCodeOptions): QRSymbol {
   return { version, ecLevel, mask, size, modules }
 }
 
-const LEFT_OUT = ["kanji", "gs1", "applicationIndicator", "structuredAppend"] as const
+const LEFT_OUT = ["kanji", "gs1", "applicationIndicator", "structuredAppend", "micro"] as const
 
 /**
  * Encode text as a QR code and return the symbol with the version, error

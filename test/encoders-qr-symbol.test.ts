@@ -73,7 +73,7 @@ describe("encodeQRSymbol", () => {
     expect(await decodedBytes(symbol.modules)).toEqual([...new TextEncoder().encode(text)])
   })
 
-  it.each(["kanji", "gs1", "applicationIndicator", "structuredAppend"])(
+  it.each(["kanji", "gs1", "applicationIndicator", "structuredAppend", "micro"])(
     "refuses the %s option it leaves out, rather than drawing a different symbol",
     (key) => {
       const options = { [key]: undefined } as never
