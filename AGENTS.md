@@ -48,6 +48,7 @@ src/
     qr/                     # QR Code (ISO 18004)
       index.ts              # Main QR encoder
       types.ts              # Types and interfaces
+      symbol.ts             # encodeQRSymbol / tryEncodeQRSymbol: the narrow QR path (no kanji, GS1, Structured Append)
       version.ts            # Version selection (1-40)
       mode.ts               # Encoding modes (numeric/alpha/byte/kanji)
       segment.ts            # Optimal segment switching
@@ -102,11 +103,12 @@ src/
     barcode.ts              # Per-format validation
     qr.ts                   # QR validation with metadata
 test/
-  *.test.ts                 # 141 test files, 3530+ tests
+  *.test.ts                 # 142 test files, 3880+ tests
   _bwip.ts                  # bwip-js (BWIPP) oracle: module data extraction
   bwip-compare.test.ts      # Module-for-module comparison against BWIPP
   qr-roundtrip.test.ts      # QR encode→decode via jsQR (all versions, EC, masks)
   encoders-qr-core.test.ts  # encodeQRCore: encodeQR without the kanji table
+  encoders-qr-symbol.test.ts # encodeQRSymbol: metadata, minVersion, boostEcc, empty input, tryEncode, reference fixtures
   2d-roundtrip.test.ts      # 2D decode verification via zxing-wasm
   1d-roundtrip.test.ts      # 1D decode verification via zxing-wasm
   encoders-modes-roundtrip.test.ts # Encoder mode coverage, decoded with zxing
@@ -247,7 +249,7 @@ is known and turns red the moment it is fixed.
 
 v1. The full gate (`bun run test`) is green:
 
-- **141 test files, 3530+ tests** passing
+- **142 test files, 3880+ tests** passing
 - **Zero** lint warnings, zero typecheck errors
 - **96.8%** statements, **93.2%** branches — thresholds enforced in CI by
   `vitest.config.ts`

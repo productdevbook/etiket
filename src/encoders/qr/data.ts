@@ -7,7 +7,6 @@ import { MODE_INDICATOR } from "./types"
 import { getECInfo, getCharCountBits } from "./tables"
 import { getDataCapacityBits, selectMode } from "./version"
 import { optimizeSegments } from "./segment"
-import { gs1Payload } from "./gs1"
 import {
   encodeNumericData,
   encodeAlphanumericData,
@@ -29,8 +28,7 @@ export interface EncodedData {
  * Encode text into QR code data bits with error correction
  */
 export function encodeData(text: string, options: QRCodeOptions = {}): EncodedData {
-  const ecLevel = options.ecLevel ?? "M"
-  const { version, segments } = planEncoding(text, ecLevel, options)
+  const { version, segments, ecLevel } = planEncoding(text, options.ecLevel ?? "M", options)
   const ecInfo = getECInfo(version, ecLevel)
 
   // Build data bitstream
@@ -61,7 +59,31 @@ export function encodeData(text: string, options: QRCodeOptions = {}): EncodedDa
 /** A segment plus the version it was measured against */
 interface EncodingPlan {
   version: number
+  /** The requested level, or the highest that fits the chosen version when `boostEcc` is set */
+  ecLevel: ErrorCorrectionLevel
   segments: QRSegment[]
+}
+
+const EC_LEVELS_ASCENDING: readonly ErrorCorrectionLevel[] = ["L", "M", "Q", "H"]
+
+function boostedLevel(
+  ecLevel: ErrorCorrectionLevel,
+  needed: number,
+  version: number,
+  options: QRCodeOptions,
+): ErrorCorrectionLevel {
+  if (!options.boostEcc) return ecLevel
+  let best = ecLevel
+  for (const level of EC_LEVELS_ASCENDING.slice(EC_LEVELS_ASCENDING.indexOf(ecLevel) + 1)) {
+    if (needed <= getDataCapacityBits(version, level)) best = level
+  }
+  return best
+}
+
+function checkVersion(name: "version" | "minVersion", value: number): void {
+  if (!Number.isInteger(value) || value < 1 || value > 40) {
+    throw new InvalidInputError(`QR ${name} must be an integer from 1 to 40, got ${value}`)
+  }
 }
 
 /**
@@ -81,16 +103,13 @@ export function planEncoding(
   options: QRCodeOptions,
 ): EncodingPlan {
   const forcedMode = options.mode && options.mode !== "auto" ? options.mode : undefined
-  // GS1 symbols carry AI element strings, not the parenthesised form the
-  // caller wrote
-  const payload = options.gs1 ? gs1Payload(text) : text
 
   // Version 40 at level L holds 7089 numeric characters and nothing holds more,
   // so anything longer than that is already answered. Finding that out by
   // segmenting a megabyte of text forty times over is a slow way to say no.
-  if (payload.length > MAX_QR_CHARACTERS) {
+  if (text.length > MAX_QR_CHARACTERS) {
     throw new CapacityError(
-      `Data too long for any QR code version: ${payload.length} characters is past what any symbol holds`,
+      `Data too long for any QR code version: ${text.length} characters is past what any symbol holds`,
     )
   }
 
@@ -101,8 +120,18 @@ export function planEncoding(
     )
   }
 
+  if (options.version !== undefined) checkVersion("version", options.version)
+  if (options.minVersion !== undefined) {
+    checkVersion("minVersion", options.minVersion)
+    if (options.version !== undefined && options.minVersion > options.version) {
+      throw new InvalidInputError(
+        `QR minVersion ${options.minVersion} is above the fixed version ${options.version}`,
+      )
+    }
+  }
+
   if (options.version !== undefined) {
-    const segments = segmentsFor(payload, options.version, forcedMode, options.kanji)
+    const segments = segmentsFor(text, options.version, forcedMode, options.kanji)
     const needed = headerBits(options) + totalBits(segments, options.version)
     const capacity = getDataCapacityBits(options.version, ecLevel)
     if (needed > capacity) {
@@ -110,24 +139,26 @@ export function planEncoding(
         `Data too long for QR version ${options.version} with EC level ${ecLevel}: ${needed} bits needed, capacity is ${capacity}`,
       )
     }
-    return { version: options.version, segments }
+    return {
+      version: options.version,
+      ecLevel: boostedLevel(ecLevel, needed, options.version, options),
+      segments,
+    }
   }
 
   // The character count indicator, and so the cost of switching mode, changes
   // only at versions 10 and 27: three segmentations to find rather than forty
   const byGroup = new Map<number, QRSegment[]>()
-  for (let version = 1; version <= 40; version++) {
+  for (let version = options.minVersion ?? 1; version <= 40; version++) {
     const group = version < 10 ? 0 : version < 27 ? 1 : 2
     let segments = byGroup.get(group)
     if (!segments) {
-      segments = segmentsFor(payload, version, forcedMode, options.kanji)
+      segments = segmentsFor(text, version, forcedMode, options.kanji)
       byGroup.set(group, segments)
     }
-    if (
-      headerBits(options) + totalBits(segments, version) <=
-      getDataCapacityBits(version, ecLevel)
-    ) {
-      return { version, segments }
+    const needed = headerBits(options) + totalBits(segments, version)
+    if (needed <= getDataCapacityBits(version, ecLevel)) {
+      return { version, ecLevel: boostedLevel(ecLevel, needed, version, options), segments }
     }
   }
 
@@ -141,6 +172,7 @@ function segmentsFor(
   forcedMode?: string,
   kanji?: KanjiCodec,
 ): QRSegment[] {
+  if (text.length === 0) return [{ mode: "byte", data: new Uint8Array(0), charCount: 0 }]
   if (forcedMode) {
     const mode = selectMode(text, forcedMode)
     const data = new TextEncoder().encode(text)

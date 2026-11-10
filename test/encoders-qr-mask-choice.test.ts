@@ -57,13 +57,13 @@ function payloads(seed: number, count: number, alphabet: string, maxLength: numb
 
 describe("QR mask selection", () => {
   it.each([
-    ["Hello, World!", 5],
-    ["https://example.com/p/12345", 6],
+    ["Hello, World!", 3],
+    ["https://example.com/p/12345", 4],
     ["0123456789", 0],
-    ["ABCDEFGHIJKLMNOPQRSTUVWXYZ", 5],
-    ["abcdefghijklmnopqrstuvwxyz", 7],
-    ["A", 3],
-    ["éèê", 7],
+    ["ABCDEFGHIJKLMNOPQRSTUVWXYZ", 6],
+    ["abcdefghijklmnopqrstuvwxyz", 3],
+    ["A", 0],
+    ["éèê", 0],
   ])("picks a mask for %j", (payload, mask) => {
     expect(readFormat(encodeQR(payload)).mask).toBe(mask)
   })

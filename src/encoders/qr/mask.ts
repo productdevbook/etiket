@@ -5,6 +5,8 @@
 
 import type { Module } from "./matrix"
 import { isDataModule } from "./matrix"
+import { forEachFormatCell } from "./format"
+import type { ErrorCorrectionLevel } from "./types"
 
 /** Get mask function for a given mask pattern (0-7) */
 export function getMaskFn(mask: number): (r: number, c: number) => boolean {
@@ -45,13 +47,15 @@ export function applyMask(matrix: Module[][], mask: number, size: number, versio
 }
 
 /**
- * Select the best mask pattern by evaluating all 8 masks
+ * Select the best mask pattern by evaluating all 8 masks, each with its own
+ * format information and with the version information already in `matrix`
  * Returns the mask number with the lowest penalty score
  */
 export function selectBestMask(
   matrix: Module[][],
   size: number,
   version: number,
+  ecLevel: ErrorCorrectionLevel,
   requestedMask?: number,
 ): number {
   if (requestedMask !== undefined && requestedMask >= 0 && requestedMask <= 7) {
@@ -85,6 +89,10 @@ export function selectBestMask(
         masked[i] = data[i] && fn(r, c) ? modules[i]! ^ 1 : modules[i]!
       }
     }
+    // The format bits depend on the mask, so they are part of what is scored
+    forEachFormatCell(size, ecLevel, mask, (r, c, bit) => {
+      masked[r * size + c] = bit
+    })
     const score = penalty(masked, size)
     if (score < bestScore) {
       bestScore = score
@@ -98,45 +106,52 @@ export function selectBestMask(
 /**
  * The four penalty rules of ISO/IEC 18004 7.8.3.1, over a flattened symbol.
  *
- * Rules 1 and 3 read a row and a column in the same pass; rule 2 reads the
- * square below and to the right of each module; rule 4 counts the dark ones.
+ * Rule 3 follows Nayuki's reading of it: a 1:1:3:1:1 run pattern of any scale,
+ * with four light modules of the same scale on one side, where the area beyond
+ * the symbol counts as light. Rule 4 counts steps of 5% from half dark.
  */
 function penalty(modules: Uint8Array, size: number): number {
   let score = 0
   let dark = 0
+  const rowHistory = new Int32Array(7)
+  const colHistory = new Int32Array(7)
 
   for (let i = 0; i < size; i++) {
-    let rowRun = 1
-    let colRun = 1
-    // The five element window rules 3 looks for, as a rolling value
-    let rowWindow = 0
-    let colWindow = 0
+    rowHistory.fill(0)
+    colHistory.fill(0)
+    let rowColor = 0
+    let colColor = 0
+    let rowRun = 0
+    let colRun = 0
     for (let j = 0; j < size; j++) {
       const row = modules[i * size + j]!
       const col = modules[j * size + i]!
       dark += row
 
-      if (j > 0) {
-        if (row === modules[i * size + j - 1]!) {
-          rowRun++
-          if (rowRun === 5) score += 3
-          else if (rowRun > 5) score++
-        } else rowRun = 1
-
-        if (col === modules[(j - 1) * size + i]!) {
-          colRun++
-          if (colRun === 5) score += 3
-          else if (colRun > 5) score++
-        } else colRun = 1
+      if (row === rowColor) {
+        rowRun++
+        if (rowRun === 5) score += 3
+        else if (rowRun > 5) score++
+      } else {
+        addRun(rowHistory, rowRun, size)
+        if (!rowColor) score += countFinderLike(rowHistory) * 40
+        rowColor = row
+        rowRun = 1
       }
 
-      rowWindow = ((rowWindow << 1) | row) & 0x7ff
-      colWindow = ((colWindow << 1) | col) & 0x7ff
-      if (j >= 10) {
-        if (rowWindow === 0x5d0 || rowWindow === 0x05d) score += 40
-        if (colWindow === 0x5d0 || colWindow === 0x05d) score += 40
+      if (col === colColor) {
+        colRun++
+        if (colRun === 5) score += 3
+        else if (colRun > 5) score++
+      } else {
+        addRun(colHistory, colRun, size)
+        if (!colColor) score += countFinderLike(colHistory) * 40
+        colColor = col
+        colRun = 1
       }
     }
+    score += endRuns(rowHistory, rowColor, rowRun, size) * 40
+    score += endRuns(colHistory, colColor, colRun, size) * 40
   }
 
   for (let r = 0; r < size - 1; r++) {
@@ -152,144 +167,45 @@ function penalty(modules: Uint8Array, size: number): number {
     }
   }
 
-  const percent = (dark * 100) / (size * size)
-  const previous = Math.floor(percent / 5) * 5
-  return score + Math.min(Math.abs(previous - 50), Math.abs(previous + 5 - 50)) * 2
+  const total = size * size
+  const steps = Math.max(0, Math.ceil(Math.abs(dark * 20 - total * 10) / total) - 1)
+  return score + steps * 10
 }
 
-/**
- * Evaluate penalty score for a masked matrix
- * Implements all 4 penalty rules from the QR code spec
- */
-export function evaluatePenalty(matrix: Module[][], size: number): number {
+/** Push a finished run onto the history, the first one lengthened by the light border */
+function addRun(history: Int32Array, length: number, size: number): void {
+  if (history[0] === 0) length += size
+  history.copyWithin(1, 0, 6)
+  history[0] = length
+}
+
+/** How many ends of the last five runs read as a finder-like pattern: 0, 1 or 2 */
+function countFinderLike(history: Int32Array): number {
+  const n = history[1]!
+  const core =
+    n > 0 && history[2] === n && history[3] === n * 3 && history[4] === n && history[5] === n
+  if (!core) return 0
   return (
-    penaltyRule1(matrix, size) +
-    penaltyRule2(matrix, size) +
-    penaltyRule3(matrix, size) +
-    penaltyRule4(matrix, size)
+    (history[0]! >= n * 4 && history[6]! >= n ? 1 : 0) +
+    (history[6]! >= n * 4 && history[0]! >= n ? 1 : 0)
   )
 }
 
-/**
- * Rule N1: Consecutive same-color modules in row/column
- * 5+ same-color → 3 + (count - 5) points
- */
-function penaltyRule1(matrix: Module[][], size: number): number {
-  let score = 0
-
-  // Rows
-  for (let r = 0; r < size; r++) {
-    let count = 1
-    for (let c = 1; c < size; c++) {
-      if (!!matrix[r]![c] === !!matrix[r]![c - 1]) {
-        count++
-        if (count === 5) score += 3
-        else if (count > 5) score++
-      } else {
-        count = 1
-      }
-    }
+/** Close the line with the light border beyond it, then count */
+function endRuns(history: Int32Array, color: number, length: number, size: number): number {
+  if (color) {
+    addRun(history, length, size)
+    length = 0
   }
-
-  // Columns
-  for (let c = 0; c < size; c++) {
-    let count = 1
-    for (let r = 1; r < size; r++) {
-      if (!!matrix[r]![c] === !!matrix[r - 1]![c]) {
-        count++
-        if (count === 5) score += 3
-        else if (count > 5) score++
-      } else {
-        count = 1
-      }
-    }
-  }
-
-  return score
+  addRun(history, length + size, size)
+  return countFinderLike(history)
 }
 
-/**
- * Rule N2: 2x2 same-color blocks
- * 3 points for each 2x2 block of same color
- */
-function penaltyRule2(matrix: Module[][], size: number): number {
-  let score = 0
-
-  for (let r = 0; r < size - 1; r++) {
-    for (let c = 0; c < size - 1; c++) {
-      const val = !!matrix[r]![c]
-      if (
-        val === !!matrix[r]![c + 1] &&
-        val === !!matrix[r + 1]![c] &&
-        val === !!matrix[r + 1]![c + 1]
-      ) {
-        score += 3
-      }
-    }
-  }
-
-  return score
-}
-
-/**
- * Rule N3: Finder-like patterns (1:1:3:1:1)
- * 40 points for each occurrence of the pattern
- * Pattern: dark-light-dark(3)-light-dark followed/preceded by 4 light modules
- */
-function penaltyRule3(matrix: Module[][], size: number): number {
-  let score = 0
-  // Pattern: 1,0,1,1,1,0,1,0,0,0,0 or 0,0,0,0,1,0,1,1,1,0,1
-  const p1 = [1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0]
-  const p2 = [0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1]
-
+/** Penalty score of a masked matrix, as the encoder weighs the candidates */
+export function evaluatePenalty(matrix: Module[][], size: number): number {
+  const modules = new Uint8Array(size * size)
   for (let r = 0; r < size; r++) {
-    for (let c = 0; c <= size - 11; c++) {
-      let match1 = true
-      let match2 = true
-      for (let i = 0; i < 11; i++) {
-        const val = matrix[r]![c + i] ? 1 : 0
-        if (val !== p1[i]) match1 = false
-        if (val !== p2[i]) match2 = false
-        if (!match1 && !match2) break
-      }
-      if (match1) score += 40
-      if (match2) score += 40
-    }
+    for (let c = 0; c < size; c++) modules[r * size + c] = matrix[r]![c] ? 1 : 0
   }
-
-  for (let c = 0; c < size; c++) {
-    for (let r = 0; r <= size - 11; r++) {
-      let match1 = true
-      let match2 = true
-      for (let i = 0; i < 11; i++) {
-        const val = matrix[r + i]![c] ? 1 : 0
-        if (val !== p1[i]) match1 = false
-        if (val !== p2[i]) match2 = false
-        if (!match1 && !match2) break
-      }
-      if (match1) score += 40
-      if (match2) score += 40
-    }
-  }
-
-  return score
-}
-
-/**
- * Rule N4: Dark module proportion
- * Deviation from 50% in steps of 5%
- * 10 points per 5% step
- */
-function penaltyRule4(matrix: Module[][], size: number): number {
-  let dark = 0
-  for (let r = 0; r < size; r++) {
-    for (let c = 0; c < size; c++) {
-      if (matrix[r]![c]) dark++
-    }
-  }
-  const total = size * size
-  const percent = (dark * 100) / total
-  const prev5 = Math.floor(percent / 5) * 5
-  const next5 = prev5 + 5
-  return Math.min(Math.abs(prev5 - 50) / 5, Math.abs(next5 - 50) / 5) * 10
+  return penalty(modules, size)
 }

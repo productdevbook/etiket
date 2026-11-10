@@ -4,10 +4,8 @@
  */
 
 import type { QRCodeOptions } from "./types"
-import { encodeData } from "./data"
-import { createMatrix, placeFunctionPatterns, placeData } from "./matrix"
-import { selectBestMask, applyMask } from "./mask"
-import { writeFormatInfo, writeVersionInfo } from "./format"
+import { buildQRSymbol } from "./symbol"
+import { gs1Payload } from "./gs1"
 import { kanjiCodec } from "./kanji"
 import { CapacityError, InvalidInputError } from "../../errors"
 
@@ -18,41 +16,21 @@ export type { QRCodeOptions, ErrorCorrectionLevel, EncodingMode, QRSegment } fro
  * Returns a 2D boolean array (true = dark module)
  */
 export function encodeQR(text: string, options: QRCodeOptions = {}): boolean[][] {
+  if (text.length === 0) {
+    throw new InvalidInputError("QR Code input must not be empty")
+  }
   return encodeQRCore(text, { ...options, kanji: options.kanji ?? kanjiCodec })
 }
 
 /**
  * Encode text as a QR code matrix without the Shift-JIS table, so a bundle
- * that uses only this never ships it. Kanji mode needs `options.kanji`.
+ * that uses only this never ships it. Kanji mode needs `options.kanji`. An empty
+ * string is a byte segment of length 0.
  */
 export function encodeQRCore(text: string, options: QRCodeOptions = {}): boolean[][] {
-  if (text.length === 0) {
-    throw new InvalidInputError("QR Code input must not be empty")
-  }
-  const { version, ecLevel, bits } = encodeData(text, options)
-  const size = version * 4 + 17
-
-  // Create matrix and place function patterns
-  const matrix = createMatrix(size)
-  placeFunctionPatterns(matrix, version)
-
-  // Place data bits
-  placeData(matrix, bits, version)
-
-  // Select and apply best mask
-  const bestMask = selectBestMask(matrix, size, version, options.mask)
-  applyMask(matrix, bestMask, size, version)
-
-  // Write format info
-  writeFormatInfo(matrix, ecLevel, bestMask)
-
-  // Write version info
-  if (version >= 7) {
-    writeVersionInfo(matrix, version)
-  }
-
-  // Convert to boolean array (null -> false)
-  return matrix.map((row) => row.map((cell) => cell === true))
+  // GS1 symbols carry AI element strings, not the parenthesised form the caller wrote
+  const payload = options.gs1 ? gs1Payload(text) : text
+  return buildQRSymbol(payload, options).modules
 }
 
 export interface QRSequenceOptions extends Omit<QRCodeOptions, "structuredAppend"> {

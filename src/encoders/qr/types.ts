@@ -9,6 +9,13 @@ export type EncodingMode = "numeric" | "alphanumeric" | "byte" | "kanji" | "auto
 export interface QRCodeOptions {
   ecLevel?: ErrorCorrectionLevel
   version?: number // 1-40, auto if omitted
+  /** The smallest version to consider, 1-40: the encoder takes the smallest one from here that fits. */
+  minVersion?: number
+  /**
+   * Once the version is chosen, raise `ecLevel` as far as the data still fits
+   * without growing the symbol.
+   */
+  boostEcc?: boolean
   mode?: EncodingMode
   mask?: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 // auto if omitted
   micro?: boolean
@@ -82,3 +89,23 @@ export const MODE_INDICATOR = {
   fnc1Second: 0b1001,
   terminator: 0b0000,
 } as const
+
+/** What `encodeQRSymbol` returns: the symbol and the choices that shaped it */
+export interface QRSymbol {
+  /** Version 1-40; the symbol is `4 * version + 17` modules on a side */
+  version: number
+  /** The error correction level actually used, after `boostEcc` */
+  ecLevel: ErrorCorrectionLevel
+  /** The mask pattern 0-7, whether given or chosen by penalty score */
+  mask: number
+  /** Modules per side */
+  size: number
+  /** true = dark module, `modules[row][column]` */
+  modules: boolean[][]
+}
+
+/** The options `encodeQRSymbol` takes: the QR-only path leaves out kanji, GS1 and Structured Append */
+export type QRSymbolOptions = Omit<
+  QRCodeOptions,
+  "kanji" | "gs1" | "applicationIndicator" | "structuredAppend" | "micro"
+>
