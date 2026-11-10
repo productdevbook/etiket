@@ -28,6 +28,12 @@
 
 ### Fixed
 
+- **Mask choice** scored each candidate mask without its own format information
+  or the version information, and read finder-like patterns at one scale with no
+  light area beyond the symbol. The symbols were valid; the mask picked differed
+  from other encoders' in about one case in five. Scoring now writes both, and
+  rule 3 follows Nayuki's QR Code generator, so the auto-chosen mask matches it.
+
 - A lone UTF-16 surrogate in byte mode is pinned to U+FFFD, as `TextEncoder`
   writes it; a test now holds it there.
 

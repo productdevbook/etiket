@@ -30,52 +30,54 @@ export function generateFormatInfo(ecLevel: ErrorCorrectionLevel, mask: number):
   return ((data << 10) | bch) ^ FORMAT_MASK
 }
 
+const FORMAT_TOP_LEFT: readonly (readonly [number, number])[] = [
+  [8, 0],
+  [8, 1],
+  [8, 2],
+  [8, 3],
+  [8, 4],
+  [8, 5],
+  [8, 7],
+  [8, 8],
+  [7, 8],
+  [5, 8],
+  [4, 8],
+  [3, 8],
+  [2, 8],
+  [1, 8],
+  [0, 8],
+]
+
+/** Visit every module of both copies of the format information, with the bit it holds */
+export function forEachFormatCell(
+  size: number,
+  ecLevel: ErrorCorrectionLevel,
+  mask: number,
+  visit: (row: number, column: number, bit: 0 | 1) => void,
+): void {
+  const formatInfo = generateFormatInfo(ecLevel, mask)
+
+  for (let i = 0; i < 15; i++) {
+    const [r, c] = FORMAT_TOP_LEFT[i]!
+    visit(r, c, ((formatInfo >> (14 - i)) & 1) as 0 | 1)
+  }
+  for (let i = 0; i < 7; i++) {
+    visit(size - 1 - i, 8, ((formatInfo >> (14 - i)) & 1) as 0 | 1)
+  }
+  for (let i = 0; i < 8; i++) {
+    visit(8, size - 8 + i, ((formatInfo >> (7 - i)) & 1) as 0 | 1)
+  }
+}
+
 /** Write format info to the matrix at the reserved positions */
 export function writeFormatInfo(
   matrix: Module[][],
   ecLevel: ErrorCorrectionLevel,
   mask: number,
 ): void {
-  const size = matrix.length
-  const formatInfo = generateFormatInfo(ecLevel, mask)
-
-  // Around top-left finder pattern
-  // Horizontal: row 8, columns 0-7 (skipping col 6 timing) and col 8
-  const horizontalPositions = [
-    [8, 0],
-    [8, 1],
-    [8, 2],
-    [8, 3],
-    [8, 4],
-    [8, 5],
-    [8, 7],
-    [8, 8],
-    [7, 8],
-    [5, 8],
-    [4, 8],
-    [3, 8],
-    [2, 8],
-    [1, 8],
-    [0, 8],
-  ]
-
-  for (let i = 0; i < 15; i++) {
-    const bit = ((formatInfo >> (14 - i)) & 1) === 1
-    const [r, c] = horizontalPositions[i]!
-    matrix[r]![c] = bit
-  }
-
-  // Bottom-left: column 8, rows from bottom
-  for (let i = 0; i < 7; i++) {
-    const bit = ((formatInfo >> (14 - i)) & 1) === 1
-    matrix[size - 1 - i]![8] = bit
-  }
-
-  // Top-right: row 8, columns from right
-  for (let i = 0; i < 8; i++) {
-    const bit = ((formatInfo >> (7 - i)) & 1) === 1
-    matrix[8]![size - 8 + i] = bit
-  }
+  forEachFormatCell(matrix.length, ecLevel, mask, (r, c, bit) => {
+    matrix[r]![c] = bit === 1
+  })
 }
 
 /** Write version info for version 7+ */

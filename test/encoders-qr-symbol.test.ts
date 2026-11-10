@@ -315,6 +315,7 @@ interface Fixture {
 // Produced by Nayuki's QR Code generator, an encoder that shares nothing with this one:
 // each row is the version, level and mask it picked and the SHA-256 of its matrix as
 // rows of 0 and 1, for the payload `payload(kind, length)` in the one segment `kind`.
+// Rows with no `mask` leave the choice to the encoder, so the mask is pinned too.
 const fixtures: Fixture[] = JSON.parse(
   readFileSync(fileURLToPath(new URL("_qr-reference-fixtures.json", import.meta.url)), "utf8"),
 )

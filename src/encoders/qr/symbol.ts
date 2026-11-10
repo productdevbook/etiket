@@ -20,13 +20,14 @@ export function buildQRSymbol(text: string, options: QRCodeOptions): QRSymbol {
   placeFunctionPatterns(matrix, version)
   placeData(matrix, bits, version)
 
-  const mask = selectBestMask(matrix, size, version, options.mask)
-  applyMask(matrix, mask, size, version)
-
-  writeFormatInfo(matrix, ecLevel, mask)
   if (version >= 7) {
     writeVersionInfo(matrix, version)
   }
+
+  const mask = selectBestMask(matrix, size, version, ecLevel, options.mask)
+  applyMask(matrix, mask, size, version)
+
+  writeFormatInfo(matrix, ecLevel, mask)
 
   const modules = matrix.map((row) => row.map((cell) => cell === true))
   return { version, ecLevel, mask, size, modules }
