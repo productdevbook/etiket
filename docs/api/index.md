@@ -701,35 +701,39 @@ or `"numeric"` (2 bars per digit).
 
 ### 2D
 
-| Function                                | Returns                                     |
-| :-------------------------------------- | :------------------------------------------ |
-| `encodeQR(text, options?)`              | `boolean[][]`                               |
-| `encodeQRSequence(text, options?)`      | `boolean[][][]`                             |
-| `encodeQRCore(text, options?)`          | `boolean[][]` — no kanji table of its own   |
-| `encodeMicroQR(text, options?)`         | `boolean[][]`                               |
-| `encodeRMQR(text, options?)`            | `boolean[][]`                               |
-| `encodeDataMatrix(text, options?)`      | `boolean[][]`                               |
-| `encodeDataMatrixSequence(text, opts?)` | `boolean[][][]` — Structured Append         |
-| `encodeGS1DataMatrix(text, options?)`   | `boolean[][]`                               |
-| `encodePDF417(text, options?)`          | `{ matrix, rows, cols }`                    |
-| `encodePDF417Sequence(text, options?)`  | `{ matrix, rows, cols }[]` — Macro PDF417   |
-| `encodeMicroPDF417(text, options?)`     | `{ matrix, rows, cols }`                    |
-| `encodeAztec(text, options?)`           | `boolean[][]`                               |
-| `encodeAztecRune(value)`                | `boolean[][]` — 11x11, a byte 0 to 255      |
-| `encodeMailmark(text, options?)`        | `boolean[][]` — a Data Matrix of fixed size |
-| `encodeMaxiCode(text, options?)`        | `boolean[][]` — 33×30                       |
-| `encodeMaxiCodeSequence(text, opts?)`   | `boolean[][][]` — Structured Append         |
-| `encodeDotCode(text, options?)`         | `boolean[][]`                               |
-| `encodeHanXin(text, options?)`          | `boolean[][]`                               |
-| `encodeCodablockF(text, options?)`      | `{ matrix, rows, cols, separatorRows }`     |
-| `encodeCode16K(text)`                   | `{ matrix, rows, cols, separatorRows }`     |
-| `encodeJABCode(text, options?)`         | `JABCodeResult`                             |
+| Function                                | Returns                                      |
+| :-------------------------------------- | :------------------------------------------- |
+| `encodeQR(text, options?)`              | `boolean[][]`                                |
+| `encodeQRSequence(text, options?)`      | `boolean[][][]`                              |
+| `encodeQRCore(text, options?)`          | `boolean[][]` — no kanji table of its own    |
+| `encodeQRSymbol(text, options?)`        | `QRSymbol` — version, ecLevel, mask, modules |
+| `tryEncodeQRSymbol(text, options?)`     | `QRSymbol \| null` — null when it won't fit  |
+| `encodeMicroQR(text, options?)`         | `boolean[][]`                                |
+| `encodeRMQR(text, options?)`            | `boolean[][]`                                |
+| `encodeDataMatrix(text, options?)`      | `boolean[][]`                                |
+| `encodeDataMatrixSequence(text, opts?)` | `boolean[][][]` — Structured Append          |
+| `encodeGS1DataMatrix(text, options?)`   | `boolean[][]`                                |
+| `encodePDF417(text, options?)`          | `{ matrix, rows, cols }`                     |
+| `encodePDF417Sequence(text, options?)`  | `{ matrix, rows, cols }[]` — Macro PDF417    |
+| `encodeMicroPDF417(text, options?)`     | `{ matrix, rows, cols }`                     |
+| `encodeAztec(text, options?)`           | `boolean[][]`                                |
+| `encodeAztecRune(value)`                | `boolean[][]` — 11x11, a byte 0 to 255       |
+| `encodeMailmark(text, options?)`        | `boolean[][]` — a Data Matrix of fixed size  |
+| `encodeMaxiCode(text, options?)`        | `boolean[][]` — 33×30                        |
+| `encodeMaxiCodeSequence(text, opts?)`   | `boolean[][][]` — Structured Append          |
+| `encodeDotCode(text, options?)`         | `boolean[][]`                                |
+| `encodeHanXin(text, options?)`          | `boolean[][]`                                |
+| `encodeCodablockF(text, options?)`      | `{ matrix, rows, cols, separatorRows }`      |
+| `encodeCode16K(text)`                   | `{ matrix, rows, cols, separatorRows }`      |
+| `encodeJABCode(text, options?)`         | `JABCodeResult`                              |
 
 ```ts
 import {
   encodeQR,
   encodeQRSequence,
   encodeQRCore,
+  encodeQRSymbol,
+  tryEncodeQRSymbol,
   kanjiCodec,
   encodeMicroQR,
   encodeRMQR,
@@ -755,6 +759,8 @@ encodeQR("Hello", { ecLevel: "H", mode: "byte" }).length // 21 for version 1
 encodeQRSequence("A".repeat(200), { symbols: 3 }).length // 3
 encodeQRCore("https://example.com") // the same matrix as encodeQR, without the Shift-JIS table
 encodeQRCore("日本語", { kanji: kanjiCodec }) // kanji mode, when the table is wanted after all
+encodeQRSymbol("Hello", { ecLevel: "L", boostEcc: true }).ecLevel // "H"
+tryEncodeQRSymbol("A".repeat(10_000)) // null
 encodeMicroQR("12345", { version: 2, ecLevel: "L" })
 encodeRMQR("Hello", { ecLevel: "M" })
 encodeDataMatrix("Hello", { shape: "auto", dmre: true })

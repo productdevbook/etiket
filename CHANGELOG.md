@@ -1,5 +1,36 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **`minVersion` and `boostEcc`** QR options. `minVersion` takes the smallest
+  version at or above it that fits; `boostEcc` raises the error correction level
+  as far as the data fits without growing the symbol. Both work on `qrcode`,
+  `encodeQR`, `encodeQRCore` and the new `encodeQRSymbol`.
+  ([#173](https://github.com/productdevbook/etiket/issues/173))
+- **`encodeQRSymbol()` and `tryEncodeQRSymbol()`**, from `etiket` and `etiket/qr`.
+  They return `{ version, ecLevel, mask, size, modules }` — the level after
+  `boostEcc`, the mask whether given or chosen. `tryEncodeQRSymbol` returns
+  `null` where `encodeQRSymbol` would throw `CapacityError`.
+- `encodeQRSymbol` is the narrow QR path: it leaves out kanji mode, GS1 and
+  Structured Append, and a bundle that imports only it is 15.8 KB minified,
+  6.3 KB gzipped, against 35.8 KB and 8.0 KB for `encodeQRCore` before.
+
+### Changed
+
+- `encodeQRCore("")` encodes a byte segment of length 0 (version 1) instead of
+  throwing `InvalidInputError`. `encodeQR("")`, `qrcode("")` and the barcode
+  wrappers still throw.
+- `encodeQRCore` and `encodeQR` smaller: the error correction table is stored
+  as four numbers a row, and `encodeQRCore` no longer imports GS1 through the
+  shared data module. Output is unchanged.
+
+### Fixed
+
+- A lone UTF-16 surrogate in byte mode is pinned to U+FFFD, as `TextEncoder`
+  writes it; a test now holds it there.
+
 ## v1.0.0 (unreleased)
 
 The v1 pass was mostly about one thing: making sure a symbol this library

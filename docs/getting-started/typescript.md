@@ -108,18 +108,20 @@ void everything
 
 ### QR
 
-| Type                   | What it is                                                                    |
-| :--------------------- | :---------------------------------------------------------------------------- |
-| `QRCodeOptions`        | Encoder: EC level, version, mode, mask, ECI, GS1, Micro QR, Structured Append |
-| `QRCodeSVGOptions`     | Renderer: size, dot shapes, gradients, corners, logo                          |
-| `ErrorCorrectionLevel` | `"L" \| "M" \| "Q" \| "H"`                                                    |
-| `EncodingMode`         | `"numeric" \| "alphanumeric" \| "byte" \| "kanji" \| "auto"`                  |
-| `MicroQROptions`       | `version` (1–4), `ecLevel` (`L`/`M`/`Q`), `mask` (0–3)                        |
-| `RMQROptions`          | `ecLevel` (`M`/`H`), `version` (0–31), `eci`                                  |
-| `MailmarkType`         | `7 \| 9 \| 29` — the Royal Mail barcode types                                 |
-| `MailmarkOptions`      | `{ type?: MailmarkType }`                                                     |
-| `QRSequenceOptions`    | `QRCodeOptions` minus `structuredAppend`, plus `symbols`                      |
-| `KanjiCodec`           | `{ toShiftJIS(char) }` — the table kanji mode encodes with (`kanjiCodec`)     |
+| Type                   | What it is                                                                                          |
+| :--------------------- | :-------------------------------------------------------------------------------------------------- |
+| `QRCodeOptions`        | Encoder: EC level, version, minVersion, boostEcc, mode, mask, ECI, GS1, Micro QR, Structured Append |
+| `QRCodeSVGOptions`     | Renderer: size, dot shapes, gradients, corners, logo                                                |
+| `ErrorCorrectionLevel` | `"L" \| "M" \| "Q" \| "H"`                                                                          |
+| `EncodingMode`         | `"numeric" \| "alphanumeric" \| "byte" \| "kanji" \| "auto"`                                        |
+| `MicroQROptions`       | `version` (1–4), `ecLevel` (`L`/`M`/`Q`), `mask` (0–3)                                              |
+| `RMQROptions`          | `ecLevel` (`M`/`H`), `version` (0–31), `eci`                                                        |
+| `MailmarkType`         | `7 \| 9 \| 29` — the Royal Mail barcode types                                                       |
+| `MailmarkOptions`      | `{ type?: MailmarkType }`                                                                           |
+| `QRSequenceOptions`    | `QRCodeOptions` minus `structuredAppend`, plus `symbols`                                            |
+| `KanjiCodec`           | `{ toShiftJIS(char) }` — the table kanji mode encodes with (`kanjiCodec`)                           |
+| `QRSymbol`             | `{ version, ecLevel, mask, size, modules }` — what `encodeQRSymbol` returns                         |
+| `QRSymbolOptions`      | `QRCodeOptions` minus `kanji`, `gs1`, `applicationIndicator`, `structuredAppend`, `micro`           |
 
 ```ts
 import type { QRCodeOptions, QRCodeSVGOptions, ErrorCorrectionLevel, EncodingMode } from "etiket"

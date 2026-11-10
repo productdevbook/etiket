@@ -241,26 +241,28 @@ qrcode("Test", {
 })
 ```
 
-| Option           | Type                                              | Default    | Description            |
-| :--------------- | :------------------------------------------------ | :--------- | :--------------------- |
-| `size`           | `number`                                          | `200`      | SVG size in pixels     |
-| `ecLevel`        | `'L' \| 'M' \| 'Q' \| 'H'`                        | `'M'`      | Error correction level |
-| `version`        | `number`                                          | auto       | QR version (1-40)      |
-| `mode`           | `'numeric' \| 'alphanumeric' \| 'byte' \| 'auto'` | `'auto'`   | Encoding mode          |
-| `mask`           | `0-7`                                             | auto       | Mask pattern           |
-| `color`          | `string \| GradientOptions`                       | `'#000'`   | Module color           |
-| `background`     | `string \| GradientOptions`                       | `'#fff'`   | Background color       |
-| `margin`         | `number`                                          | `4`        | Quiet zone in modules  |
-| `dotType`        | `DotType`                                         | `'square'` | Module shape           |
-| `dotSize`        | `number`                                          | `1`        | Module size (0.1-1)    |
-| `shape`          | `'square' \| 'circle'`                            | `'square'` | Overall QR shape       |
-| `corners`        | `object`                                          | —          | Finder pattern styling |
-| `logo`           | `LogoOptions`                                     | —          | Center logo embedding  |
-| `xmlDeclaration` | `boolean`                                         | `false`    | Add XML declaration    |
-| `unit`           | `'px' \| 'mm' \| 'in' \| 'cm'`                    | `'px'`     | Measurement unit       |
-| `ariaLabel`      | `string`                                          | —          | SVG aria-label         |
-| `title`          | `string`                                          | —          | SVG `<title>` element  |
-| `desc`           | `string`                                          | —          | SVG `<desc>` element   |
+| Option           | Type                                              | Default    | Description                  |
+| :--------------- | :------------------------------------------------ | :--------- | :--------------------------- |
+| `size`           | `number`                                          | `200`      | SVG size in pixels           |
+| `ecLevel`        | `'L' \| 'M' \| 'Q' \| 'H'`                        | `'M'`      | Error correction level       |
+| `version`        | `number`                                          | auto       | QR version (1-40)            |
+| `minVersion`     | `number`                                          | `1`        | Smallest version to try      |
+| `boostEcc`       | `boolean`                                         | `false`    | Raise EC level while it fits |
+| `mode`           | `'numeric' \| 'alphanumeric' \| 'byte' \| 'auto'` | `'auto'`   | Encoding mode                |
+| `mask`           | `0-7`                                             | auto       | Mask pattern                 |
+| `color`          | `string \| GradientOptions`                       | `'#000'`   | Module color                 |
+| `background`     | `string \| GradientOptions`                       | `'#fff'`   | Background color             |
+| `margin`         | `number`                                          | `4`        | Quiet zone in modules        |
+| `dotType`        | `DotType`                                         | `'square'` | Module shape                 |
+| `dotSize`        | `number`                                          | `1`        | Module size (0.1-1)          |
+| `shape`          | `'square' \| 'circle'`                            | `'square'` | Overall QR shape             |
+| `corners`        | `object`                                          | —          | Finder pattern styling       |
+| `logo`           | `LogoOptions`                                     | —          | Center logo embedding        |
+| `xmlDeclaration` | `boolean`                                         | `false`    | Add XML declaration          |
+| `unit`           | `'px' \| 'mm' \| 'in' \| 'cm'`                    | `'px'`     | Measurement unit             |
+| `ariaLabel`      | `string`                                          | —          | SVG aria-label               |
+| `title`          | `string`                                          | —          | SVG `<title>` element        |
+| `desc`           | `string`                                          | —          | SVG `<desc>` element         |
 
 **Dot types:** `square`, `rounded`, `dots`, `diamond`, `classy`, `classy-rounded`, `extra-rounded`, `vertical-line`, `horizontal-line`, `small-square`, `tiny-square`
 

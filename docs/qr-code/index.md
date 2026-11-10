@@ -70,6 +70,20 @@ qrcode("data")
 qrcode("data", { version: 10 }) // 57x57 modules
 ```
 
+`minVersion` starts the search at that version, so a symbol never comes out
+smaller than a size you have reserved for it. `boostEcc` runs after the version
+is chosen and raises the error correction level as far as the data still fits
+without growing the symbol:
+
+```ts
+import { qrcode } from "etiket"
+
+qrcode("data", { minVersion: 5 }) // version 5 or larger, whichever fits
+qrcode("data", { ecLevel: "L", boostEcc: true }) // version 1, level H
+```
+
+`minVersion` above a fixed `version` throws `InvalidInputError`.
+
 ## Mask Pattern
 
 8 mask patterns are evaluated and the best one is automatically selected. You can override:
@@ -89,12 +103,40 @@ payload helpers, alongside the [styling options](/qr-code/styling).
 | :--------------------- | :------------------------- | :------ | :-------------------------------------------- |
 | `ecLevel`              | `"L" \| "M" \| "Q" \| "H"` | `"M"`   | Error correction level                        |
 | `version`              | `1-40`                     | auto    | Symbol version                                |
+| `minVersion`           | `1-40`                     | `1`     | Smallest version to consider                  |
+| `boostEcc`             | `boolean`                  | `false` | Raise `ecLevel` while the symbol stays as is  |
 | `mode`                 | see above                  | `auto`  | Force a single encoding mode                  |
 | `mask`                 | `0-7`                      | auto    | Force a mask pattern                          |
 | `eci`                  | `number`                   | —       | ECI assignment number, e.g. 26 for UTF-8      |
 | `gs1`                  | `boolean`                  | `false` | Encode a parenthesised AI string as GS1 data  |
 | `applicationIndicator` | `string`                   | —       | FNC1 in the second position: `"12"` or `"A"`  |
 | `structuredAppend`     | `{ index, total, parity }` | —       | [Sequence header](/qr-code/structured-append) |
+
+## Symbol Metadata
+
+`encodeQRSymbol()` returns the matrix together with what shaped it: the version,
+the error correction level actually used (after `boostEcc`) and the mask. It is
+the narrow QR path: no kanji mode, GS1 or Structured Append, so a bundle that
+imports only it leaves them out. `tryEncodeQRSymbol()` returns `null` when the
+data does not fit, for render paths that must not throw.
+
+```ts
+import { encodeQRSymbol, tryEncodeQRSymbol } from "etiket/qr"
+
+const { version, ecLevel, mask, size, modules } = encodeQRSymbol("hello", {
+  ecLevel: "L",
+  boostEcc: true,
+})
+// version 1, ecLevel "H", size 21, modules[row][column] is true for a dark module
+
+tryEncodeQRSymbol("A".repeat(10_000)) // null
+```
+
+An empty string is a byte segment of length 0, so `encodeQRSymbol("")` is a
+valid version 1 symbol (as is `encodeQRCore("")`). Byte mode writes a lone UTF-16
+surrogate as U+FFFD, as `TextEncoder` does. Invalid options (a version outside
+1-40, for one) throw from both functions; only `CapacityError` becomes `null`.
+`encodeQR()` and `qrcode()` still reject an empty string.
 
 ## Character Sets and ECI
 

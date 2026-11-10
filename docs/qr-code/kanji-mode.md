@@ -61,6 +61,9 @@ encodeQRCore("漢字テスト", { kanji: kanjiCodec }) // kanji mode
 
 `mode: "kanji"` without a codec throws `InvalidInputError`.
 
+`encodeQRSymbol` goes further: it also leaves out GS1 and Structured Append, which
+cuts a QR-only bundle to under half the size of one built on `encodeQRCore`.
+
 ## Coverage
 
 The table covers the two byte ranges kanji mode allows:
